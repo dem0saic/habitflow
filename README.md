@@ -1,83 +1,99 @@
 # HabitFlow
 
-A habit tracking app built with Expo and React Native. Track daily habits, build streaks, and conquer multi-day challenges — with a Gothic Noir aesthetic and smooth animations throughout.
+A cross-platform habit tracker built with Expo (React Native) and Supabase. Track daily habits, log volume and timer-based activities, run multi-day challenges, and sync everything to the cloud.
 
 ## Features
 
-### Habit Types
-- **Daily** — simple toggle, done or not done
-- **Volume** — rep counter with +/− buttons (e.g. push-ups, glasses of water)
-- **Timer** — time-based in 5-minute steps (e.g. meditation, reading)
-- **Negative** — avoidance tracking (e.g. no sugar, no social media)
+- **Four habit types** — daily (toggle), volume (reps), timer (minutes), negative (avoidance)
+- **Challenges** — 3-day, 7-day, and 21-day streaks with a reward on completion
+- **Cloud sync** — every action syncs to Supabase in real time; data loads from the cloud on sign-in
+- **Per-habit reminders** — time-picker per habit plus general morning/evening nudges
+- **Dark / light theme** — Gothic Noir palette, persisted per account
 
-### Challenges
-Start a 3-day, 7-day, or 21-day challenge. The app auto-starts a 3-Day Kickstart on first launch. Complete all habits every day within the window to claim the reward and trigger a celebration.
-
-### Stats & History
-- **Today** — progress bar showing Done / Remaining / Completion %
-- **History** — calendar heatmap of daily completion
-- **Stats** — GitHub-style 16-week contribution graph, best streak, 7-day average, perfect day count
-
-### Notifications
-- Morning reminder at 9:00 AM and evening check-in at 8:00 PM
-- Per-habit reminders at a custom time you set via long-press → Set Reminder
-
-### Theming
-Full dark/light mode toggle. Default theme is **Gothic Noir** — a muted monochrome palette (`#000000` · `#D1D0D0` · `#988686` · `#5C4E4E`) from Figma Combination 58.
-
-## Tech Stack
-
-| Layer | Library |
-|---|---|
-| Framework | Expo SDK 54 / React Native 0.81.5 |
-| Navigation | React Navigation (bottom tabs) |
-| State | React `useReducer` + `AsyncStorage` |
-| Styling | `@gluestack-style/react` + custom theme system |
-| Notifications | `expo-notifications` |
-| Animations | React Native `Animated` API |
-| Icons | `@expo/vector-icons` (Ionicons) |
-
-## Getting Started
+## Getting started
 
 ### Prerequisites
+
 - Node.js 18+
-- Expo Go app on your phone ([iOS](https://apps.apple.com/app/expo-go/id982107779) / [Android](https://play.google.com/store/apps/details?id=host.exp.exponent))
+- [Expo Go](https://expo.dev/go) installed on your iOS or Android device
+- A Supabase project (see below)
 
-### Install & Run
+### Environment
+
+Create a `.env` file at the project root:
+
+```
+EXPO_PUBLIC_SUPABASE_URL=https://<your-ref>.supabase.co
+EXPO_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_...
+```
+
+### Install & run
 
 ```bash
-git clone https://github.com/dem0saic/habitflow.git
-cd habitflow
-npm install
-npx expo start
+npm install --legacy-peer-deps
+npx expo start          # scan QR with Expo Go
+npx expo start --tunnel # use if phone and PC are on different networks
 ```
 
-Scan the QR code with Expo Go. If your phone and computer are on different networks, use:
+On Windows PowerShell, replace `npx` with `npx.cmd`.
 
-```bash
-npx expo start --tunnel
+## Tech stack
+
+| Layer | Choice |
+|---|---|
+| Framework | Expo SDK 54 / React Native 0.81 (New Architecture) |
+| Auth & DB | Supabase (email auth + Postgres) |
+| State | React `useReducer` + AsyncStorage + Supabase sync |
+| Navigation | React Navigation v7 (bottom tabs) |
+| UI | Custom components, gluestack-style, expo-linear-gradient |
+| Fonts | Russo One, Work Sans (via expo-google-fonts) |
+| Notifications | expo-notifications (daily + per-habit) |
+
+## Auth flow
+
+1. Sign up with email and password → confirm via email link
+2. Sign in → app pulls your habits, completions, and challenge from Supabase
+3. Every action (add, edit, delete, log, challenge) syncs automatically
+4. Pre-auth data created before signing in is migrated to Supabase on first login
+
+## Project structure
+
 ```
-
-### Platform Notes
-- **iOS**: requires macOS for native builds; use Expo Go for testing on Windows
-- **Android**: requires Android Studio with a configured AVD for emulator testing
-- React Native New Architecture is enabled (`newArchEnabled: true`)
-
-## Project Structure
-
-```
+App.js                  # Provider stack + tab navigator
 src/
-├── screens/          # TodayScreen, ChallengeScreen, HistoryScreen, StatsScreen, OnboardingScreen
-├── components/       # HabitCard, AddHabitModal, HabitOptionsSheet, CelebrationModal
-├── utils/
-│   ├── notifications.js   # Expo notifications (general + per-habit)
-│   └── responsive.js      # rs() / ms() scaling helpers
-├── store.js          # Global state (useReducer + AsyncStorage)
-├── theme.js          # DARK / LIGHT color palettes
-├── ThemeContext.js   # useTheme() hook
-└── gluestack.config.js    # gluestack-ui token + theme config
+  AuthContext.js        # Supabase session context
+  ThemeContext.js       # DARK/LIGHT palette context
+  store.js              # Global state, AsyncStorage, Supabase sync dispatch
+  lib/
+    supabase.js         # Supabase client
+    supabaseSync.js     # pull/push helpers + per-action sync
+  screens/
+    AuthScreen.js       # Sign in / sign up
+    OnboardingScreen.js # First-run walkthrough
+    TodayScreen.js      # Main habit list
+    ChallengeScreen.js  # Active challenge view
+    HistoryScreen.js    # Completion calendar
+    StatsScreen.js      # Streaks + contribution graph
+  components/
+    HabitCard.js        # Single habit row (all 4 types)
+    AddHabitModal.js    # Create / edit habit sheet
+    HabitOptionsSheet.js# Long-press: edit / delete / reminder
+    CelebrationModal.js # All-done / reward overlay
+    AnimatedEmoji.js    # Semantic emoji animations
+  theme.js              # Color palettes, font tokens, emoji list
+  utils/
+    responsive.js       # rs() ms() vs() ls() scaling helpers
+    notifications.js    # Schedule / cancel reminders
+    date.js             # todayKey(), dateKey(), addDays(), etc.
 ```
 
-## License
+## Database schema (Supabase)
 
-MIT
+All tables are in the `public` schema with RLS enabled. Every row is scoped to the authenticated user via `auth.uid() = user_id`.
+
+| Table | PK | Notes |
+|---|---|---|
+| `user_settings` | `user_id` | `theme_mode`, `onboarding_done` |
+| `habits` | `id` (text) | Soft-deleted via `deleted_at`; `reminder_time` stored as jsonb |
+| `completions` | `(user_id, habit_id, date)` | Composite PK makes upserts idempotent |
+| `challenges` | `id` (text) | `habit_ids` text array |
