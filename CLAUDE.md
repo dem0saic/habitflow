@@ -34,9 +34,19 @@ Install **Expo Go** on the device (iOS App Store / Android Play Store) and scan 
 - Android emulator requires Android Studio with a configured AVD.
 - `newArchEnabled: true` is set in `app.json` (React Native New Architecture is on).
 
+## Environment
+
+Requires a `.env` file at the project root (already present, not committed):
+```
+EXPO_PUBLIC_SUPABASE_URL=https://<ref>.supabase.co
+EXPO_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_...
+```
+
+Both vars are read by `src/lib/supabase.js` at runtime via `process.env`.
+
 ## Architecture
 
-HabitFlow is an Expo (React Native) habit tracker. The entry point is `index.js` → `App.js`. Do not edit `index.js`.
+HabitFlow is an Expo (React Native) habit tracker with Supabase auth and cloud sync. Entry point is `index.js` → `App.js`. Do not edit `index.js`.
 
 ### Provider stack (`App.js`)
 
@@ -44,17 +54,37 @@ Fonts are loaded at the top of `App` via `useFonts` (expo-font) before any provi
 
 ```
 SafeAreaProvider
-  └─ StoreProvider          ← global state + AsyncStorage persistence
-       └─ GluestackWrapper  ← gluestack-style colorMode (reads state.themeMode directly)
-            └─ ThemeProvider ← resolves DARK/LIGHT palette → useTheme()
-                 └─ InnerApp ← StatusBar + AppNavigator
+  └─ AuthProvider           ← Supabase session (session, loading, signIn, signUp, signOut)
+       └─ StoreProvider     ← global state + AsyncStorage cache + Supabase sync
+            └─ GluestackWrapper  ← gluestack-style colorMode (reads state.themeMode directly)
+                 └─ ThemeProvider ← resolves DARK/LIGHT palette → useTheme()
+                      └─ InnerApp ← StatusBar + AppNavigator
 ```
 
 `InnerApp` reads `state.themeMode` directly from the store — **do not use `useColorMode()` from `@gluestack-style/react`**, it sets a module-level flag on first render and never updates.
 
+### Routing (`AppNavigator` in `App.js`)
+
+```js
+if (loading || !storeReady) return null;   // wait for both auth AND store to initialise
+if (!session)               return <AuthScreen />;
+if (!state.onboardingDone)  return <OnboardingScreen />;
+return <Tab.Navigator ... />;              // Today / Challenge / History / Stats
+```
+
+Both `loading` (from `AuthProvider`) and `storeReady` (from `StoreProvider`) must be true before any routing decision is made — this prevents a race condition where a stale Supabase session resolves before the store has loaded `onboardingDone` from AsyncStorage.
+
+`OnboardingScreen` shows a faint "Sign out" link when `session` is present, so users with a stale session can escape back to `AuthScreen`.
+
+### Auth (`src/AuthContext.js`, `src/screens/AuthScreen.js`)
+
+`AuthProvider` wraps the Supabase session lifecycle. `useAuth()` returns `{ session, loading, signIn, signUp, signOut }`. The Supabase client (`src/lib/supabase.js`) persists sessions to AsyncStorage with `autoRefreshToken: true`.
+
+`AuthScreen` is a single screen with Sign In / Sign Up tabs, client-side validation, and email-confirmation flow (Supabase requires email confirmation by default — after sign-up the screen switches to Sign In mode and shows a banner).
+
 ### State management (`src/store.js`)
 
-Single global store via React `useReducer` + `AsyncStorage` (key: `@habitapp_state_v1`).
+Single global store via React `useReducer` + `AsyncStorage` (key: `@habitapp_state_v1`) + Supabase sync.
 
 **State shape:**
 ```js
@@ -71,7 +101,36 @@ Single global store via React `useReducer` + `AsyncStorage` (key: `@habitapp_sta
 
 **Exported hooks/helpers:** `useStore()`, `useTodayCompletions()`, `useChallengeProgress(state)`, `calcStreak(habitId, completions)`.
 
-On every cold start, the store re-registers all habit reminders from AsyncStorage to fix stale notification triggers.
+**Initialisation sequence:**
+1. Load AsyncStorage cache → `dispatch(LOAD)` → set `storeReady = true` (fast, local)
+2. Re-register all habit reminders from cached data
+3. If a Supabase session exists, pull remote state and overwrite local; if local has pre-auth habits, migrate them up to Supabase
+
+**`syncedDispatch`** (what `useStore().dispatch` actually is): generates stable IDs for `ADD_HABIT` and `START_CHALLENGE` before dispatching, then calls `syncActionToSupabase` fire-and-forget after every action. All screens use `useStore().dispatch` — none bypass the sync.
+
+### Supabase sync (`src/lib/supabaseSync.js`)
+
+All functions use `supabase.from(table)`:
+
+- `pullUserData(userId)` — fetches all 4 tables in parallel, maps snake_case → camelCase, returns the full state shape
+- `pushAllData(userId, state)` — full upload (used for pre-auth migration)
+- `pushHabit / deleteHabit / pushCompletion / pushChallenge / deleteChallenge / pushSettings` — granular upserts
+- `syncActionToSupabase(action, stateRef)` — called after every dispatch; `stateRef.current` is the state **before** the action ran (needed to compute the new completion count for `LOG_HABIT`)
+
+`deleteHabit` is a **soft delete** — it sets `deleted_at`, never removes the row. `pullUserData` filters with `.is('deleted_at', null)`.
+
+### Supabase database schema
+
+Four tables in the `public` schema, all with RLS enabled. Every table has a policy `auth.uid() = user_id` for ALL operations.
+
+| Table | Primary key | Notable columns |
+|---|---|---|
+| `user_settings` | `user_id` | `theme_mode`, `onboarding_done` |
+| `habits` | `id` (text) | `deleted_at` (soft delete), `reminder_time` (jsonb) |
+| `completions` | composite `(user_id, habit_id, date)` | `count` integer |
+| `challenges` | `id` (text) | `habit_ids` text[], `completed`, `reward_claimed` |
+
+`habits.id` and `challenges.id` are text (timestamp strings from `Date.now().toString()`), not UUIDs. The composite PK on `completions` makes upserts idempotent without specifying `onConflict`.
 
 ### Theme system (`src/theme.js`, `src/ThemeContext.js`)
 
