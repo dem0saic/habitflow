@@ -199,6 +199,7 @@ export default function TodayScreen() {
             onIncrement={() => handleIncrement(item.id, item.type === 'timer' ? 5 : 1)}
             onDecrement={() => handleDecrement(item.id, item.type === 'timer' ? 5 : 1)}
             onLongPress={() => { lightTap(); setOptionsHabit(item); }}
+            onSetReminder={handleSetReminder}
           />
         )}
       />

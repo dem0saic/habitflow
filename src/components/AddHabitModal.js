@@ -1,13 +1,100 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, Modal, Switch,
   Pressable, ScrollView, KeyboardAvoidingView, Platform,
+  Animated, Easing,
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../ThemeContext';
 import { EMOJIS } from '../theme';
 import { rs, ms } from '../utils/responsive';
+
+// Animation presets per emoji — everything not listed gets 'float'
+const ANIM_TYPE = {
+  // bounce — physical movement
+  '🏃': 'bounce', '🚴': 'bounce', '🏋️': 'bounce', '🤸': 'bounce', '🏊': 'bounce',
+  '🚶': 'bounce', '⛹️': 'bounce', '🧗': 'bounce', '🤺': 'bounce', '🏌️': 'bounce',
+  '🎾': 'bounce', '⚽': 'bounce', '🏀': 'bounce', '🥊': 'bounce', '🦋': 'bounce',
+  // spin — circular / orbital
+  '🌙': 'spin', '☀️': 'spin', '⭐': 'spin', '🌑': 'spin', '🌈': 'spin',
+  '🌊': 'spin', '🌸': 'spin', '🌺': 'spin', '🌻': 'spin', '🌤️': 'spin',
+  // pulse — energy / intensity
+  '🔥': 'pulse', '💪': 'pulse', '❤️': 'pulse', '⚡': 'pulse', '✨': 'pulse',
+  '💡': 'pulse', '🫀': 'pulse', '🏆': 'pulse', '🏅': 'pulse', '🎊': 'pulse',
+  '🎯': 'pulse', '🥇': 'pulse', '🎖️': 'pulse',
+  // shake — sound / music / alert
+  '🎸': 'shake', '🎹': 'shake', '🎵': 'shake', '🎻': 'shake', '🥁': 'shake',
+  '🎤': 'shake', '🎨': 'shake', '🎭': 'shake', '🎬': 'shake', '📸': 'shake',
+};
+
+function AnimatedEmoji({ emoji, index }) {
+  const anim = useRef(new Animated.Value(0)).current;
+  const type = ANIM_TYPE[emoji] || 'float';
+
+  useEffect(() => {
+    const stagger = (index * 60) % 500;
+    let loopRef = null;
+
+    const timer = setTimeout(() => {
+      if (type === 'bounce') {
+        loopRef = Animated.loop(Animated.sequence([
+          Animated.timing(anim, { toValue: 1, duration: 370, easing: Easing.out(Easing.quad), useNativeDriver: true }),
+          Animated.timing(anim, { toValue: 0, duration: 370, easing: Easing.in(Easing.quad),  useNativeDriver: true }),
+          Animated.delay(700),
+        ]));
+      } else if (type === 'spin') {
+        loopRef = Animated.loop(
+          Animated.timing(anim, { toValue: 1, duration: 3600, easing: Easing.linear, useNativeDriver: true })
+        );
+      } else if (type === 'pulse') {
+        loopRef = Animated.loop(Animated.sequence([
+          Animated.timing(anim, { toValue: 1, duration: 520, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+          Animated.timing(anim, { toValue: 0, duration: 520, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
+          Animated.delay(350),
+        ]));
+      } else if (type === 'shake') {
+        loopRef = Animated.loop(Animated.sequence([
+          Animated.timing(anim, { toValue:  1,  duration: 85, useNativeDriver: true }),
+          Animated.timing(anim, { toValue: -1,  duration: 85, useNativeDriver: true }),
+          Animated.timing(anim, { toValue:  1,  duration: 85, useNativeDriver: true }),
+          Animated.timing(anim, { toValue:  0,  duration: 85, useNativeDriver: true }),
+          Animated.delay(1000),
+        ]));
+      } else {
+        // float — gentle bob for everything else
+        const dur = 1400 + (index % 6) * 160;
+        loopRef = Animated.loop(Animated.sequence([
+          Animated.timing(anim, { toValue: 1, duration: dur, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
+          Animated.timing(anim, { toValue: 0, duration: dur, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
+        ]));
+      }
+      loopRef.start();
+    }, stagger);
+
+    return () => { clearTimeout(timer); if (loopRef) loopRef.stop(); };
+  }, []);
+
+  let transform;
+  if (type === 'bounce') {
+    const translateY = anim.interpolate({ inputRange: [0, 1], outputRange: [0, -9] });
+    transform = [{ translateY }];
+  } else if (type === 'spin') {
+    const rotate = anim.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] });
+    transform = [{ rotate }];
+  } else if (type === 'pulse') {
+    const scale = anim.interpolate({ inputRange: [0, 1], outputRange: [1, 1.28] });
+    transform = [{ scale }];
+  } else if (type === 'shake') {
+    const rotate = anim.interpolate({ inputRange: [-1, 0, 1], outputRange: ['-18deg', '0deg', '18deg'] });
+    transform = [{ rotate }];
+  } else {
+    const translateY = anim.interpolate({ inputRange: [0, 1], outputRange: [0, -5] });
+    transform = [{ translateY }];
+  }
+
+  return <Animated.Text style={{ fontSize: ms(22), transform }}>{emoji}</Animated.Text>;
+}
 
 function formatTime(date) {
   const h = date.getHours() % 12 || 12;
@@ -168,13 +255,13 @@ export default function AddHabitModal({ visible, onClose, onAdd, editingHabit })
             {/* Collapsible emoji grid — no nested ScrollView, outer form scroll handles it */}
             {showEmojiGrid && (
               <View style={styles.emojiGrid}>
-                {EMOJIS.map(e => (
+                {EMOJIS.map((e, i) => (
                   <TouchableOpacity
                     key={e}
                     style={[styles.emojiGridBtn, emoji === e && styles.emojiGridBtnActive]}
                     onPress={() => { setEmoji(e); setShowEmojiGrid(false); }}
                   >
-                    <Text style={styles.emojiGridText}>{e}</Text>
+                    <AnimatedEmoji emoji={e} index={i} />
                   </TouchableOpacity>
                 ))}
               </View>
