@@ -39,7 +39,7 @@ export function AuthProvider({ children }) {
 
   async function resetPassword(email) {
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: 'habitflow://reset-password',
+      redirectTo: 'habitflow://localhost/reset-password',
     });
     if (error) throw error;
   }
