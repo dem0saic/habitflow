@@ -21,6 +21,13 @@ On Windows PowerShell use `npx.cmd` instead of `npx` (e.g. `& "C:\Program Files\
 
 Install **Expo Go** on the device (iOS App Store / Android Play Store) and scan the QR code. Use `--tunnel` when the phone and dev machine are on different networks.
 
+**Installing packages:** this project has peer dependency conflicts from `@gluestack-ui/themed`. Always use `--legacy-peer-deps`:
+```bash
+& "C:\Program Files\nodejs\npm.cmd" install --save --legacy-peer-deps <package>
+# or for expo-managed packages:
+& "C:\Program Files\nodejs\npx.cmd" expo install <package>  # falls back to npm if it errors
+```
+
 ## Platform notes
 
 - iOS builds require macOS. Use Expo Go for iOS testing on Windows.
@@ -32,6 +39,8 @@ Install **Expo Go** on the device (iOS App Store / Android Play Store) and scan 
 HabitFlow is an Expo (React Native) habit tracker. The entry point is `index.js` → `App.js`. Do not edit `index.js`.
 
 ### Provider stack (`App.js`)
+
+Fonts are loaded at the top of `App` via `useFonts` (expo-font) before any providers mount. `SplashScreen.preventAutoHideAsync()` is called at module level so the splash stays visible until fonts are ready.
 
 ```
 SafeAreaProvider
@@ -66,9 +75,22 @@ On every cold start, the store re-registers all habit reminders from AsyncStorag
 
 ### Theme system (`src/theme.js`, `src/ThemeContext.js`)
 
-`src/theme.js` exports `DARK` and `LIGHT` color palettes and the `EMOJIS` array (~110 emojis). `ThemeProvider` picks the active palette based on `state.themeMode`. All screens/components call `useTheme()` to get the color object `C` and pass it into `makeStyles(C)`.
+`src/theme.js` exports `DARK`, `LIGHT`, `FONTS`, and the `EMOJIS` array (~110 emojis).
 
-**Active palette — Gothic Noir (Figma Combination 58):** `#000000` · `#D1D0D0` · `#988686` · `#5C4E4E`. `C.primary` is `#988686` (muted mauve) in dark mode and `#5C4E4E` (dark taupe) in light mode. `C.text` is `#D1D0D0` (light gray) in dark, `#000000` in light. The same palette is mirrored in `src/gluestack.config.js` under `themes.dark` and `themes.light`.
+**`FONTS` constant** is spread into both `DARK` and `LIGHT`, so font family names are available as `C.*` tokens everywhere `useTheme()` is called:
+
+| Token | Font | Use |
+|---|---|---|
+| `C.logo` | `RussoOne_400Regular` | Onboarding title "HabitFlow" only |
+| `C.reg` | `WorkSans_400Regular` | Body text |
+| `C.med` | `WorkSans_500Medium` | Labels, sub-text |
+| `C.semi` | `WorkSans_600SemiBold` | Section labels |
+| `C.bold` | `WorkSans_700Bold` | Buttons, titles |
+| `C.xbold` | `WorkSans_800ExtraBold` | Screen headings, hero numbers |
+
+All six font variants are pre-loaded in `App.js`. If you add a new font, load it there and add a token to `FONTS`.
+
+**Active palette — Gothic Noir:** `#000000` · `#D1D0D0` · `#988686` · `#5C4E4E`. `C.primary` is `#988686` in dark, `#5C4E4E` in light. The same palette is mirrored in `src/gluestack.config.js`.
 
 When changing colors, update **both** `src/theme.js` and `src/gluestack.config.js` together — they must stay in sync.
 
@@ -80,7 +102,15 @@ const styles = makeStyles(C);
 function makeStyles(C) { return { ... }; }
 ```
 
-Avoid hardcoding hex values in screens — use `C.*` tokens. The only legitimate hardcoded colors are gradient stop values (which can't reference `C` inside `LinearGradient`'s `colors` prop array).
+Every text style should include `fontFamily: C.<token>`, `fontWeight`, and `letterSpacing: ls(fontSize)`. Avoid hardcoding hex values — use `C.*` tokens. The only legitimate hardcoded colors are gradient stop values inside `LinearGradient`'s `colors` prop.
+
+### Responsive scaling (`src/utils/responsive.js`)
+
+Baseline: iPhone 14 (390×844).
+- `rs(n)` — scales to screen width (spacing, sizes, radii).
+- `ms(n)` — moderate scale, 0.45 factor (font sizes).
+- `vs(n)` — scales to screen height (rarely needed).
+- `ls(n)` — letter spacing for a given font size: +0.3 for captions (≤12), 0 for body (13–16), −0.3 for sub-headings (17–22), −0.5 for headings (23–28), −0.8 for display (29+). Pass the same size value you pass to `ms()`.
 
 ### Screens (`src/screens/`)
 
@@ -99,22 +129,16 @@ All four main screens share the same header pattern: a plain top row (title + ac
 
 ### Components (`src/components/`)
 
-- **`HabitCard`** — renders a single habit row; handles all 4 habit types with type-specific UI (toggle, counter +/−, timer +5/−5, negative avoidance).
-- **`AddHabitModal`** — bottom-sheet modal for creating/editing habits; 2×2 type grid, collapsible emoji grid picker.
+- **`AnimatedEmoji`** — renders an emoji with a looping semantic animation based on its meaning (🏃 runs, 🔥 flickers, ❤️ heartbeats, etc.). Props: `emoji`, `size` (optional, defaults to `ms(22)`), `style`. Exports `ANIM_TYPE` map. Used on all screens wherever habit emojis appear. Add new emoji→animation mappings to `ANIM_TYPE` in this file.
+- **`HabitCard`** — renders a single habit row for all 4 habit types. The daily/negative card uses `Animated.View` as the outer wrapper (not `TouchableOpacity`) so the bell button and toggle are sibling tap targets and don't interfere. Bell icon (`alarm`/`alarm-outline`) is a dedicated column outside the toggle area; tapping it when active clears the reminder immediately, tapping when inactive opens a time picker.
+- **`AddHabitModal`** — bottom-sheet modal for creating/editing habits; has a close (×) button in the fixed header row above the `ScrollView`. Emoji grid uses `ScrollView` with `nestedScrollEnabled` and `maxHeight: rs(258)` (5 rows visible). Default emoji for new habits is 🚀.
 - **`HabitOptionsSheet`** — long-press bottom sheet: edit / delete / set reminder (uses `@react-native-community/datetimepicker`).
 - **`CelebrationModal`** — full-screen celebration overlay triggered on all-habits-done or challenge reward claim.
 
 ### Notifications (`src/utils/notifications.js`)
 
-Two layers of notifications:
-1. **General** — `scheduleDailyReminders()` schedules `habitflow_morning` (9:00) and `habitflow_evening` (20:00). Only cancels these two IDs, never per-habit reminders.
+Two layers:
+1. **General** — `scheduleDailyReminders()` schedules `habitflow_morning` (9:00) and `habitflow_evening` (20:00). Only ever cancels these two IDs.
 2. **Per-habit** — `scheduleHabitReminder(habitId, ...)` uses identifier `habit_${habitId}`. `cancelHabitReminder(habitId)` cancels only that one.
 
-Android requires `ensureAndroidChannel()` before any scheduling — called in 3 places: app startup, `requestPermissions`, and `scheduleHabitReminder`. The trigger format uses `SchedulableTriggerInputTypes.DAILY`.
-
-### Responsive scaling (`src/utils/responsive.js`)
-
-Baseline: iPhone 14 (390×844).
-- `rs(n)` — scales to screen width (use for spacing, sizes, radii).
-- `ms(n)` — moderate scale with 0.45 factor (use for font sizes).
-- `vs(n)` — scales to screen height (rarely needed).
+Android requires `ensureAndroidChannel()` before any scheduling — called at app startup, in `requestPermissions`, and in `scheduleHabitReminder`. The trigger format uses `SchedulableTriggerInputTypes.DAILY`.
