@@ -7,6 +7,7 @@ import { useStore, useChallengeProgress, useTodayCompletions } from '../store';
 import { useTheme } from '../ThemeContext';
 import { rs, ms } from '../utils/responsive';
 import CelebrationModal from '../components/CelebrationModal';
+import AnimatedEmoji from '../components/AnimatedEmoji';
 import { successBurst } from '../utils/haptics';
 import { todayKey, diffDays } from '../utils/date';
 
@@ -114,7 +115,7 @@ export default function ChallengeScreen() {
               activeOpacity={0.75}
             >
               <View style={styles.presetIconWrap}>
-                <Text style={styles.presetEmoji}>{p.emoji}</Text>
+                <AnimatedEmoji emoji={p.emoji} size={ms(26)} />
               </View>
               <View style={styles.presetInfo}>
                 <Text style={styles.presetTitle}>{p.title}</Text>
@@ -183,7 +184,7 @@ export default function ChallengeScreen() {
                 <View key={h.id} style={[styles.habitCard, isDone && styles.habitCardDone]}>
                   {/* Left: emoji + info */}
                   <View style={styles.habitCardEmoji}>
-                    <Text style={{ fontSize: ms(24) }}>{h.emoji}</Text>
+                    <AnimatedEmoji emoji={h.emoji} size={ms(24)} />
                   </View>
 
                   <View style={{ flex: 1 }}>
