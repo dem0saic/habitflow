@@ -7,6 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useStore } from '../store';
+import { useAuth } from '../AuthContext';
 import { useTheme } from '../ThemeContext';
 import { rs, ms, ls } from '../utils/responsive';
 import { requestPermissions, scheduleDailyReminders } from '../utils/notifications';
@@ -138,6 +139,7 @@ function AppLogo() {
 
 export default function OnboardingScreen() {
   const { dispatch, state } = useStore();
+  const { session, signOut } = useAuth();
   const C = useTheme();
   const styles = makeStyles(C);
   const insets = useSafeAreaInsets();
@@ -210,6 +212,12 @@ export default function OnboardingScreen() {
               : 'Get Started — Start 3-Day Challenge'}
           </Text>
         </TouchableOpacity>
+
+        {session && (
+          <TouchableOpacity onPress={signOut} style={styles.signOutBtn}>
+            <Text style={styles.signOutText}>Sign out</Text>
+          </TouchableOpacity>
+        )}
       </LinearGradient>
     </>
   );
@@ -243,4 +251,6 @@ function makeStyles(C) { return {
     marginHorizontal: rs(24), alignSelf: 'stretch', alignItems: 'center',
   },
   btnText: { color: C.primary, fontSize: ms(15), fontWeight: '700', fontFamily: C.bold, letterSpacing: ls(15) },
+  signOutBtn: { marginTop: rs(16), paddingVertical: rs(8), alignItems: 'center' },
+  signOutText: { color: 'rgba(255,255,255,0.40)', fontSize: ms(12), fontFamily: C.reg, fontWeight: '400', letterSpacing: ls(12) },
 }; }

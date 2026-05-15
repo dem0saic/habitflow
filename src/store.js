@@ -1,7 +1,9 @@
-import React, { createContext, useContext, useReducer, useEffect } from 'react';
+import React, { createContext, useContext, useReducer, useEffect, useRef, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { todayKey } from './utils/date';
 import { scheduleHabitReminder, scheduleDailyReminders, ensureAndroidChannel } from './utils/notifications';
+import { supabase } from './lib/supabase';
+import { pullUserData, pushAllData, syncActionToSupabase } from './lib/supabaseSync';
 
 const STORAGE_KEY = '@habitapp_state_v1';
 
@@ -95,7 +97,7 @@ function reducer(state, action) {
       return {
         ...state,
         challenge: {
-          id: Date.now().toString(),
+          id: action.id || Date.now().toString(),
           title: action.title,
           durationDays: action.durationDays,
           startDate: todayKey(),
@@ -125,34 +127,86 @@ const StoreContext = createContext(null);
 
 export function StoreProvider({ children }) {
   const [state, dispatch] = useReducer(reducer, defaultState);
+  const [storeReady, setStoreReady] = useState(false);
+  const stateRef = useRef(state);
+  stateRef.current = state;
 
   useEffect(() => {
-    AsyncStorage.getItem(STORAGE_KEY).then(raw => {
+    async function init() {
+      // Load local AsyncStorage cache immediately for a snappy first paint
+      const raw = await AsyncStorage.getItem(STORAGE_KEY);
+      let localState = defaultState;
       if (raw) {
-        try {
-          const loaded = JSON.parse(raw);
-          dispatch({ type: 'LOAD', payload: loaded });
-          // Re-register all habit reminders using the fixed scheduler every app start.
-          // This ensures old broken-format triggers are replaced with the correct ones.
-          const habits = loaded.habits || [];
-          ensureAndroidChannel().then(() => {
-            habits.forEach(h => {
-              if (h.reminderTime) {
-                scheduleHabitReminder(h.id, h.name, h.emoji, h.reminderTime.hour, h.reminderTime.minute).catch(() => {});
-              }
-            });
-            scheduleDailyReminders(habits.map(h => h.name)).catch(() => {});
-          });
-        } catch (_) {}
+        try { localState = JSON.parse(raw); } catch (_) {}
+      }
+      dispatch({ type: 'LOAD', payload: localState });
+      setStoreReady(true);
+
+      // Re-register notifications from cached data
+      const habits = localState.habits || [];
+      ensureAndroidChannel().then(() => {
+        habits.forEach(h => {
+          if (h.reminderTime) {
+            scheduleHabitReminder(h.id, h.name, h.emoji, h.reminderTime.hour, h.reminderTime.minute).catch(() => {});
+          }
+        });
+        scheduleDailyReminders(habits.map(h => h.name)).catch(() => {});
+      });
+
+      // Pull remote data if the user is already signed in
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        const remoteState = await pullUserData(session.user.id).catch(() => null);
+        if (remoteState) {
+          if (remoteState.habits.length > 0 || remoteState.onboardingDone) {
+            dispatch({ type: 'LOAD', payload: remoteState });
+            AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(remoteState)).catch(() => {});
+          } else if ((localState.habits?.length || 0) > 0) {
+            // User has pre-auth local data — migrate it up to Supabase
+            pushAllData(session.user.id, localState).catch(() => {});
+          }
+        }
+      }
+    }
+
+    init();
+
+    // Keep local state in sync when the user signs in or out mid-session
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_IN' && session?.user) {
+        const remoteState = await pullUserData(session.user.id).catch(() => null);
+        if (remoteState && (remoteState.habits.length > 0 || remoteState.onboardingDone)) {
+          dispatch({ type: 'LOAD', payload: remoteState });
+          AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(remoteState)).catch(() => {});
+        }
+      } else if (event === 'SIGNED_OUT') {
+        dispatch({ type: 'LOAD', payload: defaultState });
+        AsyncStorage.removeItem(STORAGE_KEY).catch(() => {});
       }
     });
+
+    return () => subscription.unsubscribe();
   }, []);
 
+  // Persist local cache on every state change
   useEffect(() => {
     AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(state)).catch(() => {});
   }, [state]);
 
-  return <StoreContext.Provider value={{ state, dispatch }}>{children}</StoreContext.Provider>;
+  // Wrapped dispatch: ensures generated IDs are stable, then syncs to Supabase
+  function syncedDispatch(action) {
+    let a = action;
+    if (a.type === 'ADD_HABIT' && !a.id) a = { ...a, id: Date.now().toString() };
+    if (a.type === 'START_CHALLENGE' && !a.id) a = { ...a, id: Date.now().toString() };
+    dispatch(a);
+    syncActionToSupabase(a, stateRef).catch(() => {});
+  }
+
+  return (
+    <StoreContext.Provider value={{ state, dispatch: syncedDispatch, storeReady }}>
+      {children}
+    </StoreContext.Provider>
+  );
 }
 
 export function useStore() {

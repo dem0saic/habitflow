@@ -1,3 +1,4 @@
+import 'react-native-url-polyfill/auto';
 import 'react-native-reanimated';
 import React, { useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
@@ -22,6 +23,7 @@ SplashScreen.preventAutoHideAsync();
 
 import { StoreProvider, useStore } from './src/store';
 import { ThemeProvider, useTheme } from './src/ThemeContext';
+import { AuthProvider, useAuth } from './src/AuthContext';
 import { gluestackUIConfig } from './src/gluestack.config';
 import { rs } from './src/utils/responsive';
 import { ensureAndroidChannel } from './src/utils/notifications';
@@ -30,6 +32,7 @@ import ChallengeScreen from './src/screens/ChallengeScreen';
 import HistoryScreen from './src/screens/HistoryScreen';
 import StatsScreen from './src/screens/StatsScreen';
 import OnboardingScreen from './src/screens/OnboardingScreen';
+import AuthScreen from './src/screens/AuthScreen';
 
 const Tab = createBottomTabNavigator();
 
@@ -52,12 +55,13 @@ function TabIcon({ name, focused, color }) {
 }
 
 function AppNavigator() {
-  const { state } = useStore();
+  const { state, storeReady } = useStore();
+  const { session, loading } = useAuth();
   const C = useTheme();
 
-  if (!state.onboardingDone) {
-    return <OnboardingScreen />;
-  }
+  if (loading || !storeReady) return null;
+  if (!session) return <AuthScreen />;
+  if (!state.onboardingDone) return <OnboardingScreen />;
 
   return (
     <NavigationContainer>
@@ -134,13 +138,15 @@ export default function App() {
 
   return (
     <SafeAreaProvider>
-      <StoreProvider>
-        <GluestackWrapper>
-          <ThemeProvider>
-            <InnerApp />
-          </ThemeProvider>
-        </GluestackWrapper>
-      </StoreProvider>
+      <AuthProvider>
+        <StoreProvider>
+          <GluestackWrapper>
+            <ThemeProvider>
+              <InnerApp />
+            </ThemeProvider>
+          </GluestackWrapper>
+        </StoreProvider>
+      </AuthProvider>
     </SafeAreaProvider>
   );
 }

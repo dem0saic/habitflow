@@ -1,0 +1,420 @@
+import React, { useState } from 'react';
+import {
+  View, Text, TextInput, TouchableOpacity,
+  ActivityIndicator, KeyboardAvoidingView, Platform,
+  ScrollView, Pressable,
+} from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
+import { StatusBar } from 'expo-status-bar';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useAuth } from '../AuthContext';
+import { useTheme } from '../ThemeContext';
+import { rs, ms, ls } from '../utils/responsive';
+
+export default function AuthScreen() {
+  const { signIn, signUp } = useAuth();
+  const C = useTheme();
+  const insets = useSafeAreaInsets();
+
+  const [mode, setMode] = useState('signIn');   // 'signIn' | 'signUp'
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirm, setConfirm] = useState('');
+  const [showPass, setShowPass] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [info, setInfo] = useState('');
+
+  const styles = makeStyles(C);
+
+  function validate() {
+    if (!email.trim()) return 'Email is required.';
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) return 'Enter a valid email address.';
+    if (!password) return 'Password is required.';
+    if (password.length < 6) return 'Password must be at least 6 characters.';
+    if (mode === 'signUp' && password !== confirm) return 'Passwords do not match.';
+    return null;
+  }
+
+  async function handleSubmit() {
+    setError('');
+    setInfo('');
+    const validationError = validate();
+    if (validationError) { setError(validationError); return; }
+
+    setLoading(true);
+    try {
+      if (mode === 'signIn') {
+        await signIn(email.trim(), password);
+      } else {
+        await signUp(email.trim(), password);
+        setInfo('Check your email to confirm your account, then sign in.');
+        setMode('signIn');
+        setPassword('');
+        setConfirm('');
+      }
+    } catch (e) {
+      setError(e.message || 'Something went wrong. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function switchMode() {
+    setMode(m => m === 'signIn' ? 'signUp' : 'signIn');
+    setError('');
+    setInfo('');
+    setPassword('');
+    setConfirm('');
+  }
+
+  return (
+    <>
+      <StatusBar style="light" />
+      <LinearGradient
+        colors={['#000000', '#2A1A1A', '#5C4E4E']}
+        style={{ flex: 1 }}
+      >
+        <KeyboardAvoidingView
+          style={{ flex: 1 }}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        >
+          <ScrollView
+            contentContainerStyle={[
+              styles.scroll,
+              { paddingTop: insets.top + rs(48), paddingBottom: insets.bottom + rs(32) },
+            ]}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+          >
+            {/* Branding */}
+            <View style={styles.brandRow}>
+              <View style={styles.iconTile}>
+                <Ionicons name="checkmark-done" size={rs(28)} color="#fff" />
+              </View>
+              <Text style={styles.logoText}>HabitFlow</Text>
+            </View>
+            <Text style={styles.tagline}>
+              {mode === 'signIn' ? 'Welcome back' : 'Create your account'}
+            </Text>
+
+            {/* Card */}
+            <View style={styles.card}>
+              {/* Mode tabs */}
+              <View style={styles.tabs}>
+                <TouchableOpacity
+                  style={[styles.tab, mode === 'signIn' && styles.tabActive]}
+                  onPress={() => mode !== 'signIn' && switchMode()}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.tabText, mode === 'signIn' && styles.tabTextActive]}>
+                    Sign In
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.tab, mode === 'signUp' && styles.tabActive]}
+                  onPress={() => mode !== 'signUp' && switchMode()}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.tabText, mode === 'signUp' && styles.tabTextActive]}>
+                    Sign Up
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Error / info banners */}
+              {!!error && (
+                <View style={styles.errorBanner}>
+                  <Ionicons name="alert-circle" size={rs(15)} color="#ff6b6b" />
+                  <Text style={styles.errorText}>{error}</Text>
+                </View>
+              )}
+              {!!info && (
+                <View style={styles.infoBanner}>
+                  <Ionicons name="checkmark-circle" size={rs(15)} color="#6bffb8" />
+                  <Text style={styles.infoText}>{info}</Text>
+                </View>
+              )}
+
+              {/* Email */}
+              <Text style={styles.label}>Email</Text>
+              <View style={styles.inputRow}>
+                <Ionicons name="mail-outline" size={rs(17)} color={C.textMuted} style={styles.inputIcon} />
+                <TextInput
+                  style={styles.input}
+                  value={email}
+                  onChangeText={t => { setEmail(t); setError(''); }}
+                  placeholder="you@example.com"
+                  placeholderTextColor={C.textMuted}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  returnKeyType="next"
+                />
+              </View>
+
+              {/* Password */}
+              <Text style={styles.label}>Password</Text>
+              <View style={styles.inputRow}>
+                <Ionicons name="lock-closed-outline" size={rs(17)} color={C.textMuted} style={styles.inputIcon} />
+                <TextInput
+                  style={[styles.input, { flex: 1 }]}
+                  value={password}
+                  onChangeText={t => { setPassword(t); setError(''); }}
+                  placeholder="Min. 6 characters"
+                  placeholderTextColor={C.textMuted}
+                  secureTextEntry={!showPass}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  returnKeyType={mode === 'signUp' ? 'next' : 'done'}
+                  onSubmitEditing={mode === 'signIn' ? handleSubmit : undefined}
+                />
+                <Pressable onPress={() => setShowPass(v => !v)} style={styles.eyeBtn} hitSlop={rs(8)}>
+                  <Ionicons name={showPass ? 'eye-off-outline' : 'eye-outline'} size={rs(18)} color={C.textMuted} />
+                </Pressable>
+              </View>
+
+              {/* Confirm password (sign up only) */}
+              {mode === 'signUp' && (
+                <>
+                  <Text style={styles.label}>Confirm Password</Text>
+                  <View style={styles.inputRow}>
+                    <Ionicons name="lock-closed-outline" size={rs(17)} color={C.textMuted} style={styles.inputIcon} />
+                    <TextInput
+                      style={[styles.input, { flex: 1 }]}
+                      value={confirm}
+                      onChangeText={t => { setConfirm(t); setError(''); }}
+                      placeholder="Repeat password"
+                      placeholderTextColor={C.textMuted}
+                      secureTextEntry={!showConfirm}
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                      returnKeyType="done"
+                      onSubmitEditing={handleSubmit}
+                    />
+                    <Pressable onPress={() => setShowConfirm(v => !v)} style={styles.eyeBtn} hitSlop={rs(8)}>
+                      <Ionicons name={showConfirm ? 'eye-off-outline' : 'eye-outline'} size={rs(18)} color={C.textMuted} />
+                    </Pressable>
+                  </View>
+                </>
+              )}
+
+              {/* Submit button */}
+              <TouchableOpacity
+                style={[styles.btn, loading && styles.btnDisabled]}
+                onPress={handleSubmit}
+                activeOpacity={0.8}
+                disabled={loading}
+              >
+                {loading
+                  ? <ActivityIndicator color={C.primary} size="small" />
+                  : <Text style={styles.btnText}>
+                      {mode === 'signIn' ? 'Sign In' : 'Create Account'}
+                    </Text>
+                }
+              </TouchableOpacity>
+
+              {/* Switch mode */}
+              <View style={styles.switchRow}>
+                <Text style={styles.switchText}>
+                  {mode === 'signIn' ? "Don't have an account? " : 'Already have an account? '}
+                </Text>
+                <TouchableOpacity onPress={switchMode} hitSlop={rs(8)}>
+                  <Text style={styles.switchLink}>
+                    {mode === 'signIn' ? 'Sign Up' : 'Sign In'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </LinearGradient>
+    </>
+  );
+}
+
+function makeStyles(C) {
+  return {
+    scroll: {
+      alignItems: 'center',
+      paddingHorizontal: rs(24),
+    },
+    brandRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: rs(10),
+      marginBottom: rs(6),
+    },
+    iconTile: {
+      width: rs(46),
+      height: rs(46),
+      borderRadius: rs(14),
+      backgroundColor: 'rgba(255,255,255,0.14)',
+      borderWidth: 1.5,
+      borderColor: 'rgba(255,255,255,0.28)',
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    logoText: {
+      color: '#fff',
+      fontSize: ms(28),
+      fontFamily: C.logo,
+      letterSpacing: 2,
+    },
+    tagline: {
+      color: 'rgba(255,255,255,0.50)',
+      fontSize: ms(12),
+      fontFamily: C.med,
+      fontWeight: '500',
+      letterSpacing: ls(12),
+      textTransform: 'uppercase',
+      marginBottom: rs(28),
+    },
+    card: {
+      width: '100%',
+      backgroundColor: 'rgba(255,255,255,0.06)',
+      borderRadius: rs(20),
+      borderWidth: 1,
+      borderColor: 'rgba(255,255,255,0.10)',
+      padding: rs(24),
+    },
+    tabs: {
+      flexDirection: 'row',
+      backgroundColor: 'rgba(0,0,0,0.30)',
+      borderRadius: rs(12),
+      padding: rs(4),
+      marginBottom: rs(20),
+    },
+    tab: {
+      flex: 1,
+      paddingVertical: rs(9),
+      borderRadius: rs(9),
+      alignItems: 'center',
+    },
+    tabActive: {
+      backgroundColor: C.primary,
+    },
+    tabText: {
+      fontSize: ms(13),
+      fontFamily: C.bold,
+      fontWeight: '700',
+      color: 'rgba(255,255,255,0.45)',
+      letterSpacing: ls(13),
+    },
+    tabTextActive: {
+      color: '#fff',
+    },
+    errorBanner: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: rs(7),
+      backgroundColor: 'rgba(255,107,107,0.12)',
+      borderRadius: rs(10),
+      padding: rs(12),
+      marginBottom: rs(14),
+      borderWidth: 1,
+      borderColor: 'rgba(255,107,107,0.25)',
+    },
+    errorText: {
+      color: '#ff6b6b',
+      fontSize: ms(12),
+      fontFamily: C.reg,
+      fontWeight: '400',
+      flex: 1,
+      letterSpacing: ls(12),
+    },
+    infoBanner: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: rs(7),
+      backgroundColor: 'rgba(107,255,184,0.10)',
+      borderRadius: rs(10),
+      padding: rs(12),
+      marginBottom: rs(14),
+      borderWidth: 1,
+      borderColor: 'rgba(107,255,184,0.22)',
+    },
+    infoText: {
+      color: '#6bffb8',
+      fontSize: ms(12),
+      fontFamily: C.reg,
+      fontWeight: '400',
+      flex: 1,
+      letterSpacing: ls(12),
+    },
+    label: {
+      color: 'rgba(255,255,255,0.55)',
+      fontSize: ms(11),
+      fontFamily: C.semi,
+      fontWeight: '600',
+      letterSpacing: 1.2,
+      textTransform: 'uppercase',
+      marginBottom: rs(7),
+      marginTop: rs(4),
+    },
+    inputRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: 'rgba(0,0,0,0.35)',
+      borderRadius: rs(12),
+      borderWidth: 1,
+      borderColor: 'rgba(255,255,255,0.12)',
+      marginBottom: rs(14),
+      paddingHorizontal: rs(12),
+    },
+    inputIcon: {
+      marginRight: rs(8),
+    },
+    input: {
+      flex: 1,
+      color: '#fff',
+      fontSize: ms(14),
+      fontFamily: C.reg,
+      fontWeight: '400',
+      paddingVertical: rs(13),
+      letterSpacing: ls(14),
+    },
+    eyeBtn: {
+      paddingLeft: rs(8),
+      paddingVertical: rs(4),
+    },
+    btn: {
+      backgroundColor: '#fff',
+      borderRadius: rs(14),
+      paddingVertical: rs(16),
+      alignItems: 'center',
+      marginTop: rs(6),
+      marginBottom: rs(8),
+    },
+    btnDisabled: {
+      opacity: 0.6,
+    },
+    btnText: {
+      color: C.primary,
+      fontSize: ms(15),
+      fontFamily: C.bold,
+      fontWeight: '700',
+      letterSpacing: ls(15),
+    },
+    switchRow: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginTop: rs(4),
+    },
+    switchText: {
+      color: 'rgba(255,255,255,0.45)',
+      fontSize: ms(13),
+      fontFamily: C.reg,
+      fontWeight: '400',
+    },
+    switchLink: {
+      color: C.primary,
+      fontSize: ms(13),
+      fontFamily: C.bold,
+      fontWeight: '700',
+    },
+  };
+}
