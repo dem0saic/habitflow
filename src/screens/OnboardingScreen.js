@@ -218,8 +218,8 @@ export default function OnboardingScreen() {
 function makeStyles(C) { return {
   root: { flex: 1, alignItems: 'center' },
   logoText: {
-    color: '#fff', fontSize: ms(32), marginTop: rs(10),
-    fontFamily: C.logo, letterSpacing: ls(32),
+    color: '#fff', fontSize: ms(34), marginTop: rs(10),
+    fontFamily: C.logo, letterSpacing: 3,
   },
   tagline: {
     color: 'rgba(255,255,255,0.55)', fontSize: ms(11), letterSpacing: 2,

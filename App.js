@@ -8,7 +8,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { StyledProvider } from '@gluestack-style/react';
 import { useFonts } from 'expo-font';
-import { Exo2_800ExtraBold } from '@expo-google-fonts/exo-2';
+import { RussoOne_400Regular } from '@expo-google-fonts/russo-one';
 import {
   WorkSans_400Regular,
   WorkSans_500Medium,
@@ -118,7 +118,7 @@ function GluestackWrapper({ children }) {
 
 export default function App() {
   const [fontsLoaded] = useFonts({
-    Exo2_800ExtraBold,
+    RussoOne_400Regular,
     WorkSans_400Regular,
     WorkSans_500Medium,
     WorkSans_600SemiBold,

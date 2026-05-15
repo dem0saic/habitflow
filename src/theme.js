@@ -8,7 +8,7 @@
 
 // Font families (loaded in App.js via expo-google-fonts)
 export const FONTS = {
-  logo:   'Exo2_800ExtraBold',
+  logo:   'RussoOne_400Regular',
   reg:    'WorkSans_400Regular',
   med:    'WorkSans_500Medium',
   semi:   'WorkSans_600SemiBold',
