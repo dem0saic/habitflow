@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, Animated, Modal, Pressable, Platform } fr
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../ThemeContext';
-import { rs, ms } from '../utils/responsive';
+import { rs, ms, ls } from '../utils/responsive';
 import AnimatedEmoji from './AnimatedEmoji';
 
 function fmtTime({ hour, minute }) {
@@ -257,27 +257,21 @@ function makeStyles(C) { return {
   cardNegative: { borderColor: C.warning, borderWidth: 1.5 },
   row: { flexDirection: 'row', alignItems: 'center' },
   info:  { flex: 1, marginRight: rs(8) },
-  name:     { fontSize: ms(14), color: C.text, fontWeight: '500', flexShrink: 1 },
+  name:     { fontSize: ms(14), color: C.text, fontFamily: C.med, fontWeight: '500', flexShrink: 1, letterSpacing: ls(14) },
   nameDone: { color: C.success, textDecorationLine: 'line-through' },
 
-  // Bell on daily/negative cards — dedicated column, outside toggle area
   bellIconBtn: {
     width: rs(32), height: rs(32),
     alignItems: 'center', justifyContent: 'center',
     marginHorizontal: rs(2),
   },
-
-  // Bell row on volume/timer cards — sits inside info, no toggle conflict
   bellRow: {
     flexDirection: 'row', alignItems: 'center', gap: rs(3),
     marginBottom: rs(4),
   },
-  bellLabel: { fontSize: ms(9), color: C.primary, fontWeight: '500' },
+  bellLabel: { fontSize: ms(9), color: C.primary, fontFamily: C.med, fontWeight: '500', letterSpacing: ls(9) },
+  reminderTimeText: { fontSize: ms(9), color: C.textMuted, marginTop: rs(2), fontFamily: C.reg, fontWeight: '400', letterSpacing: ls(9) },
 
-  // Small reminder time shown below the name on daily/negative
-  reminderTimeText: { fontSize: ms(9), color: C.textMuted, marginTop: rs(2) },
-
-  // Check circle container (replaces absolute positioning)
   checkContainer: { width: rs(28), height: rs(28) },
   check: {
     position: 'absolute', top: 0, left: 0,
@@ -292,22 +286,19 @@ function makeStyles(C) { return {
   },
   checkEmptyNegative: { borderColor: C.warning },
 
-  // Type badge
   typeBadge: {
     flexDirection: 'row', alignItems: 'center', gap: rs(3),
     backgroundColor: C.cardHigh, borderRadius: rs(20),
     paddingHorizontal: rs(6), paddingVertical: rs(2),
   },
-  typeBadgeText: { fontSize: ms(9), color: C.textMuted, fontWeight: '600' },
+  typeBadgeText: { fontSize: ms(9), color: C.textMuted, fontFamily: C.semi, fontWeight: '600', letterSpacing: ls(9) },
 
-  // Progress bar (volume/timer)
   progressTrack: {
     height: rs(4), backgroundColor: C.border,
     borderRadius: rs(2), overflow: 'hidden',
   },
   progressFill: { height: '100%', borderRadius: rs(2) },
 
-  // Counter (volume/timer)
   counter: { flexDirection: 'row', alignItems: 'center', gap: rs(8) },
   counterBtn: {
     width: rs(30), height: rs(30), borderRadius: rs(15),
@@ -316,6 +307,6 @@ function makeStyles(C) { return {
     backgroundColor: C.cardHigh,
   },
   counterBtnPlus: { backgroundColor: C.primary, borderColor: C.primary },
-  counterNum:   { fontSize: ms(15), fontWeight: '700', color: C.text, minWidth: rs(36), textAlign: 'center' },
-  counterTotal: { fontSize: ms(11), fontWeight: '400', color: C.textMuted },
+  counterNum:   { fontSize: ms(15), fontFamily: C.bold, fontWeight: '700', color: C.text, minWidth: rs(36), textAlign: 'center', letterSpacing: ls(15) },
+  counterTotal: { fontSize: ms(11), fontFamily: C.reg, fontWeight: '400', color: C.textMuted, letterSpacing: ls(11) },
 }; }

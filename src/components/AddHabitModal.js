@@ -7,7 +7,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../ThemeContext';
 import { EMOJIS } from '../theme';
-import { rs, ms } from '../utils/responsive';
+import { rs, ms, ls } from '../utils/responsive';
 import AnimatedEmoji from './AnimatedEmoji';
 
 function formatTime(date) {
@@ -30,7 +30,7 @@ export default function AddHabitModal({ visible, onClose, onAdd, editingHabit })
   const isEditing = !!editingHabit;
 
   const [name, setName] = useState('');
-  const [emoji, setEmoji] = useState('✅');
+  const [emoji, setEmoji] = useState('🚀');
   const [type, setType] = useState('daily');
   const [targetCount, setTargetCount] = useState(3);
   const [reminderEnabled, setReminderEnabled] = useState(false);
@@ -43,7 +43,7 @@ export default function AddHabitModal({ visible, onClose, onAdd, editingHabit })
     if (!visible) return;
     if (editingHabit) {
       setName(editingHabit.name);
-      setEmoji(editingHabit.emoji || '✅');
+      setEmoji(editingHabit.emoji || '🚀');
       setType(editingHabit.type || 'daily');
       setTargetCount(editingHabit.targetCount || 1);
       if (editingHabit.reminderTime) {
@@ -62,7 +62,7 @@ export default function AddHabitModal({ visible, onClose, onAdd, editingHabit })
 
   function reset() {
     setName('');
-    setEmoji('✅');
+    setEmoji('🚀');
     setType('daily');
     setTargetCount(3);
     setReminderEnabled(false);
@@ -114,13 +114,18 @@ export default function AddHabitModal({ visible, onClose, onAdd, editingHabit })
         <Pressable style={styles.overlay} onPress={handleClose} />
         <View style={styles.sheet}>
           <View style={styles.handle} />
+          <View style={styles.sheetHeader}>
+            <Text style={styles.title}>{isEditing ? 'Edit Habit' : 'New Habit'}</Text>
+            <TouchableOpacity style={styles.closeBtn} onPress={handleClose} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+              <Ionicons name="close-circle-outline" size={rs(28)} color={C.textMuted} />
+            </TouchableOpacity>
+          </View>
           <ScrollView
             bounces={false}
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.scrollContent}
           >
-            <Text style={styles.title}>{isEditing ? 'Edit Habit' : 'New Habit'}</Text>
 
             {/* Name */}
             <TextInput
@@ -326,18 +331,26 @@ function makeStyles(C) { return {
   },
   handle: {
     width: rs(40), height: rs(4), borderRadius: rs(2),
-    backgroundColor: C.border, alignSelf: 'center', marginBottom: rs(20),
+    backgroundColor: C.border, alignSelf: 'center', marginBottom: rs(16),
+  },
+  sheetHeader: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    marginBottom: rs(20),
+  },
+  closeBtn: {
+    width: rs(36), height: rs(36), alignItems: 'center', justifyContent: 'center',
   },
   scrollContent: { paddingBottom: rs(40) },
-  title: { fontSize: ms(20), fontWeight: '700', color: C.text, marginBottom: rs(20) },
+  title: { fontSize: ms(20), fontFamily: C.bold, fontWeight: '700', color: C.text, letterSpacing: ls(20) },
   input: {
     borderWidth: 1.5, borderColor: C.border, borderRadius: rs(14),
     padding: rs(14), fontSize: ms(15), color: C.text,
     backgroundColor: C.cardHigh, marginBottom: rs(20),
+    fontFamily: C.reg, fontWeight: '400', letterSpacing: ls(15),
   },
   label: {
-    fontSize: ms(12), fontWeight: '700', color: C.textSub,
-    marginBottom: rs(10), textTransform: 'uppercase', letterSpacing: 0.5,
+    fontSize: ms(12), fontFamily: C.bold, fontWeight: '700', color: C.textSub,
+    marginBottom: rs(10), textTransform: 'uppercase', letterSpacing: ls(12),
   },
   emojiPreviewRow: {
     flexDirection: 'row', alignItems: 'center',
@@ -352,8 +365,8 @@ function makeStyles(C) { return {
     borderWidth: 1.5, borderColor: C.primary,
     alignItems: 'center', justifyContent: 'center',
   },
-  emojiPreviewTitle: { fontSize: ms(14), fontWeight: '700', color: C.text },
-  emojiPreviewSub:   { fontSize: ms(11), color: C.textSub, marginTop: rs(3) },
+  emojiPreviewTitle: { fontSize: ms(14), fontFamily: C.bold, fontWeight: '700', color: C.text, letterSpacing: ls(14) },
+  emojiPreviewSub:   { fontSize: ms(11), color: C.textSub, marginTop: rs(3), fontFamily: C.reg, fontWeight: '400', letterSpacing: ls(11) },
   emojiActionBadge: {
     width: rs(36), height: rs(36), borderRadius: rs(11),
     backgroundColor: C.card, borderWidth: 1, borderColor: C.border,
@@ -367,25 +380,25 @@ function makeStyles(C) { return {
     maxHeight: rs(258),
   },
   emojiGrid: {
-    flexDirection: 'row', flexWrap: 'wrap', gap: rs(6),
-    padding: rs(12),
+    flexDirection: 'row', flexWrap: 'wrap',
+    paddingHorizontal: rs(10), paddingTop: rs(10), paddingBottom: rs(4),
   },
   emojiGridBtn: {
     width: rs(42), height: rs(42), borderRadius: rs(10),
     alignItems: 'center', justifyContent: 'center',
     backgroundColor: C.card,
+    margin: rs(3),
   },
   emojiGridBtnActive: { backgroundColor: C.primaryLight, borderWidth: 2, borderColor: C.primary },
-  emojiGridText: { fontSize: ms(22) },
   typeGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: rs(10), marginBottom: rs(20) },
   typeBtn: {
     width: '47%', padding: rs(12), borderRadius: rs(14),
     borderWidth: 1.5, borderColor: C.border, backgroundColor: C.cardHigh,
   },
   typeBtnActive: { backgroundColor: C.primary, borderColor: C.primary },
-  typeBtnText: { fontSize: ms(13), fontWeight: '700', color: C.text },
+  typeBtnText: { fontSize: ms(13), fontFamily: C.bold, fontWeight: '700', color: C.text, letterSpacing: ls(13) },
   typeBtnTextActive: { color: '#fff' },
-  typeBtnSub: { fontSize: ms(10), color: C.textMuted, marginTop: rs(2) },
+  typeBtnSub: { fontSize: ms(10), color: C.textMuted, marginTop: rs(2), fontFamily: C.reg, fontWeight: '400', letterSpacing: ls(10) },
   countRow: { marginBottom: rs(20) },
   countControls: { flexDirection: 'row', alignItems: 'center', gap: rs(16) },
   countBtn: {
@@ -394,21 +407,21 @@ function makeStyles(C) { return {
     alignItems: 'center', justifyContent: 'center',
     backgroundColor: C.cardHigh,
   },
-  countNum: { fontSize: ms(20), fontWeight: '700', color: C.primary, minWidth: rs(40), textAlign: 'center' },
+  countNum: { fontSize: ms(20), fontFamily: C.bold, fontWeight: '700', color: C.primary, minWidth: rs(40), textAlign: 'center', letterSpacing: ls(20) },
   reminderToggleRow: {
     flexDirection: 'row', alignItems: 'center', gap: rs(10),
     backgroundColor: C.cardHigh, borderRadius: rs(14),
     padding: rs(14), borderWidth: 1.5, borderColor: C.border,
     marginBottom: rs(10),
   },
-  reminderToggleLabel: { flex: 1, fontSize: ms(14), color: C.textSub, fontWeight: '500' },
+  reminderToggleLabel: { flex: 1, fontSize: ms(14), color: C.textSub, fontFamily: C.med, fontWeight: '500', letterSpacing: ls(14) },
   changeTimeBtn: {
     flexDirection: 'row', alignItems: 'center', gap: rs(6),
     alignSelf: 'flex-start', marginBottom: rs(14),
     paddingVertical: rs(6), paddingHorizontal: rs(12),
     backgroundColor: C.primaryLight, borderRadius: rs(20),
   },
-  changeTimeBtnText: { fontSize: ms(13), fontWeight: '600', color: C.primary },
+  changeTimeBtnText: { fontSize: ms(13), fontFamily: C.semi, fontWeight: '600', color: C.primary, letterSpacing: ls(13) },
   pickerCard: {
     backgroundColor: C.cardHigh, borderRadius: rs(14),
     borderWidth: 1, borderColor: C.border,
@@ -418,10 +431,10 @@ function makeStyles(C) { return {
     alignItems: 'flex-end', paddingHorizontal: rs(16), paddingVertical: rs(10),
     borderTopWidth: 1, borderTopColor: C.border,
   },
-  pickerDoneText: { fontSize: ms(14), fontWeight: '700', color: C.primary },
+  pickerDoneText: { fontSize: ms(14), fontFamily: C.bold, fontWeight: '700', color: C.primary, letterSpacing: ls(14) },
   addBtn: {
     backgroundColor: C.primary, borderRadius: rs(16),
     padding: rs(18), alignItems: 'center', marginTop: rs(8),
   },
-  addBtnText: { color: '#fff', fontSize: ms(16), fontWeight: '700' },
+  addBtnText: { color: '#fff', fontSize: ms(16), fontFamily: C.bold, fontWeight: '700', letterSpacing: ls(16) },
 }; }

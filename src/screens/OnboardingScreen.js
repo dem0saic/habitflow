@@ -8,7 +8,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useStore } from '../store';
 import { useTheme } from '../ThemeContext';
-import { rs, ms } from '../utils/responsive';
+import { rs, ms, ls } from '../utils/responsive';
 import { requestPermissions, scheduleDailyReminders } from '../utils/notifications';
 import AnimatedEmoji from '../components/AnimatedEmoji';
 
@@ -216,27 +216,31 @@ export default function OnboardingScreen() {
 }
 
 function makeStyles(C) { return {
-  /* paddingTop/paddingBottom are applied inline using insets */
   root: { flex: 1, alignItems: 'center' },
-  logoText: { color: '#fff', fontSize: ms(28), fontWeight: '900', letterSpacing: 1, marginTop: rs(10) },
-  tagline:  {
+  logoText: {
+    color: '#fff', fontSize: ms(32), marginTop: rs(10),
+    fontFamily: C.logo, letterSpacing: ls(32),
+  },
+  tagline: {
     color: 'rgba(255,255,255,0.55)', fontSize: ms(11), letterSpacing: 2,
     textTransform: 'uppercase', marginTop: rs(6), marginBottom: rs(8),
+    fontFamily: C.med, fontWeight: '500',
   },
   slide: { alignItems: 'center', justifyContent: 'center', paddingHorizontal: rs(44) },
-  slideEmoji: { fontSize: ms(68), marginBottom: rs(20) },
-  slideTitle: { fontSize: ms(22), fontWeight: '800', color: '#fff', textAlign: 'center', marginBottom: rs(10) },
-  slideBody:  { fontSize: ms(14), color: 'rgba(255,255,255,0.78)', textAlign: 'center', lineHeight: ms(22) },
+  slideTitle: {
+    fontSize: ms(22), color: '#fff', textAlign: 'center', marginBottom: rs(10),
+    fontFamily: C.xbold, fontWeight: '800', letterSpacing: ls(22),
+  },
+  slideBody: {
+    fontSize: ms(14), color: 'rgba(255,255,255,0.78)', textAlign: 'center', lineHeight: ms(22),
+    fontFamily: C.reg, fontWeight: '400', letterSpacing: ls(14),
+  },
   dots: { flexDirection: 'row', gap: rs(8), marginTop: rs(4), marginBottom: rs(24) },
   dot:  { width: rs(8), height: rs(8), borderRadius: rs(4), backgroundColor: '#fff' },
   btn: {
-    backgroundColor: '#fff',
-    borderRadius: rs(18),
-    paddingVertical: rs(18),
-    paddingHorizontal: rs(32),
-    marginHorizontal: rs(24),
-    alignSelf: 'stretch',
-    alignItems: 'center',
+    backgroundColor: '#fff', borderRadius: rs(18),
+    paddingVertical: rs(18), paddingHorizontal: rs(32),
+    marginHorizontal: rs(24), alignSelf: 'stretch', alignItems: 'center',
   },
-  btnText: { color: C.primary, fontSize: ms(15), fontWeight: '700' },
+  btnText: { color: C.primary, fontSize: ms(15), fontWeight: '700', fontFamily: C.bold, letterSpacing: ls(15) },
 }; }

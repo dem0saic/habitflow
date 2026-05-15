@@ -7,6 +7,18 @@ import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { StyledProvider } from '@gluestack-style/react';
+import { useFonts } from 'expo-font';
+import { Exo2_800ExtraBold } from '@expo-google-fonts/exo-2';
+import {
+  WorkSans_400Regular,
+  WorkSans_500Medium,
+  WorkSans_600SemiBold,
+  WorkSans_700Bold,
+  WorkSans_800ExtraBold,
+} from '@expo-google-fonts/work-sans';
+import * as SplashScreen from 'expo-splash-screen';
+
+SplashScreen.preventAutoHideAsync();
 
 import { StoreProvider, useStore } from './src/store';
 import { ThemeProvider, useTheme } from './src/ThemeContext';
@@ -57,7 +69,9 @@ function AppNavigator() {
             <Text style={{
               fontSize: rs(10),
               color: focused ? C.primary : C.textMuted,
+              fontFamily: focused ? C.bold : C.reg,
               fontWeight: focused ? '700' : '400',
+              letterSpacing: -0.5,
             }}>
               {route.name}
             </Text>
@@ -103,6 +117,21 @@ function GluestackWrapper({ children }) {
 }
 
 export default function App() {
+  const [fontsLoaded] = useFonts({
+    Exo2_800ExtraBold,
+    WorkSans_400Regular,
+    WorkSans_500Medium,
+    WorkSans_600SemiBold,
+    WorkSans_700Bold,
+    WorkSans_800ExtraBold,
+  });
+
+  useEffect(() => {
+    if (fontsLoaded) SplashScreen.hideAsync();
+  }, [fontsLoaded]);
+
+  if (!fontsLoaded) return null;
+
   return (
     <SafeAreaProvider>
       <StoreProvider>

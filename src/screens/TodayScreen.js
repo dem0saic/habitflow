@@ -5,7 +5,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useStore, useTodayCompletions } from '../store';
 import { useTheme } from '../ThemeContext';
-import { rs, ms } from '../utils/responsive';
+import { rs, ms, ls } from '../utils/responsive';
 import HabitCard from '../components/HabitCard';
 import AddHabitModal from '../components/AddHabitModal';
 import CelebrationModal from '../components/CelebrationModal';
@@ -257,8 +257,8 @@ function makeStyles(C) { return {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     paddingHorizontal: rs(20), paddingTop: rs(8), paddingBottom: rs(8),
   },
-  topGreeting: { fontSize: ms(11), color: C.textMuted, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5 },
-  topDate: { fontSize: ms(17), fontWeight: '800', color: C.text, marginTop: rs(2) },
+  topGreeting: { fontSize: ms(11), color: C.textMuted, fontFamily: C.semi, fontWeight: '600', textTransform: 'uppercase', letterSpacing: ls(11) },
+  topDate: { fontSize: ms(17), fontFamily: C.xbold, fontWeight: '800', color: C.text, marginTop: rs(2), letterSpacing: ls(17) },
   topActions: { flexDirection: 'row', gap: rs(8) },
   iconBtn: {
     width: rs(36), height: rs(36), borderRadius: rs(18),
@@ -273,10 +273,10 @@ function makeStyles(C) { return {
   },
   heroStatsRow: { flexDirection: 'row', marginBottom: rs(16) },
   heroStat: { flex: 1, alignItems: 'center' },
-  heroStatNum: { fontSize: ms(26), fontWeight: '800', color: '#fff' },
-  heroStatLabel: { fontSize: ms(10), color: 'rgba(255,255,255,0.65)', marginTop: rs(2), fontWeight: '500' },
+  heroStatNum: { fontSize: ms(26), fontFamily: C.xbold, fontWeight: '800', color: '#fff', letterSpacing: ls(26) },
+  heroStatLabel: { fontSize: ms(10), color: 'rgba(255,255,255,0.65)', marginTop: rs(2), fontFamily: C.med, fontWeight: '500', letterSpacing: ls(10) },
   heroStatDivider: { width: 1, backgroundColor: 'rgba(255,255,255,0.2)', marginVertical: rs(4) },
   heroProgressTrack: { height: rs(6), backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: rs(3), overflow: 'hidden', marginBottom: rs(10) },
   heroProgressFill: { height: '100%', backgroundColor: '#fff', borderRadius: rs(3) },
-  heroStatus: { fontSize: ms(12), color: 'rgba(255,255,255,0.8)', textAlign: 'center', fontWeight: '500' },
+  heroStatus: { fontSize: ms(12), color: 'rgba(255,255,255,0.8)', textAlign: 'center', fontFamily: C.med, fontWeight: '500', letterSpacing: ls(12) },
 }; }

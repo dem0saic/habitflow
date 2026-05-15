@@ -13,4 +13,7 @@ export const vs = (size) => Math.round((H / BASE_H) * size);
 // Moderate scale — less aggressive, good for font sizes
 export const ms = (size, factor = 0.45) => Math.round(size + (rs(size) - size) * factor);
 
+// Letter spacing at -8% of the given font size (pass the same value you pass to ms)
+export const ls = (size) => +(ms(size) * -0.08).toFixed(2);
+
 export { W, H };

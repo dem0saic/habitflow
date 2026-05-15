@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { View, Text, Modal, TouchableOpacity, Animated } from 'react-native';
 import { useTheme } from '../ThemeContext';
-import { rs, ms } from '../utils/responsive';
+import { rs, ms, ls } from '../utils/responsive';
 
 const CONFETTI_COLORS = ['#988686', '#D1D0D0', '#5C4E4E', '#6B9970', '#B09898', '#7A6868'];
 const PARTICLE_COUNT = 24;
@@ -107,8 +107,8 @@ function makeStyles(C) { return {
     elevation: 12,
   },
   bigEmoji: { fontSize: ms(64), marginBottom: rs(16) },
-  title: { fontSize: ms(24), fontWeight: '800', color: C.text, textAlign: 'center', marginBottom: rs(10) },
-  subtitle: { fontSize: ms(15), color: C.textSub, textAlign: 'center', marginBottom: rs(24), lineHeight: ms(22) },
+  title: { fontSize: ms(24), fontFamily: C.xbold, fontWeight: '800', color: C.text, textAlign: 'center', marginBottom: rs(10), letterSpacing: ls(24) },
+  subtitle: { fontSize: ms(15), color: C.textSub, textAlign: 'center', marginBottom: rs(24), lineHeight: ms(22), fontFamily: C.reg, fontWeight: '400', letterSpacing: ls(15) },
   btn: {
     backgroundColor: C.primary,
     borderRadius: rs(16),
@@ -116,5 +116,5 @@ function makeStyles(C) { return {
     paddingHorizontal: rs(40),
     marginTop: rs(8),
   },
-  btnText: { color: '#fff', fontSize: ms(16), fontWeight: '700' },
+  btnText: { color: '#fff', fontSize: ms(16), fontFamily: C.bold, fontWeight: '700', letterSpacing: ls(16) },
 }; }

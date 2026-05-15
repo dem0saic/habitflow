@@ -5,7 +5,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useStore, useChallengeProgress, useTodayCompletions } from '../store';
 import { useTheme } from '../ThemeContext';
-import { rs, ms } from '../utils/responsive';
+import { rs, ms, ls } from '../utils/responsive';
 import CelebrationModal from '../components/CelebrationModal';
 import AnimatedEmoji from '../components/AnimatedEmoji';
 import { successBurst } from '../utils/haptics';
@@ -276,8 +276,8 @@ export default function ChallengeScreen() {
 function makeStyles(C) { return {
   root: { flex: 1, backgroundColor: C.bg },
   topRow: { paddingHorizontal: rs(20), paddingTop: rs(8), paddingBottom: rs(8) },
-  topLabel: { fontSize: ms(11), color: C.textMuted, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5 },
-  topTitle: { fontSize: ms(17), fontWeight: '800', color: C.text, marginTop: rs(2) },
+  topLabel: { fontSize: ms(11), color: C.textMuted, fontFamily: C.semi, fontWeight: '600', textTransform: 'uppercase', letterSpacing: ls(11) },
+  topTitle: { fontSize: ms(17), fontFamily: C.xbold, fontWeight: '800', color: C.text, marginTop: rs(2), letterSpacing: ls(17) },
   heroWrap: { paddingHorizontal: rs(16), marginBottom: rs(8) },
   heroCard: {
     borderRadius: rs(24), padding: rs(20),
@@ -286,14 +286,13 @@ function makeStyles(C) { return {
   },
   heroStatsRow: { flexDirection: 'row', marginBottom: rs(12) },
   heroStat: { flex: 1, alignItems: 'center' },
-  heroStatNum: { fontSize: ms(26), fontWeight: '800', color: '#fff' },
-  heroStatLabel: { fontSize: ms(10), color: 'rgba(255,255,255,0.65)', marginTop: rs(2), fontWeight: '500' },
+  heroStatNum: { fontSize: ms(26), fontFamily: C.xbold, fontWeight: '800', color: '#fff', letterSpacing: ls(26) },
+  heroStatLabel: { fontSize: ms(10), color: 'rgba(255,255,255,0.65)', marginTop: rs(2), fontFamily: C.med, fontWeight: '500', letterSpacing: ls(10) },
   heroStatDivider: { width: 1, backgroundColor: 'rgba(255,255,255,0.2)', marginVertical: rs(4) },
-  heroStatus: { fontSize: ms(12), color: 'rgba(255,255,255,0.8)', textAlign: 'center', fontWeight: '500' },
+  heroStatus: { fontSize: ms(12), color: 'rgba(255,255,255,0.8)', textAlign: 'center', fontFamily: C.med, fontWeight: '500', letterSpacing: ls(12) },
 
-  /* Preset list */
   presetList:  { padding: rs(20), paddingBottom: rs(40) },
-  pickLabel:   { fontSize: ms(11), fontWeight: '700', color: C.textSub, textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: rs(14) },
+  pickLabel:   { fontSize: ms(11), fontFamily: C.bold, fontWeight: '700', color: C.textSub, textTransform: 'uppercase', letterSpacing: ls(11), marginBottom: rs(14) },
   presetCard: {
     backgroundColor: C.card, borderRadius: rs(18), padding: rs(16),
     flexDirection: 'row', alignItems: 'center', gap: rs(14),
@@ -303,26 +302,24 @@ function makeStyles(C) { return {
     width: rs(52), height: rs(52), borderRadius: rs(16),
     backgroundColor: C.cardHigh, alignItems: 'center', justifyContent: 'center',
   },
-  presetEmoji:  { fontSize: ms(26) },
   presetInfo:   { flex: 1 },
-  presetTitle:  { fontSize: ms(15), fontWeight: '700', color: C.text, marginBottom: rs(2) },
-  presetSub:    { fontSize: ms(12), color: C.textSub, marginBottom: rs(8) },
+  presetTitle:  { fontSize: ms(15), fontFamily: C.bold, fontWeight: '700', color: C.text, marginBottom: rs(2), letterSpacing: ls(15) },
+  presetSub:    { fontSize: ms(12), color: C.textSub, marginBottom: rs(8), fontFamily: C.reg, fontWeight: '400', letterSpacing: ls(12) },
   presetMeta:   { flexDirection: 'row', gap: rs(8) },
   presetPill: {
     flexDirection: 'row', alignItems: 'center', gap: rs(4),
     backgroundColor: 'rgba(251,191,36,0.12)', borderRadius: rs(20),
     paddingHorizontal: rs(8), paddingVertical: rs(3),
   },
-  presetPillText: { fontSize: ms(10), fontWeight: '600', color: C.gold },
+  presetPillText: { fontSize: ms(10), fontFamily: C.semi, fontWeight: '600', color: C.gold, letterSpacing: ls(10) },
 
   noHabitsCard: {
     alignItems: 'center', backgroundColor: C.card, borderRadius: rs(18),
     padding: rs(24), borderWidth: 1, borderColor: C.border, marginTop: rs(8),
   },
-  noHabitsTitle: { fontSize: ms(15), fontWeight: '700', color: C.text, marginBottom: rs(4) },
-  noHabitsSub:   { fontSize: ms(13), color: C.textSub, textAlign: 'center', lineHeight: ms(20) },
+  noHabitsTitle: { fontSize: ms(15), fontFamily: C.bold, fontWeight: '700', color: C.text, marginBottom: rs(4), letterSpacing: ls(15) },
+  noHabitsSub:   { fontSize: ms(13), color: C.textSub, textAlign: 'center', lineHeight: ms(20), fontFamily: C.reg, fontWeight: '400', letterSpacing: ls(13) },
 
-  /* Active challenge */
   body: { padding: rs(20), paddingBottom: 100 },
   daysRow: { flexDirection: 'row', gap: rs(8), justifyContent: 'center', marginBottom: rs(20), flexWrap: 'wrap' },
   dayCircle: {
@@ -331,18 +328,17 @@ function makeStyles(C) { return {
     backgroundColor: C.card,
   },
   dayCircleDone: { backgroundColor: C.success, borderColor: C.success },
-  dayNum:        { fontSize: ms(14), fontWeight: '700', color: C.textMuted },
+  dayNum:        { fontSize: ms(14), fontFamily: C.bold, fontWeight: '700', color: C.textMuted, letterSpacing: ls(14) },
   dayNumDone:    { color: '#fff' },
   motiveLine: {
     fontSize: ms(13), color: C.textSub, textAlign: 'center',
-    marginBottom: rs(24), lineHeight: ms(20),
+    marginBottom: rs(24), lineHeight: ms(20), fontFamily: C.reg, fontWeight: '400', letterSpacing: ls(13),
   },
   sectionLabel: {
-    fontSize: ms(11), fontWeight: '700', color: C.textSub,
-    textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: rs(12),
+    fontSize: ms(11), fontFamily: C.bold, fontWeight: '700', color: C.textSub,
+    textTransform: 'uppercase', letterSpacing: ls(11), marginBottom: rs(12),
   },
 
-  /* Habit cards */
   habitCard: {
     flexDirection: 'row', alignItems: 'center', gap: rs(12),
     backgroundColor: C.card, borderRadius: rs(16),
@@ -354,25 +350,25 @@ function makeStyles(C) { return {
     width: rs(44), height: rs(44), borderRadius: rs(12),
     backgroundColor: C.cardHigh, alignItems: 'center', justifyContent: 'center',
   },
-  habitCardName: { fontSize: ms(14), fontWeight: '600', color: C.text, flex: 1, marginRight: rs(6) },
+  habitCardName: { fontSize: ms(14), fontFamily: C.semi, fontWeight: '600', color: C.text, flex: 1, marginRight: rs(6), letterSpacing: ls(14) },
   doneTag: {
     flexDirection: 'row', alignItems: 'center', gap: rs(3),
     backgroundColor: C.success, borderRadius: rs(20),
     paddingHorizontal: rs(7), paddingVertical: rs(2),
   },
-  doneTagText: { fontSize: ms(9), fontWeight: '700', color: '#fff' },
+  doneTagText: { fontSize: ms(9), fontFamily: C.bold, fontWeight: '700', color: '#fff', letterSpacing: ls(9) },
   typePill: {
     backgroundColor: C.cardHigh, borderRadius: rs(20),
     paddingHorizontal: rs(8), paddingVertical: rs(2),
     borderWidth: 1, borderColor: C.border,
   },
-  typePillText: { fontSize: ms(10), color: C.textSub, fontWeight: '500' },
+  typePillText: { fontSize: ms(10), color: C.textSub, fontFamily: C.med, fontWeight: '500', letterSpacing: ls(10) },
   reminderPill: {
     flexDirection: 'row', alignItems: 'center', gap: rs(3),
     backgroundColor: C.primaryLight, borderRadius: rs(20),
     paddingHorizontal: rs(8), paddingVertical: rs(2),
   },
-  reminderPillText: { fontSize: ms(10), color: C.primary, fontWeight: '500' },
+  reminderPillText: { fontSize: ms(10), color: C.primary, fontFamily: C.med, fontWeight: '500', letterSpacing: ls(10) },
   progressTrack: {
     height: rs(3), backgroundColor: C.border,
     borderRadius: rs(2), overflow: 'hidden', marginTop: rs(6),
@@ -387,7 +383,7 @@ function makeStyles(C) { return {
     backgroundColor: C.gold, borderRadius: rs(16),
     padding: rs(18), alignItems: 'center', marginTop: rs(24),
   },
-  claimBtnText: { fontSize: ms(15), fontWeight: '800', color: '#fff' },
+  claimBtnText: { fontSize: ms(15), fontFamily: C.xbold, fontWeight: '800', color: '#fff', letterSpacing: ls(15) },
   dismissBtn:   { marginTop: rs(16), alignItems: 'center' },
-  dismissText:  { color: C.textMuted, fontSize: ms(12) },
+  dismissText:  { color: C.textMuted, fontSize: ms(12), fontFamily: C.reg, fontWeight: '400', letterSpacing: ls(12) },
 }; }

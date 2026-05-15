@@ -5,7 +5,7 @@ import {
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../ThemeContext';
-import { rs, ms } from '../utils/responsive';
+import { rs, ms, ls } from '../utils/responsive';
 
 function formatTime(hour, minute) {
   const h = hour % 12 || 12;
@@ -174,8 +174,8 @@ function makeStyles(C) { return {
     gap: rs(12), marginBottom: rs(16),
   },
   habitEmoji: { fontSize: ms(28) },
-  habitName: { fontSize: ms(16), fontWeight: '700', color: C.text },
-  habitType: { fontSize: ms(11), color: C.textSub, marginTop: rs(2) },
+  habitName: { fontSize: ms(16), fontFamily: C.bold, fontWeight: '700', color: C.text, letterSpacing: ls(16) },
+  habitType: { fontSize: ms(11), color: C.textSub, marginTop: rs(2), fontFamily: C.reg, fontWeight: '400', letterSpacing: ls(11) },
   divider: { height: 1, backgroundColor: C.border, marginVertical: rs(10) },
   actionBtn: {
     flexDirection: 'row', alignItems: 'center', gap: rs(12),
@@ -185,8 +185,8 @@ function makeStyles(C) { return {
     width: rs(36), height: rs(36), borderRadius: rs(10),
     alignItems: 'center', justifyContent: 'center',
   },
-  actionTitle: { fontSize: ms(14), fontWeight: '600', color: C.text },
-  actionSub: { fontSize: ms(11), color: C.textSub, marginTop: rs(1) },
+  actionTitle: { fontSize: ms(14), fontFamily: C.semi, fontWeight: '600', color: C.text, letterSpacing: ls(14) },
+  actionSub: { fontSize: ms(11), color: C.textSub, marginTop: rs(1), fontFamily: C.reg, fontWeight: '400', letterSpacing: ls(11) },
   pickerWrap: {
     backgroundColor: C.cardHigh, borderRadius: rs(14),
     marginVertical: rs(8), overflow: 'hidden',
@@ -196,12 +196,12 @@ function makeStyles(C) { return {
     alignItems: 'flex-end', paddingHorizontal: rs(16), paddingVertical: rs(10),
     borderTopWidth: 1, borderTopColor: C.border,
   },
-  pickerDoneText: { fontSize: ms(14), fontWeight: '700', color: C.primary },
+  pickerDoneText: { fontSize: ms(14), fontFamily: C.bold, fontWeight: '700', color: C.primary, letterSpacing: ls(14) },
   deleteBtn: {
     flexDirection: 'row', alignItems: 'center', gap: rs(12),
     paddingVertical: rs(12), paddingHorizontal: rs(4),
   },
-  deleteBtnText: { fontSize: ms(14), fontWeight: '600', color: '#EF4444' },
+  deleteBtnText: { fontSize: ms(14), fontFamily: C.semi, fontWeight: '600', color: '#EF4444', letterSpacing: ls(14) },
   cancelBtn: { alignItems: 'center', paddingVertical: rs(12) },
-  cancelBtnText: { fontSize: ms(14), color: C.textMuted },
+  cancelBtnText: { fontSize: ms(14), color: C.textMuted, fontFamily: C.reg, fontWeight: '400', letterSpacing: ls(14) },
 }; }

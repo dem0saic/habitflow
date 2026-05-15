@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useStore } from '../store';
 import { useTheme } from '../ThemeContext';
-import { rs, ms } from '../utils/responsive';
+import { rs, ms, ls } from '../utils/responsive';
 import { last7Days, formatDisplay } from '../utils/date';
 
 export default function HistoryScreen() {
@@ -141,8 +141,8 @@ export default function HistoryScreen() {
 function makeStyles(C) { return {
   root: { flex: 1, backgroundColor: C.bg },
   topRow: { paddingHorizontal: rs(20), paddingTop: rs(8), paddingBottom: rs(8) },
-  topLabel: { fontSize: ms(11), color: C.textMuted, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5 },
-  topTitle: { fontSize: ms(17), fontWeight: '800', color: C.text, marginTop: rs(2) },
+  topLabel: { fontSize: ms(11), color: C.textMuted, fontFamily: C.semi, fontWeight: '600', textTransform: 'uppercase', letterSpacing: ls(11) },
+  topTitle: { fontSize: ms(17), fontFamily: C.xbold, fontWeight: '800', color: C.text, marginTop: rs(2), letterSpacing: ls(17) },
   heroWrap: { paddingHorizontal: rs(16), marginBottom: rs(8) },
   heroCard: {
     borderRadius: rs(24), padding: rs(20),
@@ -151,22 +151,22 @@ function makeStyles(C) { return {
   },
   heroStatsRow: { flexDirection: 'row', marginBottom: rs(12) },
   heroStat: { flex: 1, alignItems: 'center' },
-  heroStatNum: { fontSize: ms(26), fontWeight: '800', color: '#fff' },
-  heroStatLabel: { fontSize: ms(10), color: 'rgba(255,255,255,0.65)', marginTop: rs(2), fontWeight: '500' },
+  heroStatNum: { fontSize: ms(26), fontFamily: C.xbold, fontWeight: '800', color: '#fff', letterSpacing: ls(26) },
+  heroStatLabel: { fontSize: ms(10), color: 'rgba(255,255,255,0.65)', marginTop: rs(2), fontFamily: C.med, fontWeight: '500', letterSpacing: ls(10) },
   heroStatDivider: { width: 1, backgroundColor: 'rgba(255,255,255,0.2)', marginVertical: rs(4) },
-  heroStatus: { fontSize: ms(12), color: 'rgba(255,255,255,0.8)', textAlign: 'center', fontWeight: '500' },
+  heroStatus: { fontSize: ms(12), color: 'rgba(255,255,255,0.8)', textAlign: 'center', fontFamily: C.med, fontWeight: '500', letterSpacing: ls(12) },
   heatRow: { flexDirection: 'row', justifyContent: 'space-around', paddingHorizontal: rs(20), paddingTop: rs(20), paddingBottom: rs(10) },
   heatCell: { alignItems: 'center', gap: rs(6) },
   heatBox: { width: rs(34), height: rs(34), borderRadius: rs(10) },
   heatBoxToday: { borderWidth: 2, borderColor: C.primary },
-  heatLabel: { fontSize: ms(11), color: C.textSub },
+  heatLabel: { fontSize: ms(11), color: C.textSub, fontFamily: C.med, fontWeight: '500', letterSpacing: ls(11) },
   legend: { flexDirection: 'row', gap: rs(14), paddingHorizontal: rs(20), marginBottom: rs(16), flexWrap: 'wrap' },
   legendItem: { flexDirection: 'row', alignItems: 'center', gap: rs(6) },
   legendDot: { width: rs(12), height: rs(12), borderRadius: rs(3) },
-  legendText: { fontSize: ms(11), color: C.textSub },
-  sectionLabel: { fontSize: ms(11), fontWeight: '700', color: C.textSub, textTransform: 'uppercase', letterSpacing: 0.6, paddingHorizontal: rs(20), marginBottom: rs(10) },
+  legendText: { fontSize: ms(11), color: C.textSub, fontFamily: C.reg, fontWeight: '400', letterSpacing: ls(11) },
+  sectionLabel: { fontSize: ms(11), fontFamily: C.bold, fontWeight: '700', color: C.textSub, textTransform: 'uppercase', letterSpacing: ls(11), paddingHorizontal: rs(20), marginBottom: rs(10) },
   list: { paddingHorizontal: rs(20), paddingBottom: 100 },
-  empty: { color: C.textSub, textAlign: 'center', marginTop: rs(24), fontSize: ms(13) },
+  empty: { color: C.textSub, textAlign: 'center', marginTop: rs(24), fontSize: ms(13), fontFamily: C.reg, fontWeight: '400', letterSpacing: ls(13) },
   dayRow: {
     flexDirection: 'row', alignItems: 'center',
     backgroundColor: C.card, borderRadius: rs(14),
@@ -175,7 +175,7 @@ function makeStyles(C) { return {
   },
   dayDot: { width: rs(10), height: rs(10), borderRadius: rs(5), marginRight: rs(12) },
   dayInfo: { flex: 1 },
-  dayDate: { fontSize: ms(14), fontWeight: '600', color: C.text },
-  daySub: { fontSize: ms(11), color: C.textSub, marginTop: rs(2) },
-  perfectBadge: { fontSize: ms(10), fontWeight: '700', color: C.success, backgroundColor: C.primaryLight, paddingHorizontal: rs(8), paddingVertical: rs(4), borderRadius: rs(8) },
+  dayDate: { fontSize: ms(14), fontFamily: C.semi, fontWeight: '600', color: C.text, letterSpacing: ls(14) },
+  daySub: { fontSize: ms(11), color: C.textSub, marginTop: rs(2), fontFamily: C.reg, fontWeight: '400', letterSpacing: ls(11) },
+  perfectBadge: { fontSize: ms(10), fontFamily: C.bold, fontWeight: '700', color: C.success, backgroundColor: C.primaryLight, paddingHorizontal: rs(8), paddingVertical: rs(4), borderRadius: rs(8), letterSpacing: ls(10) },
 }; }

@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useStore, calcStreak } from '../store';
 import { useTheme } from '../ThemeContext';
-import { rs, ms } from '../utils/responsive';
+import { rs, ms, ls } from '../utils/responsive';
 import { last7Days } from '../utils/date';
 import AnimatedEmoji from '../components/AnimatedEmoji';
 
@@ -198,8 +198,8 @@ export default function StatsScreen() {
 function makeStyles(C) { return {
   root: { flex: 1, backgroundColor: C.bg },
   topRow: { paddingHorizontal: rs(20), paddingTop: rs(8), paddingBottom: rs(8) },
-  topLabel: { fontSize: ms(11), color: C.textMuted, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.5 },
-  topTitle: { fontSize: ms(17), fontWeight: '800', color: C.text, marginTop: rs(2) },
+  topLabel: { fontSize: ms(11), color: C.textMuted, fontFamily: C.semi, fontWeight: '600', textTransform: 'uppercase', letterSpacing: ls(11) },
+  topTitle: { fontSize: ms(17), fontFamily: C.xbold, fontWeight: '800', color: C.text, marginTop: rs(2), letterSpacing: ls(17) },
   heroWrap: { paddingHorizontal: rs(16), marginBottom: rs(8) },
   heroCard: {
     borderRadius: rs(24), padding: rs(20),
@@ -208,28 +208,26 @@ function makeStyles(C) { return {
   },
   heroStatsRow: { flexDirection: 'row', marginBottom: rs(12) },
   heroStat: { flex: 1, alignItems: 'center' },
-  heroStatNum: { fontSize: ms(26), fontWeight: '800', color: '#fff' },
-  heroStatLabel: { fontSize: ms(10), color: 'rgba(255,255,255,0.65)', marginTop: rs(2), fontWeight: '500' },
+  heroStatNum: { fontSize: ms(26), fontFamily: C.xbold, fontWeight: '800', color: '#fff', letterSpacing: ls(26) },
+  heroStatLabel: { fontSize: ms(10), color: 'rgba(255,255,255,0.65)', marginTop: rs(2), fontFamily: C.med, fontWeight: '500', letterSpacing: ls(10) },
   heroStatDivider: { width: 1, backgroundColor: 'rgba(255,255,255,0.2)', marginVertical: rs(4) },
-  heroStatus: { fontSize: ms(12), color: 'rgba(255,255,255,0.8)', textAlign: 'center', fontWeight: '500' },
+  heroStatus: { fontSize: ms(12), color: 'rgba(255,255,255,0.8)', textAlign: 'center', fontFamily: C.med, fontWeight: '500', letterSpacing: ls(12) },
   body: { padding: rs(20), paddingBottom: 100 },
   chartCard: {
     backgroundColor: C.card, borderRadius: rs(18), padding: rs(18), marginBottom: rs(20),
     borderWidth: 1, borderColor: C.border,
   },
-  chartTitle: { fontSize: ms(13), fontWeight: '700', color: C.text, marginBottom: rs(14) },
-  sectionLabel: { fontSize: ms(11), fontWeight: '700', color: C.textSub, textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: rs(12) },
-  empty: { color: C.textSub, textAlign: 'center', fontSize: ms(13) },
+  chartTitle: { fontSize: ms(13), fontFamily: C.bold, fontWeight: '700', color: C.text, marginBottom: rs(14), letterSpacing: ls(13) },
+  sectionLabel: { fontSize: ms(11), fontFamily: C.bold, fontWeight: '700', color: C.textSub, textTransform: 'uppercase', letterSpacing: ls(11), marginBottom: rs(12) },
+  empty: { color: C.textSub, textAlign: 'center', fontSize: ms(13), fontFamily: C.reg, fontWeight: '400', letterSpacing: ls(13) },
   streakRow: {
     flexDirection: 'row', alignItems: 'center', backgroundColor: C.card,
     borderRadius: rs(16), padding: rs(14), marginBottom: rs(10),
     borderWidth: 1, borderColor: C.border,
   },
-  streakEmoji: { fontSize: rs(22), marginRight: rs(12) },
   streakInfo: { flex: 1 },
-  streakName: { fontSize: ms(14), fontWeight: '600', color: C.text },
-  streakType: { fontSize: ms(11), color: C.textSub, marginTop: rs(2) },
+  streakName: { fontSize: ms(14), fontFamily: C.semi, fontWeight: '600', color: C.text, letterSpacing: ls(14) },
+  streakType: { fontSize: ms(11), color: C.textSub, marginTop: rs(2), fontFamily: C.reg, fontWeight: '400', letterSpacing: ls(11) },
   streakBadge: { flexDirection: 'row', alignItems: 'center', gap: rs(4) },
-  streakNum: { fontSize: ms(20), fontWeight: '800', color: C.primary },
-  streakFire: { fontSize: rs(18) },
+  streakNum: { fontSize: ms(20), fontFamily: C.xbold, fontWeight: '800', color: C.primary, letterSpacing: ls(20) },
 }; }
