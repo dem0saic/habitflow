@@ -13,11 +13,11 @@ import { useTheme } from '../ThemeContext';
 import { rs, ms, ls } from '../utils/responsive';
 
 export default function AuthScreen() {
-  const { signIn, signUp } = useAuth();
+  const { signIn, signUp, resetPassword, updatePassword, recoveryMode } = useAuth();
   const C = useTheme();
   const insets = useSafeAreaInsets();
 
-  const [mode, setMode] = useState('signIn');   // 'signIn' | 'signUp'
+  const [mode, setMode] = useState('signIn');   // 'signIn' | 'signUp' | 'forgotPassword'
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
@@ -30,8 +30,15 @@ export default function AuthScreen() {
   const styles = makeStyles(C);
 
   function validate() {
+    if (recoveryMode) {
+      if (!password) return 'New password is required.';
+      if (password.length < 6) return 'Password must be at least 6 characters.';
+      if (password !== confirm) return 'Passwords do not match.';
+      return null;
+    }
     if (!email.trim()) return 'Email is required.';
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) return 'Enter a valid email address.';
+    if (mode === 'forgotPassword') return null;
     if (!password) return 'Password is required.';
     if (password.length < 6) return 'Password must be at least 6 characters.';
     if (mode === 'signUp' && password !== confirm) return 'Passwords do not match.';
@@ -46,14 +53,23 @@ export default function AuthScreen() {
 
     setLoading(true);
     try {
-      if (mode === 'signIn') {
+      if (recoveryMode) {
+        await updatePassword(password);
+        setInfo('Password updated! You are now signed in.');
+        setPassword('');
+        setConfirm('');
+      } else if (mode === 'signIn') {
         await signIn(email.trim(), password);
-      } else {
+      } else if (mode === 'signUp') {
         await signUp(email.trim(), password);
         setInfo('Check your email to confirm your account, then sign in.');
         setMode('signIn');
         setPassword('');
         setConfirm('');
+      } else if (mode === 'forgotPassword') {
+        await resetPassword(email.trim());
+        setInfo('Reset link sent — check your inbox.');
+        setMode('signIn');
       }
     } catch (e) {
       setError(e.message || 'Something went wrong. Please try again.');
@@ -69,6 +85,36 @@ export default function AuthScreen() {
     setPassword('');
     setConfirm('');
   }
+
+  function goForgotPassword() {
+    setMode('forgotPassword');
+    setError('');
+    setInfo('');
+    setPassword('');
+    setConfirm('');
+  }
+
+  function goBackToSignIn() {
+    setMode('signIn');
+    setError('');
+    setInfo('');
+  }
+
+  const tagline = recoveryMode
+    ? 'Set a new password'
+    : mode === 'forgotPassword'
+    ? 'Forgot your password?'
+    : mode === 'signIn'
+    ? 'Welcome back'
+    : 'Create your account';
+
+  const submitLabel = recoveryMode
+    ? 'Update Password'
+    : mode === 'forgotPassword'
+    ? 'Send Reset Link'
+    : mode === 'signIn'
+    ? 'Sign In'
+    : 'Create Account';
 
   return (
     <>
@@ -96,89 +142,40 @@ export default function AuthScreen() {
               </View>
               <Text style={styles.logoText}>HabitFlow</Text>
             </View>
-            <Text style={styles.tagline}>
-              {mode === 'signIn' ? 'Welcome back' : 'Create your account'}
-            </Text>
+            <Text style={styles.tagline}>{tagline}</Text>
 
             {/* Card */}
             <View style={styles.card}>
-              {/* Mode tabs */}
-              <View style={styles.tabs}>
-                <TouchableOpacity
-                  style={[styles.tab, mode === 'signIn' && styles.tabActive]}
-                  onPress={() => mode !== 'signIn' && switchMode()}
-                  activeOpacity={0.7}
-                >
-                  <Text style={[styles.tabText, mode === 'signIn' && styles.tabTextActive]}>
-                    Sign In
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.tab, mode === 'signUp' && styles.tabActive]}
-                  onPress={() => mode !== 'signUp' && switchMode()}
-                  activeOpacity={0.7}
-                >
-                  <Text style={[styles.tabText, mode === 'signUp' && styles.tabTextActive]}>
-                    Sign Up
-                  </Text>
-                </TouchableOpacity>
-              </View>
 
-              {/* Error / info banners */}
-              {!!error && (
-                <View style={styles.errorBanner}>
-                  <Ionicons name="alert-circle" size={rs(15)} color="#ff6b6b" />
-                  <Text style={styles.errorText}>{error}</Text>
-                </View>
-              )}
-              {!!info && (
-                <View style={styles.infoBanner}>
-                  <Ionicons name="checkmark-circle" size={rs(15)} color="#6bffb8" />
-                  <Text style={styles.infoText}>{info}</Text>
-                </View>
-              )}
-
-              {/* Email */}
-              <Text style={styles.label}>Email</Text>
-              <View style={styles.inputRow}>
-                <Ionicons name="mail-outline" size={rs(17)} color={C.textMuted} style={styles.inputIcon} />
-                <TextInput
-                  style={styles.input}
-                  value={email}
-                  onChangeText={t => { setEmail(t); setError(''); }}
-                  placeholder="you@example.com"
-                  placeholderTextColor={C.textMuted}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  returnKeyType="next"
-                />
-              </View>
-
-              {/* Password */}
-              <Text style={styles.label}>Password</Text>
-              <View style={styles.inputRow}>
-                <Ionicons name="lock-closed-outline" size={rs(17)} color={C.textMuted} style={styles.inputIcon} />
-                <TextInput
-                  style={[styles.input, { flex: 1 }]}
-                  value={password}
-                  onChangeText={t => { setPassword(t); setError(''); }}
-                  placeholder="Min. 6 characters"
-                  placeholderTextColor={C.textMuted}
-                  secureTextEntry={!showPass}
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  returnKeyType={mode === 'signUp' ? 'next' : 'done'}
-                  onSubmitEditing={mode === 'signIn' ? handleSubmit : undefined}
-                />
-                <Pressable onPress={() => setShowPass(v => !v)} style={styles.eyeBtn} hitSlop={rs(8)}>
-                  <Ionicons name={showPass ? 'eye-off-outline' : 'eye-outline'} size={rs(18)} color={C.textMuted} />
-                </Pressable>
-              </View>
-
-              {/* Confirm password (sign up only) */}
-              {mode === 'signUp' && (
+              {recoveryMode ? (
+                /* ── Reset Password (arrived via deep link) ── */
                 <>
+                  <Text style={styles.recoveryHint}>
+                    Choose a new password for your account.
+                  </Text>
+
+                  {!!error && <Banner type="error" icon="alert-circle" text={error} styles={styles} />}
+                  {!!info  && <Banner type="info"  icon="checkmark-circle" text={info} styles={styles} />}
+
+                  <Text style={styles.label}>New Password</Text>
+                  <View style={styles.inputRow}>
+                    <Ionicons name="lock-closed-outline" size={rs(17)} color={C.textMuted} style={styles.inputIcon} />
+                    <TextInput
+                      style={[styles.input, { flex: 1 }]}
+                      value={password}
+                      onChangeText={t => { setPassword(t); setError(''); }}
+                      placeholder="Min. 6 characters"
+                      placeholderTextColor={C.textMuted}
+                      secureTextEntry={!showPass}
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                      returnKeyType="next"
+                    />
+                    <Pressable onPress={() => setShowPass(v => !v)} style={styles.eyeBtn} hitSlop={rs(8)}>
+                      <Ionicons name={showPass ? 'eye-off-outline' : 'eye-outline'} size={rs(18)} color={C.textMuted} />
+                    </Pressable>
+                  </View>
+
                   <Text style={styles.label}>Confirm Password</Text>
                   <View style={styles.inputRow}>
                     <Ionicons name="lock-closed-outline" size={rs(17)} color={C.textMuted} style={styles.inputIcon} />
@@ -186,7 +183,7 @@ export default function AuthScreen() {
                       style={[styles.input, { flex: 1 }]}
                       value={confirm}
                       onChangeText={t => { setConfirm(t); setError(''); }}
-                      placeholder="Repeat password"
+                      placeholder="Repeat new password"
                       placeholderTextColor={C.textMuted}
                       secureTextEntry={!showConfirm}
                       autoCapitalize="none"
@@ -198,40 +195,175 @@ export default function AuthScreen() {
                       <Ionicons name={showConfirm ? 'eye-off-outline' : 'eye-outline'} size={rs(18)} color={C.textMuted} />
                     </Pressable>
                   </View>
+
+                  <SubmitButton label={submitLabel} loading={loading} onPress={handleSubmit} styles={styles} C={C} />
+                </>
+
+              ) : mode === 'forgotPassword' ? (
+                /* ── Forgot Password ── */
+                <>
+                  <TouchableOpacity onPress={goBackToSignIn} style={styles.backRow} hitSlop={rs(8)}>
+                    <Ionicons name="arrow-back" size={rs(16)} color={C.primary} />
+                    <Text style={styles.backText}>Back to Sign In</Text>
+                  </TouchableOpacity>
+
+                  {!!error && <Banner type="error" icon="alert-circle" text={error} styles={styles} />}
+                  {!!info  && <Banner type="info"  icon="checkmark-circle" text={info} styles={styles} />}
+
+                  <Text style={styles.label}>Email</Text>
+                  <View style={styles.inputRow}>
+                    <Ionicons name="mail-outline" size={rs(17)} color={C.textMuted} style={styles.inputIcon} />
+                    <TextInput
+                      style={styles.input}
+                      value={email}
+                      onChangeText={t => { setEmail(t); setError(''); }}
+                      placeholder="you@example.com"
+                      placeholderTextColor={C.textMuted}
+                      keyboardType="email-address"
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                      returnKeyType="done"
+                      onSubmitEditing={handleSubmit}
+                    />
+                  </View>
+
+                  <SubmitButton label={submitLabel} loading={loading} onPress={handleSubmit} styles={styles} C={C} />
+                </>
+
+              ) : (
+                /* ── Sign In / Sign Up ── */
+                <>
+                  <View style={styles.tabs}>
+                    <TouchableOpacity
+                      style={[styles.tab, mode === 'signIn' && styles.tabActive]}
+                      onPress={() => mode !== 'signIn' && switchMode()}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={[styles.tabText, mode === 'signIn' && styles.tabTextActive]}>Sign In</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[styles.tab, mode === 'signUp' && styles.tabActive]}
+                      onPress={() => mode !== 'signUp' && switchMode()}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={[styles.tabText, mode === 'signUp' && styles.tabTextActive]}>Sign Up</Text>
+                    </TouchableOpacity>
+                  </View>
+
+                  {!!error && <Banner type="error" icon="alert-circle" text={error} styles={styles} />}
+                  {!!info  && <Banner type="info"  icon="checkmark-circle" text={info} styles={styles} />}
+
+                  <Text style={styles.label}>Email</Text>
+                  <View style={styles.inputRow}>
+                    <Ionicons name="mail-outline" size={rs(17)} color={C.textMuted} style={styles.inputIcon} />
+                    <TextInput
+                      style={styles.input}
+                      value={email}
+                      onChangeText={t => { setEmail(t); setError(''); }}
+                      placeholder="you@example.com"
+                      placeholderTextColor={C.textMuted}
+                      keyboardType="email-address"
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                      returnKeyType="next"
+                    />
+                  </View>
+
+                  <Text style={styles.label}>Password</Text>
+                  <View style={styles.inputRow}>
+                    <Ionicons name="lock-closed-outline" size={rs(17)} color={C.textMuted} style={styles.inputIcon} />
+                    <TextInput
+                      style={[styles.input, { flex: 1 }]}
+                      value={password}
+                      onChangeText={t => { setPassword(t); setError(''); }}
+                      placeholder="Min. 6 characters"
+                      placeholderTextColor={C.textMuted}
+                      secureTextEntry={!showPass}
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                      returnKeyType={mode === 'signUp' ? 'next' : 'done'}
+                      onSubmitEditing={mode === 'signIn' ? handleSubmit : undefined}
+                    />
+                    <Pressable onPress={() => setShowPass(v => !v)} style={styles.eyeBtn} hitSlop={rs(8)}>
+                      <Ionicons name={showPass ? 'eye-off-outline' : 'eye-outline'} size={rs(18)} color={C.textMuted} />
+                    </Pressable>
+                  </View>
+
+                  {mode === 'signIn' && (
+                    <TouchableOpacity onPress={goForgotPassword} style={styles.forgotRow} hitSlop={rs(8)}>
+                      <Text style={styles.forgotText}>Forgot password?</Text>
+                    </TouchableOpacity>
+                  )}
+
+                  {mode === 'signUp' && (
+                    <>
+                      <Text style={styles.label}>Confirm Password</Text>
+                      <View style={styles.inputRow}>
+                        <Ionicons name="lock-closed-outline" size={rs(17)} color={C.textMuted} style={styles.inputIcon} />
+                        <TextInput
+                          style={[styles.input, { flex: 1 }]}
+                          value={confirm}
+                          onChangeText={t => { setConfirm(t); setError(''); }}
+                          placeholder="Repeat password"
+                          placeholderTextColor={C.textMuted}
+                          secureTextEntry={!showConfirm}
+                          autoCapitalize="none"
+                          autoCorrect={false}
+                          returnKeyType="done"
+                          onSubmitEditing={handleSubmit}
+                        />
+                        <Pressable onPress={() => setShowConfirm(v => !v)} style={styles.eyeBtn} hitSlop={rs(8)}>
+                          <Ionicons name={showConfirm ? 'eye-off-outline' : 'eye-outline'} size={rs(18)} color={C.textMuted} />
+                        </Pressable>
+                      </View>
+                    </>
+                  )}
+
+                  <SubmitButton label={submitLabel} loading={loading} onPress={handleSubmit} styles={styles} C={C} />
+
+                  <View style={styles.switchRow}>
+                    <Text style={styles.switchText}>
+                      {mode === 'signIn' ? "Don't have an account? " : 'Already have an account? '}
+                    </Text>
+                    <TouchableOpacity onPress={switchMode} hitSlop={rs(8)}>
+                      <Text style={styles.switchLink}>
+                        {mode === 'signIn' ? 'Sign Up' : 'Sign In'}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
                 </>
               )}
 
-              {/* Submit button */}
-              <TouchableOpacity
-                style={[styles.btn, loading && styles.btnDisabled]}
-                onPress={handleSubmit}
-                activeOpacity={0.8}
-                disabled={loading}
-              >
-                {loading
-                  ? <ActivityIndicator color={C.primary} size="small" />
-                  : <Text style={styles.btnText}>
-                      {mode === 'signIn' ? 'Sign In' : 'Create Account'}
-                    </Text>
-                }
-              </TouchableOpacity>
-
-              {/* Switch mode */}
-              <View style={styles.switchRow}>
-                <Text style={styles.switchText}>
-                  {mode === 'signIn' ? "Don't have an account? " : 'Already have an account? '}
-                </Text>
-                <TouchableOpacity onPress={switchMode} hitSlop={rs(8)}>
-                  <Text style={styles.switchLink}>
-                    {mode === 'signIn' ? 'Sign Up' : 'Sign In'}
-                  </Text>
-                </TouchableOpacity>
-              </View>
             </View>
           </ScrollView>
         </KeyboardAvoidingView>
       </LinearGradient>
     </>
+  );
+}
+
+function Banner({ type, icon, text, styles }) {
+  return (
+    <View style={type === 'error' ? styles.errorBanner : styles.infoBanner}>
+      <Ionicons name={icon} size={rs(15)} color={type === 'error' ? '#ff6b6b' : '#6bffb8'} />
+      <Text style={type === 'error' ? styles.errorText : styles.infoText}>{text}</Text>
+    </View>
+  );
+}
+
+function SubmitButton({ label, loading, onPress, styles, C }) {
+  return (
+    <TouchableOpacity
+      style={[styles.btn, loading && styles.btnDisabled]}
+      onPress={onPress}
+      activeOpacity={0.8}
+      disabled={loading}
+    >
+      {loading
+        ? <ActivityIndicator color={C.primary} size="small" />
+        : <Text style={styles.btnText}>{label}</Text>
+      }
+    </TouchableOpacity>
   );
 }
 
@@ -379,6 +511,39 @@ function makeStyles(C) {
     eyeBtn: {
       paddingLeft: rs(8),
       paddingVertical: rs(4),
+    },
+    forgotRow: {
+      alignSelf: 'flex-end',
+      marginTop: rs(-6),
+      marginBottom: rs(18),
+    },
+    forgotText: {
+      color: C.primary,
+      fontSize: ms(12),
+      fontFamily: C.semi,
+      fontWeight: '600',
+      letterSpacing: ls(12),
+    },
+    backRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: rs(6),
+      marginBottom: rs(20),
+    },
+    backText: {
+      color: C.primary,
+      fontSize: ms(13),
+      fontFamily: C.semi,
+      fontWeight: '600',
+      letterSpacing: ls(13),
+    },
+    recoveryHint: {
+      color: 'rgba(255,255,255,0.55)',
+      fontSize: ms(13),
+      fontFamily: C.reg,
+      fontWeight: '400',
+      letterSpacing: ls(13),
+      marginBottom: rs(20),
     },
     btn: {
       backgroundColor: '#fff',

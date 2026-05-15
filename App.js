@@ -1,6 +1,8 @@
 import 'react-native-url-polyfill/auto';
 import 'react-native-reanimated';
 import React, { useEffect } from 'react';
+import * as Linking from 'expo-linking';
+import { supabase } from './src/lib/supabase';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Text } from 'react-native';
@@ -56,11 +58,11 @@ function TabIcon({ name, focused, color }) {
 
 function AppNavigator() {
   const { state, storeReady } = useStore();
-  const { session, loading } = useAuth();
+  const { session, loading, recoveryMode } = useAuth();
   const C = useTheme();
 
   if (loading || !storeReady) return null;
-  if (!session) return <AuthScreen />;
+  if (!session || recoveryMode) return <AuthScreen />;
   if (!state.onboardingDone) return <OnboardingScreen />;
 
   return (
@@ -154,8 +156,26 @@ export default function App() {
 function InnerApp() {
   const { state } = useStore();
 
-  // Create Android notification channel on every app start (idempotent, no-op on iOS)
   useEffect(() => { ensureAndroidChannel(); }, []);
+
+  // Handle password-reset deep links: habitflow://reset-password#access_token=...&type=recovery
+  useEffect(() => {
+    function handleUrl(url) {
+      if (!url || !url.includes('type=recovery')) return;
+      const fragment = url.split('#')[1];
+      if (!fragment) return;
+      const params = Object.fromEntries(new URLSearchParams(fragment));
+      if (params.access_token && params.refresh_token) {
+        supabase.auth.setSession({
+          access_token: params.access_token,
+          refresh_token: params.refresh_token,
+        });
+      }
+    }
+    Linking.getInitialURL().then(url => { if (url) handleUrl(url); });
+    const sub = Linking.addEventListener('url', ({ url }) => handleUrl(url));
+    return () => sub.remove();
+  }, []);
 
   return (
     <>
