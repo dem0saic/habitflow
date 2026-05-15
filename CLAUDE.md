@@ -44,6 +44,16 @@ EXPO_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_...
 
 Both vars are read by `src/lib/supabase.js` at runtime via `process.env`.
 
+The Edge Functions need an additional secret set **in Supabase** (not in `.env` — it never touches the client):
+```bash
+npx supabase secrets set ANTHROPIC_API_KEY=sk-ant-... --project-ref <ref>
+```
+
+To redeploy an Edge Function after editing `supabase/functions/<name>/index.ts`:
+```bash
+npx supabase functions deploy <name> --project-ref <ref>
+```
+
 ## Architecture
 
 HabitFlow is an Expo (React Native) habit tracker with Supabase auth and cloud sync. Entry point is `index.js` → `App.js`. Do not edit `index.js`.
@@ -121,7 +131,7 @@ All functions use `supabase.from(table)`:
 
 ### Supabase database schema
 
-Four tables in the `public` schema, all with RLS enabled. Every table has a policy `auth.uid() = user_id` for ALL operations.
+Five tables in the `public` schema, all with RLS enabled. Every table has a policy `auth.uid() = user_id` for ALL operations.
 
 | Table | Primary key | Notable columns |
 |---|---|---|
@@ -129,8 +139,20 @@ Four tables in the `public` schema, all with RLS enabled. Every table has a poli
 | `habits` | `id` (text) | `deleted_at` (soft delete), `reminder_time` (jsonb) |
 | `completions` | composite `(user_id, habit_id, date)` | `count` integer |
 | `challenges` | `id` (text) | `habit_ids` text[], `completed`, `reward_claimed` |
+| `ai_insights` | `id` (uuid) | `type` ('nudge'\|'weekly_summary'\|'monthly_summary'), `content`, `period_start`, `period_end`, `metadata` (jsonb) |
 
 `habits.id` and `challenges.id` are text (timestamp strings from `Date.now().toString()`), not UUIDs. The composite PK on `completions` makes upserts idempotent without specifying `onConflict`.
+
+### AI Coaching (`src/lib/aiCoaching.js`, `supabase/functions/`)
+
+Two Supabase Edge Functions call Claude Sonnet and write results to `ai_insights`. The app calls them via `supabase.functions.invoke()` with the user's JWT — the functions use the service-role key internally and bypass RLS.
+
+- **`ai-coaching-nudge`** — invoked on `StatsScreen` mount. Checks for a cached row in `ai_insights` where `type='nudge'` and `created_at >= today`. If found, returns it immediately; otherwise reads habits + completions, calls Claude, stores and returns the result. One Claude call per user per day maximum.
+- **`ai-reflection-summary`** — invoked when the user taps Weekly or Monthly in StatsScreen. Caches by `(user_id, type, period_start)` so the same period never re-generates. Computes per-habit consistency and weakest day-of-week before calling Claude.
+
+`src/lib/aiCoaching.js` is a thin client: `fetchCoachingNudge()` and `fetchReflectionSummary(period)` both get the session, pass the JWT in the Authorization header, and return `data.content`. All error handling is fire-and-forget at the call site (StatsScreen catches silently and shows a retry prompt).
+
+The Edge Function source lives in `supabase/functions/<name>/index.ts` and is written in Deno TypeScript. It imports from `npm:@supabase/supabase-js@2` and `npm:@anthropic-ai/sdk`. Both functions use `claude-sonnet-4-6` with `verify_jwt: true` at the gateway level.
 
 ### Theme system (`src/theme.js`, `src/ThemeContext.js`)
 
@@ -182,7 +204,7 @@ All four main screens share the same header pattern: a plain top row (title + ac
 | `HistoryScreen` | `#000000 → #5C4E4E` | Days tracked / Perfect days / This week% |
 | `StatsScreen` | `#000000 → #988686` | Best streak / 7-day avg / Perfect days |
 
-`StatsScreen` includes a GitHub-style contribution graph (`ContributionGraph` component, 16 weeks × 7 days grid, horizontally scrollable).
+`StatsScreen` includes a GitHub-style contribution graph (`ContributionGraph` component, 16 weeks × 7 days grid, horizontally scrollable) and an **AI Coach** section at the bottom: a daily nudge card (auto-fetched on mount, cached per day) and Weekly/Monthly reflection report buttons (each generates on first tap, cached per period start date). Both use skeleton loading states and call the Edge Functions via `src/lib/aiCoaching.js`.
 
 `OnboardingScreen` uses `useSafeAreaInsets()` for padding and has an animated `AppLogo` (float, breathe, badge bounce — all via RN `Animated` with `useNativeDriver: true`).
 
