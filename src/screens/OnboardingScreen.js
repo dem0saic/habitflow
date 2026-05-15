@@ -10,6 +10,7 @@ import { useStore } from '../store';
 import { useTheme } from '../ThemeContext';
 import { rs, ms } from '../utils/responsive';
 import { requestPermissions, scheduleDailyReminders } from '../utils/notifications';
+import AnimatedEmoji from '../components/AnimatedEmoji';
 
 const { width } = Dimensions.get('window');
 
@@ -186,7 +187,7 @@ export default function OnboardingScreen() {
         >
           {STEPS.map((step, i) => (
             <View key={i} style={[styles.slide, { width }]}>
-              <Text style={styles.slideEmoji}>{step.emoji}</Text>
+              <AnimatedEmoji emoji={step.emoji} size={ms(68)} style={{ marginBottom: rs(20) }} />
               <Text style={styles.slideTitle}>{step.title}</Text>
               <Text style={styles.slideBody}>{step.body}</Text>
             </View>

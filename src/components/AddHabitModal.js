@@ -166,19 +166,27 @@ export default function AddHabitModal({ visible, onClose, onAdd, editingHabit })
               </View>
             </TouchableOpacity>
 
-            {/* Collapsible emoji grid — no nested ScrollView, outer form scroll handles it */}
+            {/* Collapsible emoji grid — limited to 5 rows, rest scrollable */}
             {showEmojiGrid && (
-              <View style={styles.emojiGrid}>
-                {EMOJIS.map((e, i) => (
-                  <TouchableOpacity
-                    key={e}
-                    style={[styles.emojiGridBtn, emoji === e && styles.emojiGridBtnActive]}
-                    onPress={() => { setEmoji(e); setShowEmojiGrid(false); }}
-                  >
-                    <AnimatedEmoji emoji={e} index={i} />
-                  </TouchableOpacity>
-                ))}
-              </View>
+              <ScrollView
+                style={styles.emojiGridScroll}
+                nestedScrollEnabled
+                showsVerticalScrollIndicator={false}
+                bounces={false}
+                keyboardShouldPersistTaps="handled"
+              >
+                <View style={styles.emojiGrid}>
+                  {EMOJIS.map((e, i) => (
+                    <TouchableOpacity
+                      key={e}
+                      style={[styles.emojiGridBtn, emoji === e && styles.emojiGridBtnActive]}
+                      onPress={() => { setEmoji(e); setShowEmojiGrid(false); }}
+                    >
+                      <AnimatedEmoji emoji={e} index={i} />
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </ScrollView>
             )}
 
             {/* Type */}
@@ -352,11 +360,15 @@ function makeStyles(C) { return {
     alignItems: 'center', justifyContent: 'center',
   },
   emojiActionBadgeOpen: { backgroundColor: C.primaryLight, borderColor: C.primary },
+  emojiGridScroll: {
+    backgroundColor: C.cardHigh, borderRadius: rs(16),
+    borderWidth: 1.5, borderColor: C.border,
+    marginBottom: rs(20),
+    maxHeight: rs(258),
+  },
   emojiGrid: {
     flexDirection: 'row', flexWrap: 'wrap', gap: rs(6),
-    backgroundColor: C.cardHigh, borderRadius: rs(16),
-    padding: rs(12), borderWidth: 1.5, borderColor: C.border,
-    marginBottom: rs(20),
+    padding: rs(12),
   },
   emojiGridBtn: {
     width: rs(42), height: rs(42), borderRadius: rs(10),

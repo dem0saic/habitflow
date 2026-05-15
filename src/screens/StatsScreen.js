@@ -6,6 +6,7 @@ import { useStore, calcStreak } from '../store';
 import { useTheme } from '../ThemeContext';
 import { rs, ms } from '../utils/responsive';
 import { last7Days } from '../utils/date';
+import AnimatedEmoji from '../components/AnimatedEmoji';
 
 function ContributionGraph({ completions, habits, C }) {
   const WEEKS = 16;
@@ -177,14 +178,14 @@ export default function StatsScreen() {
           const streak = calcStreak(h.id, completions);
           return (
             <View key={h.id} style={styles.streakRow}>
-              <Text style={styles.streakEmoji}>{h.emoji}</Text>
+              <AnimatedEmoji emoji={h.emoji} size={rs(22)} style={{ marginRight: rs(12) }} />
               <View style={styles.streakInfo}>
                 <Text style={styles.streakName}>{h.name}</Text>
                 <Text style={styles.streakType}>{h.type === 'volume' ? `Volume · ${h.targetCount}× daily` : 'Daily'}</Text>
               </View>
               <View style={styles.streakBadge}>
                 <Text style={styles.streakNum}>{streak}</Text>
-                <Text style={styles.streakFire}>🔥</Text>
+                <AnimatedEmoji emoji="🔥" size={rs(18)} />
               </View>
             </View>
           );
