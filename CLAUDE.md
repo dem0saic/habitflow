@@ -79,7 +79,7 @@ SafeAreaProvider
 if (loading || !storeReady) return null;          // wait for both auth AND store to initialise
 if (!session || recoveryMode) return <AuthScreen />;
 if (!state.onboardingDone)   return <OnboardingScreen />;
-return <Tab.Navigator ... />;                     // Today / Challenge / History / Stats / Settings
+return <Tab.Navigator ... />;                     // Today / Challenge / History / Stats (+ hidden Settings)
 ```
 
 Both `loading` (from `AuthProvider`) and `storeReady` (from `StoreProvider`) must be true before any routing decision is made — this prevents a race condition where a stale Supabase session resolves before the store has loaded `onboardingDone` from AsyncStorage.
@@ -227,7 +227,7 @@ The four main tab screens share the same header pattern: a plain top row (title 
 | `HistoryScreen` | `#000000 → #5C4E4E` | Days tracked / Perfect days / This week% |
 | `StatsScreen` | `#000000 → #988686` | Best streak / 7-day avg / Perfect days |
 
-`TodayScreen`'s top row has a single `?` icon button that triggers `RESET_ONBOARDING`. The theme toggle that was previously there has been moved to `SettingsScreen`.
+`TodayScreen`'s top row has two icon buttons: `?` (triggers `RESET_ONBOARDING`) and a gear icon that calls `navigation.navigate('Settings')` via `useNavigation`. The Settings tab is registered in the Tab.Navigator but hidden from the tab bar (`tabBarButton: () => null`, `tabBarItemStyle: { display: 'none' }`) so it is only reachable via this header button.
 
 `StatsScreen` includes a GitHub-style contribution graph (`ContributionGraph` component, 16 weeks × 7 days grid, horizontally scrollable) and an **AI Coach** section at the bottom: a daily nudge card (auto-fetched on mount, cached per day) and Weekly/Monthly reflection report buttons (each generates on first tap, cached per period start date). Both use skeleton loading states and call the Edge Functions via `src/lib/aiCoaching.js`.
 
