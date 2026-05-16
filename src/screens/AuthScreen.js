@@ -18,15 +18,15 @@ export default function AuthScreen() {
   const C = useTheme();
   const insets = useSafeAreaInsets();
 
-  const [mode, setMode] = useState('signIn');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirm, setConfirm] = useState('');
-  const [showPass, setShowPass] = useState(false);
+  const [mode, setMode]           = useState('signIn');
+  const [email, setEmail]         = useState('');
+  const [password, setPassword]   = useState('');
+  const [confirm, setConfirm]     = useState('');
+  const [showPass, setShowPass]   = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [info, setInfo] = useState('');
+  const [loading, setLoading]     = useState(false);
+  const [error, setError]         = useState('');
+  const [info, setInfo]           = useState('');
 
   const styles = makeStyles(C);
 
@@ -56,7 +56,7 @@ export default function AuthScreen() {
     try {
       if (recoveryMode) {
         await updatePassword(password);
-        setInfo('Password updated! You are now signed in.');
+        setInfo('Password updated — you are now signed in.');
         setPassword('');
         setConfirm('');
       } else if (mode === 'signIn') {
@@ -81,53 +81,53 @@ export default function AuthScreen() {
 
   function switchMode() {
     setMode(m => m === 'signIn' ? 'signUp' : 'signIn');
-    setError('');
-    setInfo('');
-    setPassword('');
-    setConfirm('');
+    setError(''); setInfo(''); setPassword(''); setConfirm('');
   }
 
   function goForgotPassword() {
     setMode('forgotPassword');
-    setError('');
-    setInfo('');
-    setPassword('');
-    setConfirm('');
+    setError(''); setInfo(''); setPassword(''); setConfirm('');
   }
 
   function goBackToSignIn() {
     setMode('signIn');
-    setError('');
-    setInfo('');
+    setError(''); setInfo('');
   }
 
   const tagline = recoveryMode
     ? 'Set a new password'
     : mode === 'forgotPassword'
-    ? 'Forgot your password?'
+    ? 'Forgot your password'
     : mode === 'signIn'
     ? 'Welcome back'
     : 'Create your account';
 
   const submitLabel = recoveryMode
-    ? 'Update Password'
+    ? 'Update password'
     : mode === 'forgotPassword'
-    ? 'Send Reset Link'
+    ? 'Send reset link'
     : mode === 'signIn'
-    ? 'Sign In'
-    : 'Create Account';
+    ? 'Sign in'
+    : 'Create account';
 
   return (
     <>
       <StatusBar style="light" />
-      {/* Solid dark background with warm decorative glow */}
-      <View style={{ flex: 1, backgroundColor: '#061519' }}>
+      <View style={{ flex: 1, backgroundColor: C.bg }}>
+        {/* Soft warm radial in the bottom corner */}
         <View style={{
           position: 'absolute',
-          bottom: -rs(60), left: -rs(40), right: -rs(40),
-          height: rs(260), borderRadius: rs(130),
-          backgroundColor: '#C8502A', opacity: 0.12,
+          bottom: -rs(80), right: -rs(80),
+          width: rs(300), height: rs(300), borderRadius: rs(150),
+          backgroundColor: C.primary, opacity: 0.07,
         }} />
+        <View style={{
+          position: 'absolute',
+          top: -rs(60), left: -rs(60),
+          width: rs(220), height: rs(220), borderRadius: rs(110),
+          backgroundColor: C.primary, opacity: 0.04,
+        }} />
+
         <KeyboardAvoidingView
           style={{ flex: 1 }}
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -143,7 +143,7 @@ export default function AuthScreen() {
             {/* Branding */}
             <View style={styles.brandRow}>
               <View style={styles.iconTile}>
-                <CheckCheck size={rs(28)} color="#fff" strokeWidth={2.5} />
+                <CheckCheck size={rs(26)} color={C.primary} strokeWidth={2.5} />
               </View>
               <Text style={styles.logoText}>HabitFlow</Text>
             </View>
@@ -158,12 +158,12 @@ export default function AuthScreen() {
                     Choose a new password for your account.
                   </Text>
 
-                  {!!error && <Banner type="error" Icon={AlertCircle} text={error} styles={styles} />}
-                  {!!info  && <Banner type="info"  Icon={CheckCircle} text={info} styles={styles} />}
+                  {!!error && <Banner type="error" Icon={AlertCircle} text={error} styles={styles} C={C} />}
+                  {!!info  && <Banner type="info"  Icon={CheckCircle} text={info}  styles={styles} C={C} />}
 
-                  <Text style={styles.label}>New Password</Text>
+                  <Text style={styles.label}>New password</Text>
                   <View style={styles.inputRow}>
-                    <Lock size={rs(17)} color={C.textMuted} strokeWidth={1.75} style={styles.inputIcon} />
+                    <Lock size={rs(16)} color={C.textMuted} strokeWidth={1.75} style={styles.inputIcon} />
                     <TextInput
                       style={[styles.input, { flex: 1 }]}
                       value={password}
@@ -177,15 +177,15 @@ export default function AuthScreen() {
                     />
                     <Pressable onPress={() => setShowPass(v => !v)} style={styles.eyeBtn} hitSlop={rs(8)}>
                       {showPass
-                        ? <EyeOff size={rs(18)} color={C.textMuted} strokeWidth={1.75} />
-                        : <Eye size={rs(18)} color={C.textMuted} strokeWidth={1.75} />
+                        ? <EyeOff size={rs(17)} color={C.textMuted} strokeWidth={1.75} />
+                        : <Eye    size={rs(17)} color={C.textMuted} strokeWidth={1.75} />
                       }
                     </Pressable>
                   </View>
 
-                  <Text style={styles.label}>Confirm Password</Text>
+                  <Text style={styles.label}>Confirm password</Text>
                   <View style={styles.inputRow}>
-                    <Lock size={rs(17)} color={C.textMuted} strokeWidth={1.75} style={styles.inputIcon} />
+                    <Lock size={rs(16)} color={C.textMuted} strokeWidth={1.75} style={styles.inputIcon} />
                     <TextInput
                       style={[styles.input, { flex: 1 }]}
                       value={confirm}
@@ -200,8 +200,8 @@ export default function AuthScreen() {
                     />
                     <Pressable onPress={() => setShowConfirm(v => !v)} style={styles.eyeBtn} hitSlop={rs(8)}>
                       {showConfirm
-                        ? <EyeOff size={rs(18)} color={C.textMuted} strokeWidth={1.75} />
-                        : <Eye size={rs(18)} color={C.textMuted} strokeWidth={1.75} />
+                        ? <EyeOff size={rs(17)} color={C.textMuted} strokeWidth={1.75} />
+                        : <Eye    size={rs(17)} color={C.textMuted} strokeWidth={1.75} />
                       }
                     </Pressable>
                   </View>
@@ -212,16 +212,16 @@ export default function AuthScreen() {
               ) : mode === 'forgotPassword' ? (
                 <>
                   <TouchableOpacity onPress={goBackToSignIn} style={styles.backRow} hitSlop={rs(8)}>
-                    <ArrowLeft size={rs(16)} color={C.primary} strokeWidth={2} />
-                    <Text style={styles.backText}>Back to Sign In</Text>
+                    <ArrowLeft size={rs(15)} color={C.primary} strokeWidth={2} />
+                    <Text style={styles.backText}>Back to sign in</Text>
                   </TouchableOpacity>
 
-                  {!!error && <Banner type="error" Icon={AlertCircle} text={error} styles={styles} />}
-                  {!!info  && <Banner type="info"  Icon={CheckCircle} text={info} styles={styles} />}
+                  {!!error && <Banner type="error" Icon={AlertCircle} text={error} styles={styles} C={C} />}
+                  {!!info  && <Banner type="info"  Icon={CheckCircle} text={info}  styles={styles} C={C} />}
 
                   <Text style={styles.label}>Email</Text>
                   <View style={styles.inputRow}>
-                    <Mail size={rs(17)} color={C.textMuted} strokeWidth={1.75} style={styles.inputIcon} />
+                    <Mail size={rs(16)} color={C.textMuted} strokeWidth={1.75} style={styles.inputIcon} />
                     <TextInput
                       style={styles.input}
                       value={email}
@@ -247,23 +247,23 @@ export default function AuthScreen() {
                       onPress={() => mode !== 'signIn' && switchMode()}
                       activeOpacity={0.7}
                     >
-                      <Text style={[styles.tabText, mode === 'signIn' && styles.tabTextActive]}>Sign In</Text>
+                      <Text style={[styles.tabText, mode === 'signIn' && styles.tabTextActive]}>Sign in</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
                       style={[styles.tab, mode === 'signUp' && styles.tabActive]}
                       onPress={() => mode !== 'signUp' && switchMode()}
                       activeOpacity={0.7}
                     >
-                      <Text style={[styles.tabText, mode === 'signUp' && styles.tabTextActive]}>Sign Up</Text>
+                      <Text style={[styles.tabText, mode === 'signUp' && styles.tabTextActive]}>Sign up</Text>
                     </TouchableOpacity>
                   </View>
 
-                  {!!error && <Banner type="error" Icon={AlertCircle} text={error} styles={styles} />}
-                  {!!info  && <Banner type="info"  Icon={CheckCircle} text={info} styles={styles} />}
+                  {!!error && <Banner type="error" Icon={AlertCircle} text={error} styles={styles} C={C} />}
+                  {!!info  && <Banner type="info"  Icon={CheckCircle} text={info}  styles={styles} C={C} />}
 
                   <Text style={styles.label}>Email</Text>
                   <View style={styles.inputRow}>
-                    <Mail size={rs(17)} color={C.textMuted} strokeWidth={1.75} style={styles.inputIcon} />
+                    <Mail size={rs(16)} color={C.textMuted} strokeWidth={1.75} style={styles.inputIcon} />
                     <TextInput
                       style={styles.input}
                       value={email}
@@ -279,7 +279,7 @@ export default function AuthScreen() {
 
                   <Text style={styles.label}>Password</Text>
                   <View style={styles.inputRow}>
-                    <Lock size={rs(17)} color={C.textMuted} strokeWidth={1.75} style={styles.inputIcon} />
+                    <Lock size={rs(16)} color={C.textMuted} strokeWidth={1.75} style={styles.inputIcon} />
                     <TextInput
                       style={[styles.input, { flex: 1 }]}
                       value={password}
@@ -294,8 +294,8 @@ export default function AuthScreen() {
                     />
                     <Pressable onPress={() => setShowPass(v => !v)} style={styles.eyeBtn} hitSlop={rs(8)}>
                       {showPass
-                        ? <EyeOff size={rs(18)} color={C.textMuted} strokeWidth={1.75} />
-                        : <Eye size={rs(18)} color={C.textMuted} strokeWidth={1.75} />
+                        ? <EyeOff size={rs(17)} color={C.textMuted} strokeWidth={1.75} />
+                        : <Eye    size={rs(17)} color={C.textMuted} strokeWidth={1.75} />
                       }
                     </Pressable>
                   </View>
@@ -308,9 +308,9 @@ export default function AuthScreen() {
 
                   {mode === 'signUp' && (
                     <>
-                      <Text style={styles.label}>Confirm Password</Text>
+                      <Text style={styles.label}>Confirm password</Text>
                       <View style={styles.inputRow}>
-                        <Lock size={rs(17)} color={C.textMuted} strokeWidth={1.75} style={styles.inputIcon} />
+                        <Lock size={rs(16)} color={C.textMuted} strokeWidth={1.75} style={styles.inputIcon} />
                         <TextInput
                           style={[styles.input, { flex: 1 }]}
                           value={confirm}
@@ -325,8 +325,8 @@ export default function AuthScreen() {
                         />
                         <Pressable onPress={() => setShowConfirm(v => !v)} style={styles.eyeBtn} hitSlop={rs(8)}>
                           {showConfirm
-                            ? <EyeOff size={rs(18)} color={C.textMuted} strokeWidth={1.75} />
-                            : <Eye size={rs(18)} color={C.textMuted} strokeWidth={1.75} />
+                            ? <EyeOff size={rs(17)} color={C.textMuted} strokeWidth={1.75} />
+                            : <Eye    size={rs(17)} color={C.textMuted} strokeWidth={1.75} />
                           }
                         </Pressable>
                       </View>
@@ -341,7 +341,7 @@ export default function AuthScreen() {
                     </Text>
                     <TouchableOpacity onPress={switchMode} hitSlop={rs(8)}>
                       <Text style={styles.switchLink}>
-                        {mode === 'signIn' ? 'Sign Up' : 'Sign In'}
+                        {mode === 'signIn' ? 'Sign up' : 'Sign in'}
                       </Text>
                     </TouchableOpacity>
                   </View>
@@ -356,10 +356,10 @@ export default function AuthScreen() {
   );
 }
 
-function Banner({ type, Icon, text, styles }) {
+function Banner({ type, Icon, text, styles, C }) {
   return (
     <View style={type === 'error' ? styles.errorBanner : styles.infoBanner}>
-      <Icon size={rs(15)} color={type === 'error' ? '#ff6b6b' : '#6bffb8'} strokeWidth={2} />
+      <Icon size={rs(14)} color={type === 'error' ? C.danger : C.success} strokeWidth={2} />
       <Text style={type === 'error' ? styles.errorText : styles.infoText}>{text}</Text>
     </View>
   );
@@ -370,11 +370,11 @@ function SubmitButton({ label, loading, onPress, styles, C }) {
     <TouchableOpacity
       style={[styles.btn, loading && styles.btnDisabled]}
       onPress={onPress}
-      activeOpacity={0.8}
+      activeOpacity={0.88}
       disabled={loading}
     >
       {loading
-        ? <ActivityIndicator color={C.primary} size="small" />
+        ? <ActivityIndicator color="#fff" size="small" />
         : <Text style={styles.btnText}>{label}</Text>
       }
     </TouchableOpacity>
@@ -383,222 +383,106 @@ function SubmitButton({ label, loading, onPress, styles, C }) {
 
 function makeStyles(C) {
   return {
-    scroll: {
-      alignItems: 'center',
-      paddingHorizontal: rs(24),
-    },
-    brandRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: rs(10),
-      marginBottom: rs(6),
-    },
+    scroll:    { alignItems: 'center', paddingHorizontal: rs(24) },
+    brandRow:  { flexDirection: 'row', alignItems: 'center', gap: rs(12), marginBottom: rs(8) },
     iconTile: {
-      width: rs(46),
-      height: rs(46),
-      borderRadius: rs(14),
-      backgroundColor: 'rgba(255,255,255,0.14)',
-      borderWidth: 1.5,
-      borderColor: 'rgba(255,255,255,0.28)',
-      alignItems: 'center',
-      justifyContent: 'center',
+      width: rs(48), height: rs(48), borderRadius: rs(14),
+      backgroundColor: C.primarySoft,
+      borderWidth: 1.5, borderColor: C.primary,
+      alignItems: 'center', justifyContent: 'center',
     },
     logoText: {
-      color: '#fff',
-      fontSize: ms(28),
-      fontFamily: C.logo,
-      letterSpacing: 2,
+      color: C.text, fontSize: ms(28),
+      fontFamily: C.logo, letterSpacing: 2,
     },
     tagline: {
-      color: 'rgba(255,255,255,0.50)',
-      fontSize: ms(12),
-      fontFamily: C.med,
-      fontWeight: '500',
-      letterSpacing: ls(12),
-      textTransform: 'uppercase',
+      color: C.textMuted, fontSize: ms(12),
+      fontFamily: C.med, fontWeight: '500',
+      letterSpacing: 1.4, textTransform: 'uppercase',
       marginBottom: rs(28),
     },
     card: {
       width: '100%',
-      backgroundColor: 'rgba(255,255,255,0.06)',
-      borderRadius: rs(20),
-      borderWidth: 1,
-      borderColor: 'rgba(255,255,255,0.10)',
-      padding: rs(24),
+      backgroundColor: C.card,
+      borderRadius: rs(18),
+      borderWidth: 1, borderColor: C.border,
+      padding: rs(22),
     },
     tabs: {
       flexDirection: 'row',
-      backgroundColor: 'rgba(0,0,0,0.30)',
-      borderRadius: rs(12),
+      backgroundColor: C.cardHigh,
+      borderRadius: rs(10),
       padding: rs(4),
       marginBottom: rs(20),
+      borderWidth: 1, borderColor: C.border,
     },
-    tab: {
-      flex: 1,
-      paddingVertical: rs(9),
-      borderRadius: rs(9),
-      alignItems: 'center',
-    },
-    tabActive: {
-      backgroundColor: C.primary,
-    },
-    tabText: {
-      fontSize: ms(13),
-      fontFamily: C.bold,
-      fontWeight: '700',
-      color: 'rgba(255,255,255,0.45)',
-      letterSpacing: ls(13),
-    },
-    tabTextActive: {
-      color: '#fff',
-    },
+    tab:       { flex: 1, paddingVertical: rs(9), borderRadius: rs(8), alignItems: 'center' },
+    tabActive: { backgroundColor: C.primary },
+    tabText:   { fontSize: ms(13), fontFamily: C.semi, fontWeight: '600', color: C.textMuted, letterSpacing: ls(13) },
+    tabTextActive: { color: '#fff' },
+
     errorBanner: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: rs(7),
-      backgroundColor: 'rgba(255,107,107,0.12)',
-      borderRadius: rs(10),
-      padding: rs(12),
+      flexDirection: 'row', alignItems: 'center', gap: rs(8),
+      backgroundColor: C.dangerSoft,
+      borderRadius: rs(10), padding: rs(11),
       marginBottom: rs(14),
-      borderWidth: 1,
-      borderColor: 'rgba(255,107,107,0.25)',
+      borderWidth: 1, borderColor: C.danger,
     },
-    errorText: {
-      color: '#ff6b6b',
-      fontSize: ms(12),
-      fontFamily: C.reg,
-      fontWeight: '400',
-      flex: 1,
-      letterSpacing: ls(12),
-    },
+    errorText: { color: C.danger, fontSize: ms(12), fontFamily: C.med, fontWeight: '500', flex: 1, letterSpacing: ls(12) },
     infoBanner: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: rs(7),
-      backgroundColor: 'rgba(107,255,184,0.10)',
-      borderRadius: rs(10),
-      padding: rs(12),
+      flexDirection: 'row', alignItems: 'center', gap: rs(8),
+      backgroundColor: C.successSoft,
+      borderRadius: rs(10), padding: rs(11),
       marginBottom: rs(14),
-      borderWidth: 1,
-      borderColor: 'rgba(107,255,184,0.22)',
+      borderWidth: 1, borderColor: C.success,
     },
-    infoText: {
-      color: '#6bffb8',
-      fontSize: ms(12),
-      fontFamily: C.reg,
-      fontWeight: '400',
-      flex: 1,
-      letterSpacing: ls(12),
-    },
+    infoText: { color: C.success, fontSize: ms(12), fontFamily: C.med, fontWeight: '500', flex: 1, letterSpacing: ls(12) },
+
     label: {
-      color: 'rgba(255,255,255,0.55)',
-      fontSize: ms(11),
-      fontFamily: C.semi,
-      fontWeight: '600',
-      letterSpacing: 1.2,
-      textTransform: 'uppercase',
-      marginBottom: rs(7),
-      marginTop: rs(4),
+      color: C.textMuted, fontSize: ms(11),
+      fontFamily: C.bold, fontWeight: '700',
+      letterSpacing: 0.8, textTransform: 'uppercase',
+      marginBottom: rs(7), marginTop: rs(4),
     },
     inputRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      backgroundColor: 'rgba(0,0,0,0.35)',
+      flexDirection: 'row', alignItems: 'center',
+      backgroundColor: C.cardHigh,
       borderRadius: rs(12),
-      borderWidth: 1,
-      borderColor: 'rgba(255,255,255,0.12)',
+      borderWidth: 1, borderColor: C.border,
       marginBottom: rs(14),
       paddingHorizontal: rs(12),
     },
-    inputIcon: {
-      marginRight: rs(8),
-    },
+    inputIcon: { marginRight: rs(8) },
     input: {
-      flex: 1,
-      color: '#fff',
-      fontSize: ms(14),
-      fontFamily: C.reg,
-      fontWeight: '400',
-      paddingVertical: rs(13),
-      letterSpacing: ls(14),
+      flex: 1, color: C.text, fontSize: ms(14),
+      fontFamily: C.reg, fontWeight: '400',
+      paddingVertical: rs(13), letterSpacing: ls(14),
     },
-    eyeBtn: {
-      paddingLeft: rs(8),
-      paddingVertical: rs(4),
-    },
-    forgotRow: {
-      alignSelf: 'flex-end',
-      marginTop: rs(-6),
-      marginBottom: rs(18),
-    },
-    forgotText: {
-      color: C.primary,
-      fontSize: ms(12),
-      fontFamily: C.semi,
-      fontWeight: '600',
-      letterSpacing: ls(12),
-    },
-    backRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: rs(6),
-      marginBottom: rs(20),
-    },
-    backText: {
-      color: C.primary,
-      fontSize: ms(13),
-      fontFamily: C.semi,
-      fontWeight: '600',
-      letterSpacing: ls(13),
-    },
+    eyeBtn: { paddingLeft: rs(8), paddingVertical: rs(4) },
+
+    forgotRow:  { alignSelf: 'flex-end', marginTop: rs(-6), marginBottom: rs(18) },
+    forgotText: { color: C.primary, fontSize: ms(12), fontFamily: C.semi, fontWeight: '600', letterSpacing: ls(12) },
+    backRow:    { flexDirection: 'row', alignItems: 'center', gap: rs(6), marginBottom: rs(20) },
+    backText:   { color: C.primary, fontSize: ms(13), fontFamily: C.semi, fontWeight: '600', letterSpacing: ls(13) },
+
     recoveryHint: {
-      color: 'rgba(255,255,255,0.55)',
-      fontSize: ms(13),
-      fontFamily: C.reg,
-      fontWeight: '400',
-      letterSpacing: ls(13),
-      marginBottom: rs(20),
+      color: C.textSub, fontSize: ms(13),
+      fontFamily: C.reg, fontWeight: '400',
+      letterSpacing: ls(13), marginBottom: rs(20),
     },
+
     btn: {
       backgroundColor: C.primary,
-      borderRadius: rs(14),
-      paddingVertical: rs(16),
+      borderRadius: rs(12),
+      paddingVertical: rs(15),
       alignItems: 'center',
-      marginTop: rs(6),
-      marginBottom: rs(8),
-      shadowColor: '#000',
-      shadowOpacity: 0.3,
-      shadowRadius: rs(8),
-      shadowOffset: { width: 0, height: rs(3) },
-      elevation: 4,
+      marginTop: rs(6), marginBottom: rs(8),
     },
-    btnDisabled: {
-      opacity: 0.6,
-    },
-    btnText: {
-      color: '#fff',
-      fontSize: ms(15),
-      fontFamily: C.bold,
-      fontWeight: '700',
-      letterSpacing: ls(15),
-    },
-    switchRow: {
-      flexDirection: 'row',
-      justifyContent: 'center',
-      alignItems: 'center',
-      marginTop: rs(4),
-    },
-    switchText: {
-      color: 'rgba(255,255,255,0.45)',
-      fontSize: ms(13),
-      fontFamily: C.reg,
-      fontWeight: '400',
-    },
-    switchLink: {
-      color: C.primary,
-      fontSize: ms(13),
-      fontFamily: C.bold,
-      fontWeight: '700',
-    },
+    btnDisabled: { opacity: 0.6 },
+    btnText:     { color: '#fff', fontSize: ms(15), fontFamily: C.bold, fontWeight: '700', letterSpacing: ls(15) },
+
+    switchRow:  { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', marginTop: rs(4) },
+    switchText: { color: C.textMuted, fontSize: ms(13), fontFamily: C.reg, fontWeight: '400' },
+    switchLink: { color: C.primary, fontSize: ms(13), fontFamily: C.bold, fontWeight: '700' },
   };
 }

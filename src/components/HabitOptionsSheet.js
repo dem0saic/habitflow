@@ -41,6 +41,12 @@ export default function HabitOptionsSheet({
     onClose();
   }
 
+  const typeLabel =
+    habit.type === 'volume'   ? `Volume · ${habit.targetCount}× daily`
+  : habit.type === 'timer'    ? `Timer · ${habit.targetCount} min daily`
+  : habit.type === 'negative' ? 'Avoidance habit'
+  : 'Daily habit';
+
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={handleClose}>
       <Pressable style={styles.overlay} onPress={handleClose} />
@@ -52,9 +58,7 @@ export default function HabitOptionsSheet({
           <Text style={styles.habitEmoji}>{habit.emoji}</Text>
           <View style={{ flex: 1 }}>
             <Text style={styles.habitName} numberOfLines={1}>{habit.name}</Text>
-            <Text style={styles.habitType}>
-              {habit.type === 'volume' ? `Volume · ${habit.targetCount}× daily` : 'Daily habit'}
-            </Text>
+            <Text style={styles.habitType}>{typeLabel}</Text>
           </View>
         </View>
 
@@ -64,9 +68,10 @@ export default function HabitOptionsSheet({
         <TouchableOpacity
           style={styles.actionBtn}
           onPress={() => { onEdit(habit); handleClose(); }}
+          activeOpacity={0.7}
         >
-          <View style={[styles.actionIcon, { backgroundColor: C.primaryLight }]}>
-            <Pencil size={rs(16)} color={C.primary} strokeWidth={2} />
+          <View style={[styles.actionIcon, { backgroundColor: C.primarySoft }]}>
+            <Pencil size={rs(15)} color={C.primary} strokeWidth={2} />
           </View>
           <View style={{ flex: 1 }}>
             <Text style={styles.actionTitle}>Edit habit</Text>
@@ -75,14 +80,15 @@ export default function HabitOptionsSheet({
           <ChevronRight size={rs(16)} color={C.textMuted} strokeWidth={1.75} />
         </TouchableOpacity>
 
-        {/* Quick reminder toggle */}
+        {/* Reminder */}
         <TouchableOpacity
           style={styles.actionBtn}
           onPress={() => setShowPicker(true)}
+          activeOpacity={0.7}
         >
-          <View style={[styles.actionIcon, { backgroundColor: hasReminder ? 'rgba(52,211,153,0.15)' : C.cardHigh }]}>
+          <View style={[styles.actionIcon, { backgroundColor: hasReminder ? C.successSoft : C.cardHigh }]}>
             <AlarmClock
-              size={rs(16)}
+              size={rs(15)}
               color={hasReminder ? C.success : C.textSub}
               strokeWidth={hasReminder ? 2.5 : 1.75}
             />
@@ -93,19 +99,20 @@ export default function HabitOptionsSheet({
             </Text>
             <Text style={styles.actionSub}>
               {hasReminder
-                ? `Currently: ${formatTime(habit.reminderTime.hour, habit.reminderTime.minute)}`
+                ? `Currently ${formatTime(habit.reminderTime.hour, habit.reminderTime.minute)}`
                 : 'Add a daily push notification'}
             </Text>
           </View>
-          {hasReminder && (
+          {hasReminder ? (
             <TouchableOpacity
               onPress={() => onSetReminder(habit.id, null)}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
-              <XCircle size={rs(20)} color={C.textMuted} strokeWidth={1.75} />
+              <XCircle size={rs(18)} color={C.textMuted} strokeWidth={1.75} />
             </TouchableOpacity>
+          ) : (
+            <ChevronRight size={rs(16)} color={C.textMuted} strokeWidth={1.75} />
           )}
-          {!hasReminder && <ChevronRight size={rs(16)} color={C.textMuted} strokeWidth={1.75} />}
         </TouchableOpacity>
 
         {/* iOS inline picker */}
@@ -137,16 +144,17 @@ export default function HabitOptionsSheet({
 
         {/* Delete */}
         <TouchableOpacity
-          style={styles.deleteBtn}
+          style={styles.actionBtn}
           onPress={() => { onDelete(habit.id); handleClose(); }}
+          activeOpacity={0.7}
         >
-          <View style={[styles.actionIcon, { backgroundColor: 'rgba(239,68,68,0.1)' }]}>
-            <Trash2 size={rs(16)} color="#EF4444" strokeWidth={2} />
+          <View style={[styles.actionIcon, { backgroundColor: C.dangerSoft }]}>
+            <Trash2 size={rs(15)} color={C.danger} strokeWidth={2} />
           </View>
-          <Text style={styles.deleteBtnText}>Delete habit</Text>
+          <Text style={[styles.actionTitle, { color: C.danger }]}>Delete habit</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.cancelBtn} onPress={handleClose}>
+        <TouchableOpacity style={styles.cancelBtn} onPress={handleClose} activeOpacity={0.7}>
           <Text style={styles.cancelBtnText}>Cancel</Text>
         </TouchableOpacity>
       </View>
@@ -157,38 +165,39 @@ export default function HabitOptionsSheet({
 function makeStyles(C) { return {
   overlay: {
     position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: 'rgba(0,0,0,0.55)',
   },
   sheet: {
     position: 'absolute', bottom: 0, left: 0, right: 0,
     backgroundColor: C.card,
-    borderTopLeftRadius: rs(24), borderTopRightRadius: rs(24),
-    paddingHorizontal: rs(20), paddingTop: rs(12), paddingBottom: rs(40),
+    borderTopLeftRadius: rs(20), borderTopRightRadius: rs(20),
+    borderTopWidth: 1, borderColor: C.borderStrong,
+    paddingHorizontal: rs(20), paddingTop: rs(10), paddingBottom: rs(36),
   },
   handle: {
-    width: rs(40), height: rs(4), borderRadius: rs(2),
-    backgroundColor: C.border, alignSelf: 'center', marginBottom: rs(20),
+    width: rs(36), height: rs(4), borderRadius: rs(2),
+    backgroundColor: C.borderStrong, alignSelf: 'center', marginBottom: rs(20),
   },
   habitRow: {
     flexDirection: 'row', alignItems: 'center',
-    gap: rs(12), marginBottom: rs(16),
+    gap: rs(12), marginBottom: rs(12),
   },
   habitEmoji: { fontSize: ms(28) },
-  habitName: { fontSize: ms(16), fontFamily: C.bold, fontWeight: '700', color: C.text, letterSpacing: ls(16) },
-  habitType: { fontSize: ms(11), color: C.textSub, marginTop: rs(2), fontFamily: C.reg, fontWeight: '400', letterSpacing: ls(11) },
-  divider: { height: 1, backgroundColor: C.border, marginVertical: rs(10) },
+  habitName:  { fontSize: ms(16), fontFamily: C.bold, fontWeight: '700', color: C.text, letterSpacing: ls(16) },
+  habitType:  { fontSize: ms(11), color: C.textMuted, marginTop: rs(2), fontFamily: C.reg, fontWeight: '400', letterSpacing: ls(11) },
+  divider:    { height: 1, backgroundColor: C.border, marginVertical: rs(8) },
   actionBtn: {
     flexDirection: 'row', alignItems: 'center', gap: rs(12),
     paddingVertical: rs(12), paddingHorizontal: rs(4),
   },
   actionIcon: {
-    width: rs(36), height: rs(36), borderRadius: rs(10),
+    width: rs(34), height: rs(34), borderRadius: rs(10),
     alignItems: 'center', justifyContent: 'center',
   },
   actionTitle: { fontSize: ms(14), fontFamily: C.semi, fontWeight: '600', color: C.text, letterSpacing: ls(14) },
-  actionSub: { fontSize: ms(11), color: C.textSub, marginTop: rs(1), fontFamily: C.reg, fontWeight: '400', letterSpacing: ls(11) },
+  actionSub:   { fontSize: ms(11), color: C.textMuted, marginTop: rs(1), fontFamily: C.reg, fontWeight: '400', letterSpacing: ls(11) },
   pickerWrap: {
-    backgroundColor: C.cardHigh, borderRadius: rs(14),
+    backgroundColor: C.cardHigh, borderRadius: rs(12),
     marginVertical: rs(8), overflow: 'hidden',
     borderWidth: 1, borderColor: C.border,
   },
@@ -197,11 +206,6 @@ function makeStyles(C) { return {
     borderTopWidth: 1, borderTopColor: C.border,
   },
   pickerDoneText: { fontSize: ms(14), fontFamily: C.bold, fontWeight: '700', color: C.primary, letterSpacing: ls(14) },
-  deleteBtn: {
-    flexDirection: 'row', alignItems: 'center', gap: rs(12),
-    paddingVertical: rs(12), paddingHorizontal: rs(4),
-  },
-  deleteBtnText: { fontSize: ms(14), fontFamily: C.semi, fontWeight: '600', color: '#EF4444', letterSpacing: ls(14) },
-  cancelBtn: { alignItems: 'center', paddingVertical: rs(12) },
-  cancelBtnText: { fontSize: ms(14), color: C.textMuted, fontFamily: C.reg, fontWeight: '400', letterSpacing: ls(14) },
+  cancelBtn:      { alignItems: 'center', paddingVertical: rs(14), marginTop: rs(4) },
+  cancelBtnText:  { fontSize: ms(14), color: C.textMuted, fontFamily: C.med, fontWeight: '500', letterSpacing: ls(14) },
 }; }

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { RotateCw } from 'lucide-react-native';
+import { RotateCw, Sparkles } from 'lucide-react-native';
 import { useStore, calcStreak } from '../store';
 import { useTheme } from '../ThemeContext';
 import { rs, ms, ls } from '../utils/responsive';
@@ -40,8 +40,8 @@ function ContributionGraph({ completions, habits, C }) {
   function cellColor(pct) {
     if (pct === null) return 'transparent';
     if (pct === 0)    return C.border;
-    if (pct < 0.33)   return C.primaryLight;
-    if (pct < 0.67)   return C.primaryDark;
+    if (pct < 0.33)   return C.primarySoft;
+    if (pct < 0.67)   return C.primaryMuted;
     if (pct < 1)      return C.primary;
     return C.success;
   }
@@ -49,6 +49,7 @@ function ContributionGraph({ completions, habits, C }) {
   const CELL = rs(12);
   const GAP  = rs(3);
   const DAY_LABELS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+  const RAMP = [C.border, C.primarySoft, C.primaryMuted, C.primary, C.success];
 
   return (
     <View>
@@ -65,7 +66,7 @@ function ContributionGraph({ completions, habits, C }) {
           </View>
           {grid.map(({ week, monthLabel }, w) => (
             <View key={w} style={{ marginRight: GAP }}>
-              <Text style={{ fontSize: ms(9), color: monthLabel ? C.textSub : 'transparent', height: rs(18), lineHeight: rs(18) }}>
+              <Text style={{ fontSize: ms(9), color: monthLabel ? C.textMuted : 'transparent', height: rs(18), lineHeight: rs(18), fontFamily: C.med }}>
                 {monthLabel || ' '}
               </Text>
               {week.map((cell, d) => (
@@ -82,12 +83,12 @@ function ContributionGraph({ completions, habits, C }) {
           ))}
         </View>
       </ScrollView>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: GAP, marginTop: rs(10), justifyContent: 'flex-end' }}>
-        <Text style={{ fontSize: ms(9), color: C.textMuted }}>Less</Text>
-        {[C.border, C.primaryLight, C.primaryDark, C.primary, C.success].map((color, i) => (
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: GAP, marginTop: rs(12), justifyContent: 'flex-end' }}>
+        <Text style={{ fontSize: ms(9), color: C.textMuted, fontFamily: C.med, marginRight: rs(2) }}>Less</Text>
+        {RAMP.map((color, i) => (
           <View key={i} style={{ width: CELL, height: CELL, borderRadius: rs(3), backgroundColor: color }} />
         ))}
-        <Text style={{ fontSize: ms(9), color: C.textMuted }}>More</Text>
+        <Text style={{ fontSize: ms(9), color: C.textMuted, fontFamily: C.med, marginLeft: rs(2) }}>More</Text>
       </View>
     </View>
   );
@@ -105,10 +106,6 @@ export default function StatsScreen() {
     const done = habits.filter(h => (dayMap[h.id] || 0) >= (h.targetCount || 1)).length;
     return habits.length ? done / habits.length : 0;
   });
-
-  const totalDaysTracked = Object.keys(completions).filter(d =>
-    Object.values(completions[d] || {}).some(v => v > 0)
-  ).length;
 
   const perfectDays = Object.keys(completions).filter(d => {
     if (!habits.length) return false;
@@ -154,17 +151,20 @@ export default function StatsScreen() {
     setReportLoading(false);
   }
 
+  const statusText = bestStreak === 0
+    ? 'Complete habits daily to build streaks'
+    : bestStreak >= 7
+    ? `${bestStreak}-day streak — incredible`
+    : `Best streak: ${bestStreak} day${bestStreak !== 1 ? 's' : ''}`;
+
   return (
     <SafeAreaView style={styles.root}>
-      {/* Top row */}
       <View style={styles.topRow}>
-        <View>
-          <Text style={styles.topLabel}>Stats</Text>
-          <Text style={styles.topTitle}>Your consistency</Text>
-        </View>
+        <Text style={styles.topLabel}>Stats</Text>
+        <Text style={styles.topTitle}>Your consistency</Text>
       </View>
 
-      {/* Hero card — solid dark with accent */}
+      {/* Hero */}
       <View style={styles.heroWrap}>
         <View style={styles.heroCard}>
           <View style={styles.heroTopLine} />
@@ -175,7 +175,7 @@ export default function StatsScreen() {
             </View>
             <View style={styles.heroStatDivider} />
             <View style={styles.heroStat}>
-              <Text style={styles.heroStatNum}>{avgCompletion}%</Text>
+              <Text style={styles.heroStatNum}>{avgCompletion}<Text style={styles.heroStatUnit}>%</Text></Text>
               <Text style={styles.heroStatLabel}>7-day avg</Text>
             </View>
             <View style={styles.heroStatDivider} />
@@ -184,49 +184,55 @@ export default function StatsScreen() {
               <Text style={styles.heroStatLabel}>Perfect days</Text>
             </View>
           </View>
-          <Text style={styles.heroStatus}>
-            {bestStreak === 0
-              ? 'Complete habits daily to build streaks'
-              : bestStreak >= 7
-              ? `🔥 ${bestStreak}-day streak — incredible!`
-              : `🔥 Best streak: ${bestStreak} day${bestStreak !== 1 ? 's' : ''}`}
-          </Text>
+          <Text style={styles.heroStatus}>{statusText}</Text>
         </View>
       </View>
 
       <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
 
+        {/* Contribution graph */}
         <View style={styles.chartCard}>
           <Text style={styles.chartTitle}>Contribution history</Text>
           <ContributionGraph completions={completions} habits={habits} C={C} />
         </View>
 
+        {/* Habit streaks */}
         <Text style={styles.sectionLabel}>Habit streaks</Text>
-        {habits.length === 0 && <Text style={styles.empty}>Add habits to see streaks.</Text>}
+        {habits.length === 0 && <Text style={styles.empty}>Add habits to see streaks</Text>}
         {habits.map(h => {
           const streak = calcStreak(h.id, completions);
           return (
             <View key={h.id} style={styles.streakRow}>
-              <AnimatedEmoji emoji={h.emoji} size={rs(22)} style={{ marginRight: rs(12) }} />
+              <View style={styles.streakEmojiTile}>
+                <AnimatedEmoji emoji={h.emoji} size={rs(20)} />
+              </View>
               <View style={styles.streakInfo}>
-                <Text style={styles.streakName}>{h.name}</Text>
-                <Text style={styles.streakType}>{h.type === 'volume' ? `Volume · ${h.targetCount}× daily` : 'Daily'}</Text>
+                <Text style={styles.streakName} numberOfLines={1}>{h.name}</Text>
+                <Text style={styles.streakType}>
+                  {h.type === 'volume' ? `Volume · ${h.targetCount}× daily`
+                 : h.type === 'timer'  ? `Timer · ${h.targetCount} min daily`
+                 : h.type === 'negative' ? 'Avoidance habit'
+                 : 'Daily habit'}
+                </Text>
               </View>
               <View style={styles.streakBadge}>
                 <Text style={styles.streakNum}>{streak}</Text>
-                <AnimatedEmoji emoji="🔥" size={rs(18)} />
+                <Text style={styles.streakUnit}>day{streak !== 1 ? 's' : ''}</Text>
               </View>
             </View>
           );
         })}
 
-        {/* ── AI Coach ── */}
+        {/* AI Coach */}
         <Text style={[styles.sectionLabel, { marginTop: rs(8) }]}>AI Coach</Text>
         <View style={styles.aiNudgeCard}>
           <View style={styles.aiNudgeHeader}>
-            <Text style={styles.aiNudgeTitle}>✦ Today's nudge</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: rs(6) }}>
+              <Sparkles size={rs(13)} color={C.primary} strokeWidth={2.5} />
+              <Text style={styles.aiNudgeTitle}>TODAY'S NUDGE</Text>
+            </View>
             <TouchableOpacity onPress={refreshNudge} disabled={nudgeLoading} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-              <RotateCw size={rs(16)} color={nudgeLoading ? C.textMuted : C.primary} strokeWidth={2} />
+              <RotateCw size={rs(15)} color={nudgeLoading ? C.textMuted : C.primary} strokeWidth={2} />
             </TouchableOpacity>
           </View>
           {nudgeLoading ? (
@@ -238,17 +244,18 @@ export default function StatsScreen() {
           ) : nudge ? (
             <Text style={styles.aiNudgeText}>{nudge}</Text>
           ) : (
-            <Text style={styles.aiNudgeError}>Could not load nudge — tap ↺ to retry.</Text>
+            <Text style={styles.aiNudgeError}>Could not load nudge — tap to retry</Text>
           )}
         </View>
 
-        {/* ── Reflection reports ── */}
+        {/* Reflection reports */}
         <Text style={[styles.sectionLabel, { marginTop: rs(4) }]}>Reflection</Text>
         <View style={styles.reportButtons}>
           <TouchableOpacity
             style={[styles.reportBtn, reportPeriod === 'weekly' && styles.reportBtnActive]}
             onPress={() => loadReport('weekly')}
             disabled={reportLoading}
+            activeOpacity={0.85}
           >
             <Text style={[styles.reportBtnText, reportPeriod === 'weekly' && styles.reportBtnTextActive]}>
               Weekly
@@ -258,6 +265,7 @@ export default function StatsScreen() {
             style={[styles.reportBtn, reportPeriod === 'monthly' && styles.reportBtnActive]}
             onPress={() => loadReport('monthly')}
             disabled={reportLoading}
+            activeOpacity={0.85}
           >
             <Text style={[styles.reportBtnText, reportPeriod === 'monthly' && styles.reportBtnTextActive]}>
               Monthly
@@ -267,7 +275,7 @@ export default function StatsScreen() {
         {(reportLoading || report) && (
           <View style={styles.reportCard}>
             <Text style={styles.reportPeriodLabel}>
-              {reportPeriod === 'weekly' ? 'Weekly Reflection' : 'Monthly Reflection'}
+              {reportPeriod === 'weekly' ? 'WEEKLY REFLECTION' : 'MONTHLY REFLECTION'}
             </Text>
             {reportLoading ? (
               <View style={styles.aiSkeleton}>
@@ -287,76 +295,88 @@ export default function StatsScreen() {
 }
 
 function makeStyles(C) { return {
-  root: { flex: 1, backgroundColor: C.bg },
-  topRow: { paddingHorizontal: rs(20), paddingTop: rs(8), paddingBottom: rs(8) },
-  topLabel: { fontSize: ms(11), color: C.textMuted, fontFamily: C.semi, fontWeight: '600', textTransform: 'uppercase', letterSpacing: ls(11) },
-  topTitle: { fontSize: ms(17), fontFamily: C.xbold, fontWeight: '800', color: C.text, marginTop: rs(2), letterSpacing: ls(17) },
+  root:     { flex: 1, backgroundColor: C.bg },
+  topRow:   { paddingHorizontal: rs(20), paddingTop: rs(8), paddingBottom: rs(12) },
+  topLabel: { fontSize: ms(11), color: C.textMuted, fontFamily: C.semi, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.8 },
+  topTitle: { fontSize: ms(20), fontFamily: C.bold, fontWeight: '700', color: C.text, marginTop: rs(4), letterSpacing: ls(20) },
+
+  // Hero
   heroWrap: { paddingHorizontal: rs(16), marginBottom: rs(8) },
   heroCard: {
-    backgroundColor: '#071D26',
-    borderRadius: rs(24), padding: rs(24), paddingTop: rs(22),
-    borderWidth: 1.5, borderColor: 'rgba(245,123,81,0.22)',
-    shadowColor: C.primary,
-    shadowOpacity: 0.18, shadowRadius: rs(18),
-    shadowOffset: { width: 0, height: rs(5) }, elevation: 8,
+    backgroundColor: C.heroSurface,
+    borderRadius: rs(18), padding: rs(20), paddingTop: rs(22),
+    borderWidth: 1, borderColor: C.borderStrong,
     overflow: 'hidden',
   },
   heroTopLine: {
     position: 'absolute', top: 0, left: 0, right: 0,
     height: rs(3), backgroundColor: C.primary,
   },
-  heroStatsRow: { flexDirection: 'row', marginBottom: rs(16) },
-  heroStat: { flex: 1, alignItems: 'center' },
-  heroStatNum: { fontSize: ms(38), fontFamily: C.xbold, fontWeight: '800', color: '#fff', letterSpacing: ls(26) },
-  heroStatLabel: { fontSize: ms(11), color: 'rgba(255,255,255,0.6)', marginTop: rs(4), fontFamily: C.med, fontWeight: '500', letterSpacing: ls(11) },
-  heroStatDivider: { width: 1, backgroundColor: 'rgba(255,255,255,0.18)', marginVertical: rs(6) },
-  heroStatus: { fontSize: ms(12), color: 'rgba(255,255,255,0.8)', textAlign: 'center', fontFamily: C.med, fontWeight: '500', letterSpacing: ls(12) },
-  body: { padding: rs(20), paddingBottom: 100 },
+  heroStatsRow:    { flexDirection: 'row', marginBottom: rs(14) },
+  heroStat:        { flex: 1, alignItems: 'center' },
+  heroStatNum:     { fontSize: ms(28), fontFamily: C.bold, fontWeight: '700', color: C.text, letterSpacing: ls(28) },
+  heroStatUnit:    { fontSize: ms(16), fontFamily: C.semi, fontWeight: '600', color: C.textMuted, letterSpacing: 0 },
+  heroStatLabel:   { fontSize: ms(11), color: C.textMuted, marginTop: rs(2), fontFamily: C.med, fontWeight: '500', letterSpacing: 0.4, textTransform: 'uppercase' },
+  heroStatDivider: { width: 1, backgroundColor: C.borderStrong, marginVertical: rs(8) },
+  heroStatus:      { fontSize: ms(12), color: C.textSub, textAlign: 'center', fontFamily: C.med, fontWeight: '500', letterSpacing: ls(12) },
+
+  body: { padding: rs(20), paddingBottom: rs(100) },
   chartCard: {
-    backgroundColor: C.card, borderRadius: rs(18), padding: rs(18), marginBottom: rs(20),
+    backgroundColor: C.card, borderRadius: rs(14), padding: rs(16), marginBottom: rs(20),
     borderWidth: 1, borderColor: C.border,
   },
-  chartTitle: { fontSize: ms(13), fontFamily: C.bold, fontWeight: '700', color: C.text, marginBottom: rs(14), letterSpacing: ls(13) },
-  sectionLabel: { fontSize: ms(11), fontFamily: C.bold, fontWeight: '700', color: C.textSub, textTransform: 'uppercase', letterSpacing: ls(11), marginBottom: rs(12) },
-  empty: { color: C.textSub, textAlign: 'center', fontSize: ms(13), fontFamily: C.reg, fontWeight: '400', letterSpacing: ls(13) },
+  chartTitle:   { fontSize: ms(12), fontFamily: C.bold, fontWeight: '700', color: C.textMuted, marginBottom: rs(14), textTransform: 'uppercase', letterSpacing: 0.8 },
+  sectionLabel: { fontSize: ms(11), fontFamily: C.bold, fontWeight: '700', color: C.textMuted, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: rs(12) },
+  empty:        { color: C.textMuted, textAlign: 'center', fontSize: ms(13), fontFamily: C.reg, fontWeight: '400', letterSpacing: ls(13) },
+
   streakRow: {
-    flexDirection: 'row', alignItems: 'center', backgroundColor: C.card,
-    borderRadius: rs(16), padding: rs(16), marginBottom: rs(10),
+    flexDirection: 'row', alignItems: 'center', gap: rs(12),
+    backgroundColor: C.card,
+    borderRadius: rs(14), padding: rs(14), marginBottom: rs(8),
     borderWidth: 1, borderColor: C.border,
-    shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: rs(6),
-    shadowOffset: { width: 0, height: rs(2) }, elevation: 1,
+  },
+  streakEmojiTile: {
+    width: rs(38), height: rs(38), borderRadius: rs(11),
+    backgroundColor: C.cardHigh,
+    alignItems: 'center', justifyContent: 'center',
   },
   streakInfo: { flex: 1 },
   streakName: { fontSize: ms(14), fontFamily: C.semi, fontWeight: '600', color: C.text, letterSpacing: ls(14) },
-  streakType: { fontSize: ms(11), color: C.textSub, marginTop: rs(2), fontFamily: C.reg, fontWeight: '400', letterSpacing: ls(11) },
+  streakType: { fontSize: ms(11), color: C.textMuted, marginTop: rs(2), fontFamily: C.reg, fontWeight: '400', letterSpacing: ls(11) },
   streakBadge: {
-    flexDirection: 'row', alignItems: 'center', gap: rs(4),
-    backgroundColor: C.primary + '18', borderRadius: rs(12),
+    flexDirection: 'row', alignItems: 'baseline', gap: rs(4),
+    backgroundColor: C.primarySoft, borderRadius: rs(10),
     paddingHorizontal: rs(10), paddingVertical: rs(6),
   },
-  streakNum: { fontSize: ms(22), fontFamily: C.xbold, fontWeight: '800', color: C.primary, letterSpacing: ls(20) },
+  streakNum:  { fontSize: ms(18), fontFamily: C.bold, fontWeight: '700', color: C.primary, letterSpacing: ls(18) },
+  streakUnit: { fontSize: ms(10), fontFamily: C.med, fontWeight: '500', color: C.primary, letterSpacing: 0.2 },
+
   aiNudgeCard: {
-    backgroundColor: C.card, borderRadius: rs(18), padding: rs(18), marginBottom: rs(20),
-    borderWidth: 1, borderColor: C.primary + '40',
+    backgroundColor: C.card, borderRadius: rs(14), padding: rs(16), marginBottom: rs(20),
+    borderWidth: 1, borderColor: C.primary,
   },
   aiNudgeHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: rs(12) },
-  aiNudgeTitle: { fontSize: ms(11), fontFamily: C.bold, fontWeight: '700', color: C.primary, letterSpacing: ls(11), textTransform: 'uppercase' },
-  aiNudgeText: { fontSize: ms(14), fontFamily: C.reg, fontWeight: '400', color: C.text, lineHeight: ms(14) * 1.6, letterSpacing: ls(14) },
-  aiNudgeError: { fontSize: ms(13), fontFamily: C.reg, fontWeight: '400', color: C.textMuted, letterSpacing: ls(13) },
-  aiSkeleton: { gap: rs(8) },
-  aiSkeletonLine: { height: rs(14), backgroundColor: C.border, borderRadius: rs(4) },
+  aiNudgeTitle:  { fontSize: ms(11), fontFamily: C.bold, fontWeight: '700', color: C.primary, letterSpacing: 0.8 },
+  aiNudgeText:   { fontSize: ms(14), fontFamily: C.reg, fontWeight: '400', color: C.text, lineHeight: ms(14) * 1.6, letterSpacing: ls(14) },
+  aiNudgeError:  { fontSize: ms(13), fontFamily: C.reg, fontWeight: '400', color: C.textMuted, letterSpacing: ls(13) },
+
+  aiSkeleton:     { gap: rs(8) },
+  aiSkeletonLine: { height: rs(12), backgroundColor: C.border, borderRadius: rs(4) },
+
   reportButtons: { flexDirection: 'row', gap: rs(10), marginBottom: rs(14) },
   reportBtn: {
-    flex: 1, paddingVertical: rs(10), borderRadius: rs(12),
-    borderWidth: 1, borderColor: C.border, alignItems: 'center',
+    flex: 1, paddingVertical: rs(11), borderRadius: rs(10),
+    borderWidth: 1, borderColor: C.borderStrong, alignItems: 'center',
+    backgroundColor: C.card,
   },
-  reportBtnActive: { backgroundColor: C.primary, borderColor: C.primary },
-  reportBtnText: { fontSize: ms(13), fontFamily: C.semi, fontWeight: '600', color: C.textSub, letterSpacing: ls(13) },
+  reportBtnActive:     { backgroundColor: C.primary, borderColor: C.primary },
+  reportBtnText:       { fontSize: ms(13), fontFamily: C.semi, fontWeight: '600', color: C.textSub, letterSpacing: ls(13) },
   reportBtnTextActive: { color: '#fff' },
+
   reportCard: {
-    backgroundColor: C.card, borderRadius: rs(18), padding: rs(18), marginBottom: rs(20),
-    borderWidth: 1, borderColor: C.primary + '40',
+    backgroundColor: C.card, borderRadius: rs(14), padding: rs(16), marginBottom: rs(20),
+    borderWidth: 1, borderColor: C.primary,
   },
-  reportPeriodLabel: { fontSize: ms(11), fontFamily: C.bold, fontWeight: '700', color: C.primary, letterSpacing: ls(11), textTransform: 'uppercase', marginBottom: rs(10) },
-  reportText: { fontSize: ms(14), fontFamily: C.reg, fontWeight: '400', color: C.text, lineHeight: ms(14) * 1.6, letterSpacing: ls(14) },
+  reportPeriodLabel: { fontSize: ms(11), fontFamily: C.bold, fontWeight: '700', color: C.primary, letterSpacing: 0.8, marginBottom: rs(10) },
+  reportText:        { fontSize: ms(14), fontFamily: C.reg, fontWeight: '400', color: C.text, lineHeight: ms(14) * 1.6, letterSpacing: ls(14) },
 }; }

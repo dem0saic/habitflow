@@ -194,7 +194,12 @@ The Edge Function source lives in `supabase/functions/<name>/index.ts` and is wr
 
 All six font variants are pre-loaded in `App.js`. If you add a new font, load it there and add a token to `FONTS`.
 
-**Active palette — Color Palette 62 (Bonfire · Backlight · Golden Rambler · Nocturnal Sea):** `#F57B51` · `#FDF6F0` · `#FBBC58` · `#095D6A`. `C.primary` is `#F57B51` in dark, `#C8502A` in light.
+**Active palette — Warm Editorial:** warm dark surfaces, refined amber accent, sage for streaks, rust for avoidance, brick for danger. `C.primary` is `#D89860` in dark, `#A86C2D` in light. Depth comes from layered surfaces (`bg` → `card` → `cardHigh` / `heroSurface`) and 1px borders — **never use shadows on cards** (the FAB is the only exception).
+
+Tokens beyond the basic surface/text/border set:
+- `primarySoft` / `successSoft` / `warningSoft` / `dangerSoft` — rgba tints for badges, soft buttons, banners
+- `primaryMuted` — mid-tone amber, used only in the StatsScreen heatmap ramp
+- `borderStrong` — 1px dividers between stat cells, outline buttons, bottom-sheet handles
 
 When changing colors, edit `src/theme.js` — it is the single source of truth for the design tokens consumed via `useTheme()`.
 

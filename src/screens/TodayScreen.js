@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, FlatList, TouchableOpacity, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { AlarmClock, HelpCircle, Settings, Plus } from 'lucide-react-native';
+import { AlarmClock, Settings, Plus } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useStore, useTodayCompletions } from '../store';
 import { useTheme } from '../ThemeContext';
@@ -34,7 +34,8 @@ export default function TodayScreen() {
   const { habits } = state;
   const habitsWithReminder = habits.filter(h => h.reminderTime);
   const doneCount = habits.filter(h => (todayCompletions[h.id] || 0) >= (h.targetCount || 1)).length;
-  const allDone = habits.length > 0 && doneCount === habits.length;
+  const allDone   = habits.length > 0 && doneCount === habits.length;
+
   useEffect(() => {
     if (allDone && !wasAllDoneRef.current) {
       wasAllDoneRef.current = true;
@@ -44,9 +45,9 @@ export default function TodayScreen() {
     if (!allDone) wasAllDoneRef.current = false;
   }, [allDone]);
 
-  function handleToggle(id) { lightTap(); dispatch({ type: 'LOG_HABIT', id }); }
-  function handleIncrement(id, delta = 1) { lightTap(); dispatch({ type: 'LOG_HABIT', id, delta }); }
-  function handleDecrement(id, delta = 1) { lightTap(); dispatch({ type: 'LOG_HABIT', id, delta: -delta }); }
+  function handleToggle(id)              { lightTap(); dispatch({ type: 'LOG_HABIT', id }); }
+  function handleIncrement(id, delta=1)  { lightTap(); dispatch({ type: 'LOG_HABIT', id, delta }); }
+  function handleDecrement(id, delta=1)  { lightTap(); dispatch({ type: 'LOG_HABIT', id, delta: -delta }); }
 
   function handleDelete(id) {
     cancelHabitReminder(id).catch(() => {});
@@ -86,29 +87,26 @@ export default function TodayScreen() {
   const pct = habits.length ? doneCount / habits.length : 0;
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+
+  const statusText = habits.length === 0
+    ? 'Add your first habit to begin'
+    : allDone
+    ? `All done — great work today`
+    : `${habits.length - doneCount} habit${habits.length - doneCount !== 1 ? 's' : ''} left for today`;
+
   const reminderBanner = habitsWithReminder.length > 0 ? (
-    <View style={{
-      marginHorizontal: rs(0), marginBottom: rs(12),
-      backgroundColor: C.card, borderRadius: rs(16),
-      borderWidth: 1, borderColor: C.border,
-      padding: rs(12),
-    }}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: rs(6), marginBottom: rs(8) }}>
-        <AlarmClock size={rs(14)} color={C.primary} strokeWidth={2.5} />
-        <Text style={{ fontSize: ms(11), fontWeight: '700', color: C.primary, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-          {habitsWithReminder.length} Reminder{habitsWithReminder.length !== 1 ? 's' : ''} Active
+    <View style={styles.reminderBanner}>
+      <View style={styles.reminderBannerHeader}>
+        <AlarmClock size={rs(12)} color={C.primary} strokeWidth={2.5} />
+        <Text style={styles.reminderBannerLabel}>
+          {habitsWithReminder.length} REMINDER{habitsWithReminder.length !== 1 ? 'S' : ''} ACTIVE
         </Text>
       </View>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ gap: rs(8) }}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
         {habitsWithReminder.map(h => (
-          <View key={h.id} style={{
-            flexDirection: 'row', alignItems: 'center', gap: rs(6),
-            backgroundColor: C.cardHigh, borderRadius: rs(20),
-            paddingHorizontal: rs(10), paddingVertical: rs(5),
-            marginRight: rs(8), borderWidth: 1, borderColor: C.border,
-          }}>
+          <View key={h.id} style={styles.reminderChip}>
             <Text style={{ fontSize: ms(12) }}>{h.emoji}</Text>
-            <Text style={{ fontSize: ms(11), color: C.textSub, fontWeight: '500' }}>
+            <Text style={styles.reminderChipText}>
               {formatReminderTime(h.reminderTime.hour, h.reminderTime.minute)}
             </Text>
           </View>
@@ -119,37 +117,30 @@ export default function TodayScreen() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: C.bg }}>
-      {/* Top row */}
+      {/* Header */}
       <View style={styles.topRow}>
-        <View>
-          <Text style={styles.topGreeting}>{greeting} 👋</Text>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.topGreeting}>{greeting}</Text>
           <Text style={styles.topDate}>
             {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
           </Text>
         </View>
-        <View style={styles.topActions}>
-          <TouchableOpacity
-            onPress={() => { lightTap(); dispatch({ type: 'RESET_ONBOARDING' }); }}
-            style={styles.iconBtn}
-          >
-            <HelpCircle size={rs(18)} color={C.textSub} strokeWidth={1.75} />
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={() => { lightTap(); navigation.navigate('Settings'); }}
-            style={styles.iconBtn}
-          >
-            <Settings size={rs(18)} color={C.textSub} strokeWidth={1.75} />
-          </TouchableOpacity>
-        </View>
+        <TouchableOpacity
+          onPress={() => { lightTap(); navigation.navigate('Settings'); }}
+          style={styles.iconBtn}
+          activeOpacity={0.7}
+        >
+          <Settings size={rs(18)} color={C.textSub} strokeWidth={1.75} />
+        </TouchableOpacity>
       </View>
 
-      {/* Hero card — solid dark with accent */}
+      {/* Hero card */}
       <View style={styles.heroWrap}>
         <View style={styles.heroCard}>
           <View style={styles.heroTopLine} />
           <View style={styles.heroStatsRow}>
             <View style={styles.heroStat}>
-              <Text style={[styles.heroStatNum, styles.heroStatNumDone]}>{doneCount}</Text>
+              <Text style={[styles.heroStatNum, allDone && { color: C.success }]}>{doneCount}</Text>
               <Text style={styles.heroStatLabel}>Done</Text>
             </View>
             <View style={styles.heroStatDivider} />
@@ -159,34 +150,31 @@ export default function TodayScreen() {
             </View>
             <View style={styles.heroStatDivider} />
             <View style={styles.heroStat}>
-              <Text style={styles.heroStatNum}>{Math.round(pct * 100)}%</Text>
+              <Text style={styles.heroStatNum}>{Math.round(pct * 100)}<Text style={styles.heroStatUnit}>%</Text></Text>
               <Text style={styles.heroStatLabel}>Complete</Text>
             </View>
           </View>
           <View style={styles.heroProgressTrack}>
-            <View style={[styles.heroProgressFill, { width: `${pct * 100}%` }]} />
+            <View style={[styles.heroProgressFill, {
+              width: `${pct * 100}%`,
+              backgroundColor: allDone ? C.success : C.primary,
+            }]} />
           </View>
-          <Text style={styles.heroStatus}>
-            {habits.length === 0
-              ? 'Add your first habit below'
-              : allDone
-              ? '🔥 All done — great work today!'
-              : `${habits.length - doneCount} habit${habits.length - doneCount !== 1 ? 's' : ''} left for today`}
-          </Text>
+          <Text style={styles.heroStatus}>{statusText}</Text>
         </View>
       </View>
 
       <FlatList
         data={habits}
         keyExtractor={item => item.id}
-        contentContainerStyle={{ padding: rs(16), paddingBottom: 110 }}
+        contentContainerStyle={{ padding: rs(16), paddingBottom: rs(110) }}
         showsVerticalScrollIndicator={false}
         ListHeaderComponent={reminderBanner}
         ListEmptyComponent={
-          <View style={{ alignItems: 'center', paddingTop: rs(60) }}>
-            <Text style={{ fontSize: rs(52), marginBottom: rs(16) }}>🌱</Text>
-            <Text style={{ fontSize: ms(18), fontWeight: '700', color: C.text, marginBottom: rs(8) }}>No habits yet</Text>
-            <Text style={{ fontSize: ms(14), color: C.textSub }}>Tap + to add your first habit</Text>
+          <View style={styles.emptyState}>
+            <Text style={{ fontSize: rs(44), marginBottom: rs(12) }}>🌱</Text>
+            <Text style={styles.emptyTitle}>No habits yet</Text>
+            <Text style={styles.emptySub}>Tap + to add your first habit</Text>
           </View>
         }
         renderItem={({ item }) => (
@@ -203,16 +191,11 @@ export default function TodayScreen() {
       />
 
       <TouchableOpacity
-        style={{
-          position: 'absolute', bottom: rs(28), right: rs(20),
-          width: rs(58), height: rs(58), borderRadius: rs(29),
-          backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center',
-          shadowColor: '#000', shadowOpacity: 0.35, shadowRadius: rs(8),
-          shadowOffset: { width: 0, height: rs(4) }, elevation: 8,
-        }}
+        style={styles.fab}
         onPress={() => { lightTap(); setAddVisible(true); }}
+        activeOpacity={0.88}
       >
-        <Plus size={rs(30)} color="#fff" strokeWidth={2.5} />
+        <Plus size={rs(26)} color="#fff" strokeWidth={2.5} />
       </TouchableOpacity>
 
       <AddHabitModal
@@ -239,8 +222,8 @@ export default function TodayScreen() {
 
       <CelebrationModal
         visible={celebrate}
-        title="All habits done! 🔥"
-        subtitle={`Amazing — you completed all ${habits.length} habits today. Keep the streak alive!`}
+        title="All habits done"
+        subtitle={`You completed all ${habits.length} habits today. Keep the streak alive.`}
         onClose={() => setCelebrate(false)}
         type="daily"
       />
@@ -250,38 +233,73 @@ export default function TodayScreen() {
 
 function makeStyles(C) { return {
   topRow: {
-    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    paddingHorizontal: rs(20), paddingTop: rs(8), paddingBottom: rs(8),
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end',
+    paddingHorizontal: rs(20), paddingTop: rs(8), paddingBottom: rs(12),
   },
-  topGreeting: { fontSize: ms(11), color: C.textMuted, fontFamily: C.semi, fontWeight: '600', textTransform: 'uppercase', letterSpacing: ls(11) },
-  topDate: { fontSize: ms(17), fontFamily: C.xbold, fontWeight: '800', color: C.text, marginTop: rs(2), letterSpacing: ls(17) },
-  topActions: { flexDirection: 'row', gap: rs(8) },
+  topGreeting: {
+    fontSize: ms(11), color: C.textMuted, fontFamily: C.semi, fontWeight: '600',
+    textTransform: 'uppercase', letterSpacing: 0.8,
+  },
+  topDate: { fontSize: ms(20), fontFamily: C.bold, fontWeight: '700', color: C.text, marginTop: rs(4), letterSpacing: ls(20) },
   iconBtn: {
-    width: rs(36), height: rs(36), borderRadius: rs(18),
+    width: rs(38), height: rs(38), borderRadius: rs(12),
     backgroundColor: C.card, borderWidth: 1, borderColor: C.border,
     alignItems: 'center', justifyContent: 'center',
   },
+
+  // Hero
   heroWrap: { paddingHorizontal: rs(16), marginBottom: rs(8) },
   heroCard: {
-    backgroundColor: '#071D26',
-    borderRadius: rs(24), padding: rs(24), paddingTop: rs(22),
-    borderWidth: 1.5, borderColor: 'rgba(245,123,81,0.22)',
-    shadowColor: C.primary,
-    shadowOpacity: 0.18, shadowRadius: rs(18),
-    shadowOffset: { width: 0, height: rs(5) }, elevation: 8,
+    backgroundColor: C.heroSurface,
+    borderRadius: rs(18),
+    padding: rs(20),
+    paddingTop: rs(22),
+    borderWidth: 1, borderColor: C.borderStrong,
     overflow: 'hidden',
   },
   heroTopLine: {
     position: 'absolute', top: 0, left: 0, right: 0,
     height: rs(3), backgroundColor: C.primary,
   },
-  heroStatsRow: { flexDirection: 'row', marginBottom: rs(20) },
-  heroStat: { flex: 1, alignItems: 'center' },
-  heroStatNum: { fontSize: ms(42), fontFamily: C.xbold, fontWeight: '800', color: '#fff', letterSpacing: ls(26) },
-  heroStatNumDone: { color: '#FBBC58' },
-  heroStatLabel: { fontSize: ms(11), color: 'rgba(255,255,255,0.6)', marginTop: rs(4), fontFamily: C.med, fontWeight: '500', letterSpacing: ls(11) },
-  heroStatDivider: { width: 1, backgroundColor: 'rgba(255,255,255,0.18)', marginVertical: rs(6) },
-  heroProgressTrack: { height: rs(8), backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: rs(4), overflow: 'hidden', marginBottom: rs(12) },
-  heroProgressFill: { height: '100%', backgroundColor: '#F57B51', borderRadius: rs(4) },
-  heroStatus: { fontSize: ms(12), color: 'rgba(255,255,255,0.75)', textAlign: 'center', fontFamily: C.med, fontWeight: '500', letterSpacing: ls(12) },
+  heroStatsRow:    { flexDirection: 'row', marginBottom: rs(18) },
+  heroStat:        { flex: 1, alignItems: 'center' },
+  heroStatNum:     { fontSize: ms(30), fontFamily: C.bold, fontWeight: '700', color: C.text, letterSpacing: ls(30) },
+  heroStatUnit:    { fontSize: ms(18), fontFamily: C.semi, fontWeight: '600', color: C.textMuted, letterSpacing: 0 },
+  heroStatLabel:   { fontSize: ms(11), color: C.textMuted, marginTop: rs(2), fontFamily: C.med, fontWeight: '500', letterSpacing: 0.4, textTransform: 'uppercase' },
+  heroStatDivider: { width: 1, backgroundColor: C.borderStrong, marginVertical: rs(8) },
+  heroProgressTrack: { height: rs(6), backgroundColor: C.border, borderRadius: rs(3), overflow: 'hidden', marginBottom: rs(12) },
+  heroProgressFill:  { height: '100%', borderRadius: rs(3) },
+  heroStatus: { fontSize: ms(12), color: C.textSub, textAlign: 'center', fontFamily: C.med, fontWeight: '500', letterSpacing: ls(12) },
+
+  // Reminder banner
+  reminderBanner: {
+    marginBottom: rs(12),
+    backgroundColor: C.card, borderRadius: rs(14),
+    borderWidth: 1, borderColor: C.border,
+    padding: rs(12),
+  },
+  reminderBannerHeader: { flexDirection: 'row', alignItems: 'center', gap: rs(6), marginBottom: rs(8) },
+  reminderBannerLabel:  { fontSize: ms(10), fontFamily: C.bold, fontWeight: '700', color: C.primary, letterSpacing: 0.8 },
+  reminderChip: {
+    flexDirection: 'row', alignItems: 'center', gap: rs(6),
+    backgroundColor: C.cardHigh, borderRadius: rs(20),
+    paddingHorizontal: rs(10), paddingVertical: rs(5),
+    marginRight: rs(8), borderWidth: 1, borderColor: C.border,
+  },
+  reminderChipText: { fontSize: ms(11), color: C.textSub, fontFamily: C.med, fontWeight: '500' },
+
+  // Empty state
+  emptyState: { alignItems: 'center', paddingTop: rs(60) },
+  emptyTitle: { fontSize: ms(17), fontFamily: C.bold, fontWeight: '700', color: C.text, marginBottom: rs(6), letterSpacing: ls(17) },
+  emptySub:   { fontSize: ms(13), color: C.textMuted, fontFamily: C.reg, fontWeight: '400', letterSpacing: ls(13) },
+
+  // FAB
+  fab: {
+    position: 'absolute', bottom: rs(28), right: rs(20),
+    width: rs(56), height: rs(56), borderRadius: rs(28),
+    backgroundColor: C.primary,
+    alignItems: 'center', justifyContent: 'center',
+    shadowColor: '#000', shadowOpacity: 0.25, shadowRadius: rs(10),
+    shadowOffset: { width: 0, height: rs(4) }, elevation: 6,
+  },
 }; }

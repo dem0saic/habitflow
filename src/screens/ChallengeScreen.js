@@ -25,10 +25,10 @@ export default function ChallengeScreen() {
   const todayCompletions = useTodayCompletions();
   const { challenge, habits } = state;
 
-  const daysPassed  = challenge ? Math.min(challenge.durationDays, diffDays(challenge.startDate, todayKey()) + 1) : 0;
-  const daysLeft    = challenge ? Math.max(0, challenge.durationDays - daysPassed) : 0;
-  const allDaysComplete  = challengeProgress?.every(d => d.allDone);
-  const canClaimReward   = allDaysComplete && challenge && !challenge.rewardClaimed;
+  const daysPassed = challenge ? Math.min(challenge.durationDays, diffDays(challenge.startDate, todayKey()) + 1) : 0;
+  const daysLeft   = challenge ? Math.max(0, challenge.durationDays - daysPassed) : 0;
+  const allDaysComplete = challengeProgress?.every(d => d.allDone);
+  const canClaimReward  = allDaysComplete && challenge && !challenge.rewardClaimed;
 
   function startChallenge(preset) {
     dispatch({ type: 'START_CHALLENGE', title: preset.title, durationDays: preset.durationDays, habitIds: habits.map(h => h.id) });
@@ -40,19 +40,24 @@ export default function ChallengeScreen() {
     setRewardVisible(true);
   }
 
+  const statusText = !challenge
+    ? 'Pick a challenge to begin'
+    : canClaimReward
+    ? 'Complete — claim your reward'
+    : challenge.rewardClaimed
+    ? 'Challenge conquered'
+    : `Keep going — you're building something real`;
+
   return (
     <SafeAreaView style={styles.root}>
-      {/* Top row */}
       <View style={styles.topRow}>
-        <View>
-          <Text style={styles.topLabel}>Challenges</Text>
-          <Text style={styles.topTitle}>
-            {!challenge ? 'Push yourself further' : challenge.title}
-          </Text>
-        </View>
+        <Text style={styles.topLabel}>Challenges</Text>
+        <Text style={styles.topTitle}>
+          {!challenge ? 'Push yourself further' : challenge.title}
+        </Text>
       </View>
 
-      {/* Hero card — solid dark with accent */}
+      {/* Hero card */}
       <View style={styles.heroWrap}>
         <View style={styles.heroCard}>
           <View style={styles.heroTopLine} />
@@ -65,12 +70,12 @@ export default function ChallengeScreen() {
               <View style={styles.heroStatDivider} />
               <View style={styles.heroStat}>
                 <Text style={styles.heroStatNum}>{PRESETS.length}</Text>
-                <Text style={styles.heroStatLabel}>Challenges</Text>
+                <Text style={styles.heroStatLabel}>Programs</Text>
               </View>
               <View style={styles.heroStatDivider} />
               <View style={styles.heroStat}>
-                <Text style={styles.heroStatNum}>🏅</Text>
-                <Text style={styles.heroStatLabel}>Ready to go</Text>
+                <Text style={styles.heroStatNum}>—</Text>
+                <Text style={styles.heroStatLabel}>Ready</Text>
               </View>
             </View>
           ) : (
@@ -91,15 +96,7 @@ export default function ChallengeScreen() {
               </View>
             </View>
           )}
-          <Text style={styles.heroStatus}>
-            {!challenge
-              ? '🏆 Pick a challenge to begin'
-              : canClaimReward
-              ? '🎊 Complete! Claim your reward!'
-              : challenge.rewardClaimed
-              ? '🏅 Challenge conquered — well done!'
-              : `Keep going — you're building something real.`}
-          </Text>
+          <Text style={styles.heroStatus}>{statusText}</Text>
         </View>
       </View>
 
@@ -114,23 +111,23 @@ export default function ChallengeScreen() {
               activeOpacity={0.75}
             >
               <View style={styles.presetIconWrap}>
-                <AnimatedEmoji emoji={p.emoji} size={ms(26)} />
+                <AnimatedEmoji emoji={p.emoji} size={ms(24)} />
               </View>
               <View style={styles.presetInfo}>
                 <Text style={styles.presetTitle}>{p.title}</Text>
                 <Text style={styles.presetSub}>{p.desc}</Text>
                 <View style={styles.presetMeta}>
                   <View style={styles.presetPill}>
-                    <Calendar size={rs(11)} color={C.gold} strokeWidth={2} />
+                    <Calendar size={rs(11)} color={C.primary} strokeWidth={2} />
                     <Text style={styles.presetPillText}>{p.durationDays} days</Text>
                   </View>
                   <View style={styles.presetPill}>
-                    <CheckCircle size={rs(11)} color={C.gold} strokeWidth={2} />
+                    <CheckCircle size={rs(11)} color={C.primary} strokeWidth={2} />
                     <Text style={styles.presetPillText}>{habits.length} habit{habits.length !== 1 ? 's' : ''}</Text>
                   </View>
                 </View>
               </View>
-              <ChevronRight size={rs(20)} color={C.textMuted} strokeWidth={1.75} />
+              <ChevronRight size={rs(18)} color={C.textMuted} strokeWidth={1.75} />
             </TouchableOpacity>
           ))}
           {habits.length === 0 && (
@@ -148,20 +145,13 @@ export default function ChallengeScreen() {
           <View style={styles.daysRow}>
             {challengeProgress?.map((day, i) => (
               <View key={day.key} style={[styles.dayCircle, day.allDone && styles.dayCircleDone]}>
-                <Text style={[styles.dayNum, day.allDone && styles.dayNumDone]}>
-                  {day.allDone ? '✓' : i + 1}
-                </Text>
+                {day.allDone
+                  ? <Check size={rs(14)} color="#fff" strokeWidth={3} />
+                  : <Text style={styles.dayNum}>{i + 1}</Text>
+                }
               </View>
             ))}
           </View>
-
-          <Text style={styles.motiveLine}>
-            {canClaimReward
-              ? '🎊 Challenge complete! Claim your reward!'
-              : allDaysComplete && challenge.rewardClaimed
-                ? '🏅 Challenge conquered — well done!'
-                : `Keep going — you're building something real.`}
-          </Text>
 
           <Text style={styles.sectionLabel}>Tracked habits</Text>
 
@@ -172,31 +162,33 @@ export default function ChallengeScreen() {
             </View>
           ) : (
             habits.map(h => {
-              const count   = todayCompletions[h.id] || 0;
-              const target  = h.targetCount || 1;
-              const isDone  = count >= target;
-              const pct     = (h.type === 'volume' || h.type === 'timer') ? Math.min(1, count / target) : (isDone ? 1 : 0);
+              const count  = todayCompletions[h.id] || 0;
+              const target = h.targetCount || 1;
+              const isDone = count >= target;
+              const pct    = (h.type === 'volume' || h.type === 'timer')
+                ? Math.min(1, count / target)
+                : (isDone ? 1 : 0);
 
               return (
                 <View key={h.id} style={[styles.habitCard, isDone && styles.habitCardDone]}>
-                  <View style={styles.habitCardEmoji}>
-                    <AnimatedEmoji emoji={h.emoji} size={ms(24)} />
+                  <View style={[styles.habitCardEmoji, isDone && { backgroundColor: C.successSoft }]}>
+                    <AnimatedEmoji emoji={h.emoji} size={ms(22)} />
                   </View>
 
                   <View style={{ flex: 1 }}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: rs(4) }}>
+                    <View style={styles.habitTopRow}>
                       <Text style={[styles.habitCardName, isDone && { color: C.success }]} numberOfLines={1}>
                         {h.name}
                       </Text>
                       {isDone && (
                         <View style={styles.doneTag}>
-                          <Check size={rs(10)} color="#fff" strokeWidth={3} />
-                          <Text style={styles.doneTagText}>Done</Text>
+                          <Check size={rs(9)} color="#fff" strokeWidth={3} />
+                          <Text style={styles.doneTagText}>DONE</Text>
                         </View>
                       )}
                     </View>
 
-                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: rs(8) }}>
+                    <View style={styles.habitMetaRow}>
                       <View style={styles.typePill}>
                         <Text style={styles.typePillText}>
                           {h.type === 'volume'   ? `${count}/${target}×`
@@ -207,7 +199,7 @@ export default function ChallengeScreen() {
                       </View>
                       {h.reminderTime && (
                         <View style={styles.reminderPill}>
-                          <AlarmClock size={rs(10)} color={C.primary} strokeWidth={2} />
+                          <AlarmClock size={rs(10)} color={C.primary} strokeWidth={2.5} />
                           <Text style={styles.reminderPillText}>
                             {(() => {
                               const hr = h.reminderTime.hour % 12 || 12;
@@ -223,7 +215,7 @@ export default function ChallengeScreen() {
                       <View style={styles.progressTrack}>
                         <View style={[styles.progressFill, {
                           width: `${pct * 100}%`,
-                          backgroundColor: isDone ? C.success : C.gold,
+                          backgroundColor: isDone ? C.success : C.primary,
                         }]} />
                       </View>
                     )}
@@ -231,7 +223,7 @@ export default function ChallengeScreen() {
 
                   <View style={[styles.statusDot, { backgroundColor: isDone ? C.success : C.border }]}>
                     {isDone
-                      ? <Check size={rs(14)} color="#fff" strokeWidth={3} />
+                      ? <Check size={rs(12)} color="#fff" strokeWidth={3} />
                       : <View style={{ width: rs(6), height: rs(6), borderRadius: rs(3), backgroundColor: C.textMuted }} />
                     }
                   </View>
@@ -241,8 +233,8 @@ export default function ChallengeScreen() {
           )}
 
           {canClaimReward && (
-            <TouchableOpacity style={styles.claimBtn} onPress={claimReward}>
-              <Text style={styles.claimBtnText}>🏆 Claim Your Reward</Text>
+            <TouchableOpacity style={styles.claimBtn} onPress={claimReward} activeOpacity={0.88}>
+              <Text style={styles.claimBtnText}>Claim your reward</Text>
             </TouchableOpacity>
           )}
           {!challenge.rewardClaimed && (
@@ -255,8 +247,8 @@ export default function ChallengeScreen() {
 
       <CelebrationModal
         visible={rewardVisible}
-        title="Challenge Complete!"
-        subtitle={`You crushed the "${challenge?.title}"!\nIncredible consistency — you should be proud.`}
+        title="Challenge complete"
+        subtitle={`You crushed "${challenge?.title}". Incredible consistency.`}
         onClose={() => setRewardVisible(false)}
         type="challenge"
       />
@@ -265,132 +257,125 @@ export default function ChallengeScreen() {
 }
 
 function makeStyles(C) { return {
-  root: { flex: 1, backgroundColor: C.bg },
-  topRow: { paddingHorizontal: rs(20), paddingTop: rs(8), paddingBottom: rs(8) },
-  topLabel: { fontSize: ms(11), color: C.textMuted, fontFamily: C.semi, fontWeight: '600', textTransform: 'uppercase', letterSpacing: ls(11) },
-  topTitle: { fontSize: ms(17), fontFamily: C.xbold, fontWeight: '800', color: C.text, marginTop: rs(2), letterSpacing: ls(17) },
+  root:     { flex: 1, backgroundColor: C.bg },
+  topRow:   { paddingHorizontal: rs(20), paddingTop: rs(8), paddingBottom: rs(12) },
+  topLabel: { fontSize: ms(11), color: C.textMuted, fontFamily: C.semi, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.8 },
+  topTitle: { fontSize: ms(20), fontFamily: C.bold, fontWeight: '700', color: C.text, marginTop: rs(4), letterSpacing: ls(20) },
+
+  // Hero
   heroWrap: { paddingHorizontal: rs(16), marginBottom: rs(8) },
   heroCard: {
-    backgroundColor: '#071D26',
-    borderRadius: rs(24), padding: rs(24), paddingTop: rs(22),
-    borderWidth: 1.5, borderColor: 'rgba(245,123,81,0.22)',
-    shadowColor: C.primary,
-    shadowOpacity: 0.18, shadowRadius: rs(18),
-    shadowOffset: { width: 0, height: rs(5) }, elevation: 8,
+    backgroundColor: C.heroSurface,
+    borderRadius: rs(18), padding: rs(20), paddingTop: rs(22),
+    borderWidth: 1, borderColor: C.borderStrong,
     overflow: 'hidden',
   },
   heroTopLine: {
     position: 'absolute', top: 0, left: 0, right: 0,
     height: rs(3), backgroundColor: C.primary,
   },
-  heroStatsRow: { flexDirection: 'row', marginBottom: rs(16) },
-  heroStat: { flex: 1, alignItems: 'center' },
-  heroStatNum: { fontSize: ms(38), fontFamily: C.xbold, fontWeight: '800', color: '#fff', letterSpacing: ls(26) },
-  heroStatLabel: { fontSize: ms(11), color: 'rgba(255,255,255,0.6)', marginTop: rs(4), fontFamily: C.med, fontWeight: '500', letterSpacing: ls(11) },
-  heroStatDivider: { width: 1, backgroundColor: 'rgba(255,255,255,0.18)', marginVertical: rs(6) },
-  heroStatus: { fontSize: ms(12), color: 'rgba(255,255,255,0.8)', textAlign: 'center', fontFamily: C.med, fontWeight: '500', letterSpacing: ls(12) },
+  heroStatsRow:    { flexDirection: 'row', marginBottom: rs(14) },
+  heroStat:        { flex: 1, alignItems: 'center' },
+  heroStatNum:     { fontSize: ms(28), fontFamily: C.bold, fontWeight: '700', color: C.text, letterSpacing: ls(28) },
+  heroStatLabel:   { fontSize: ms(11), color: C.textMuted, marginTop: rs(2), fontFamily: C.med, fontWeight: '500', letterSpacing: 0.4, textTransform: 'uppercase' },
+  heroStatDivider: { width: 1, backgroundColor: C.borderStrong, marginVertical: rs(8) },
+  heroStatus:      { fontSize: ms(12), color: C.textSub, textAlign: 'center', fontFamily: C.med, fontWeight: '500', letterSpacing: ls(12) },
 
-  presetList:  { padding: rs(20), paddingBottom: rs(40) },
-  pickLabel:   { fontSize: ms(11), fontFamily: C.bold, fontWeight: '700', color: C.textSub, textTransform: 'uppercase', letterSpacing: ls(11), marginBottom: rs(14) },
+  presetList: { padding: rs(20), paddingBottom: rs(40) },
+  pickLabel: {
+    fontSize: ms(11), fontFamily: C.bold, fontWeight: '700', color: C.textMuted,
+    textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: rs(14),
+  },
   presetCard: {
-    backgroundColor: C.card, borderRadius: rs(18), padding: rs(16),
-    flexDirection: 'row', alignItems: 'center', gap: rs(14),
-    borderWidth: 1, borderColor: C.border, marginBottom: rs(12),
+    backgroundColor: C.card, borderRadius: rs(14), padding: rs(14),
+    flexDirection: 'row', alignItems: 'center', gap: rs(12),
+    borderWidth: 1, borderColor: C.border, marginBottom: rs(10),
   },
   presetIconWrap: {
-    width: rs(52), height: rs(52), borderRadius: rs(16),
-    backgroundColor: C.primary + '22',
+    width: rs(48), height: rs(48), borderRadius: rs(14),
+    backgroundColor: C.primarySoft,
     alignItems: 'center', justifyContent: 'center',
-    borderWidth: 1, borderColor: C.primary + '44',
   },
-  presetInfo:   { flex: 1 },
-  presetTitle:  { fontSize: ms(15), fontFamily: C.bold, fontWeight: '700', color: C.text, marginBottom: rs(2), letterSpacing: ls(15) },
-  presetSub:    { fontSize: ms(12), color: C.textSub, marginBottom: rs(8), fontFamily: C.reg, fontWeight: '400', letterSpacing: ls(12) },
-  presetMeta:   { flexDirection: 'row', gap: rs(8) },
+  presetInfo:  { flex: 1 },
+  presetTitle: { fontSize: ms(15), fontFamily: C.semi, fontWeight: '600', color: C.text, marginBottom: rs(2), letterSpacing: ls(15) },
+  presetSub:   { fontSize: ms(12), color: C.textSub, marginBottom: rs(8), fontFamily: C.reg, fontWeight: '400', letterSpacing: ls(12) },
+  presetMeta:  { flexDirection: 'row', gap: rs(8) },
   presetPill: {
     flexDirection: 'row', alignItems: 'center', gap: rs(4),
-    backgroundColor: 'rgba(251,191,36,0.12)', borderRadius: rs(20),
+    backgroundColor: C.primarySoft, borderRadius: rs(20),
     paddingHorizontal: rs(8), paddingVertical: rs(3),
   },
-  presetPillText: { fontSize: ms(10), fontFamily: C.semi, fontWeight: '600', color: C.gold, letterSpacing: ls(10) },
+  presetPillText: { fontSize: ms(10), fontFamily: C.semi, fontWeight: '600', color: C.primary, letterSpacing: 0.2 },
 
   noHabitsCard: {
-    alignItems: 'center', backgroundColor: C.card, borderRadius: rs(18),
+    alignItems: 'center', backgroundColor: C.card, borderRadius: rs(14),
     padding: rs(24), borderWidth: 1, borderColor: C.border, marginTop: rs(8),
   },
   noHabitsTitle: { fontSize: ms(15), fontFamily: C.bold, fontWeight: '700', color: C.text, marginBottom: rs(4), letterSpacing: ls(15) },
-  noHabitsSub:   { fontSize: ms(13), color: C.textSub, textAlign: 'center', lineHeight: ms(20), fontFamily: C.reg, fontWeight: '400', letterSpacing: ls(13) },
+  noHabitsSub:   { fontSize: ms(13), color: C.textMuted, textAlign: 'center', lineHeight: ms(20), fontFamily: C.reg, fontWeight: '400', letterSpacing: ls(13) },
 
-  body: { padding: rs(20), paddingBottom: 100 },
-  daysRow: { flexDirection: 'row', gap: rs(8), justifyContent: 'center', marginBottom: rs(20), flexWrap: 'wrap' },
+  body: { padding: rs(20), paddingBottom: rs(100) },
+  daysRow: { flexDirection: 'row', gap: rs(8), justifyContent: 'center', marginBottom: rs(24), flexWrap: 'wrap' },
   dayCircle: {
-    width: rs(46), height: rs(46), borderRadius: rs(23),
-    borderWidth: 2, borderColor: C.border, alignItems: 'center', justifyContent: 'center',
+    width: rs(42), height: rs(42), borderRadius: rs(21),
+    borderWidth: 1.5, borderColor: C.border, alignItems: 'center', justifyContent: 'center',
     backgroundColor: C.card,
   },
-  dayCircleDone: {
-    backgroundColor: '#FBBC58', borderColor: '#FBBC58',
-    shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: rs(6), shadowOffset: { width: 0, height: rs(2) },
-    elevation: 4,
-  },
-  dayNum:     { fontSize: ms(14), fontFamily: C.bold, fontWeight: '700', color: C.textMuted, letterSpacing: ls(14) },
-  dayNumDone: { color: '#fff' },
-  motiveLine: {
-    fontSize: ms(13), color: C.textSub, textAlign: 'center',
-    marginBottom: rs(24), lineHeight: ms(20), fontFamily: C.reg, fontWeight: '400', letterSpacing: ls(13),
-  },
+  dayCircleDone: { backgroundColor: C.success, borderColor: C.success },
+  dayNum:        { fontSize: ms(13), fontFamily: C.bold, fontWeight: '700', color: C.textMuted, letterSpacing: ls(13) },
+
   sectionLabel: {
-    fontSize: ms(11), fontFamily: C.bold, fontWeight: '700', color: C.textSub,
-    textTransform: 'uppercase', letterSpacing: ls(11), marginBottom: rs(12),
+    fontSize: ms(11), fontFamily: C.bold, fontWeight: '700', color: C.textMuted,
+    textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: rs(12),
   },
 
   habitCard: {
     flexDirection: 'row', alignItems: 'center', gap: rs(12),
-    backgroundColor: C.card, borderRadius: rs(16),
+    backgroundColor: C.card, borderRadius: rs(14),
     padding: rs(14), marginBottom: rs(10),
     borderWidth: 1, borderColor: C.border,
   },
-  habitCardDone: { borderColor: C.success, backgroundColor: '#082218' },
+  habitCardDone: { borderColor: C.success, backgroundColor: C.successSoft },
   habitCardEmoji: {
-    width: rs(44), height: rs(44), borderRadius: rs(12),
+    width: rs(40), height: rs(40), borderRadius: rs(12),
     backgroundColor: C.cardHigh, alignItems: 'center', justifyContent: 'center',
   },
+  habitTopRow:   { flexDirection: 'row', alignItems: 'center', marginBottom: rs(4) },
+  habitMetaRow:  { flexDirection: 'row', alignItems: 'center', gap: rs(6) },
   habitCardName: { fontSize: ms(14), fontFamily: C.semi, fontWeight: '600', color: C.text, flex: 1, marginRight: rs(6), letterSpacing: ls(14) },
   doneTag: {
     flexDirection: 'row', alignItems: 'center', gap: rs(3),
-    backgroundColor: C.success, borderRadius: rs(20),
-    paddingHorizontal: rs(7), paddingVertical: rs(2),
+    backgroundColor: C.success, borderRadius: rs(6),
+    paddingHorizontal: rs(6), paddingVertical: rs(2),
   },
-  doneTagText: { fontSize: ms(9), fontFamily: C.bold, fontWeight: '700', color: '#fff', letterSpacing: ls(9) },
+  doneTagText: { fontSize: ms(8), fontFamily: C.bold, fontWeight: '700', color: '#fff', letterSpacing: 0.6 },
   typePill: {
-    backgroundColor: C.cardHigh, borderRadius: rs(20),
-    paddingHorizontal: rs(8), paddingVertical: rs(2),
+    backgroundColor: C.cardHigh, borderRadius: rs(6),
+    paddingHorizontal: rs(7), paddingVertical: rs(2),
     borderWidth: 1, borderColor: C.border,
   },
-  typePillText: { fontSize: ms(10), color: C.textSub, fontFamily: C.med, fontWeight: '500', letterSpacing: ls(10) },
+  typePillText: { fontSize: ms(10), color: C.textSub, fontFamily: C.med, fontWeight: '500', letterSpacing: 0.2 },
   reminderPill: {
     flexDirection: 'row', alignItems: 'center', gap: rs(3),
-    backgroundColor: C.primaryLight, borderRadius: rs(20),
-    paddingHorizontal: rs(8), paddingVertical: rs(2),
+    backgroundColor: C.primarySoft, borderRadius: rs(6),
+    paddingHorizontal: rs(7), paddingVertical: rs(2),
   },
-  reminderPillText: { fontSize: ms(10), color: C.primary, fontFamily: C.med, fontWeight: '500', letterSpacing: ls(10) },
+  reminderPillText: { fontSize: ms(10), color: C.primary, fontFamily: C.med, fontWeight: '500', letterSpacing: 0.2 },
   progressTrack: {
     height: rs(3), backgroundColor: C.border,
-    borderRadius: rs(2), overflow: 'hidden', marginTop: rs(6),
+    borderRadius: rs(2), overflow: 'hidden', marginTop: rs(8),
   },
   progressFill: { height: '100%', borderRadius: rs(2) },
   statusDot: {
-    width: rs(28), height: rs(28), borderRadius: rs(14),
+    width: rs(26), height: rs(26), borderRadius: rs(13),
     alignItems: 'center', justifyContent: 'center',
   },
 
   claimBtn: {
-    backgroundColor: C.gold, borderRadius: rs(16),
-    padding: rs(18), alignItems: 'center', marginTop: rs(24),
-    shadowColor: '#000', shadowOpacity: 0.25, shadowRadius: rs(8),
-    shadowOffset: { width: 0, height: rs(3) }, elevation: 5,
+    backgroundColor: C.primary, borderRadius: rs(12),
+    paddingVertical: rs(16), alignItems: 'center', marginTop: rs(20),
   },
-  claimBtnText: { fontSize: ms(15), fontFamily: C.xbold, fontWeight: '800', color: '#fff', letterSpacing: ls(15) },
-  dismissBtn:   { marginTop: rs(16), alignItems: 'center' },
+  claimBtnText: { fontSize: ms(15), fontFamily: C.bold, fontWeight: '700', color: '#fff', letterSpacing: ls(15) },
+  dismissBtn:   { marginTop: rs(14), alignItems: 'center', paddingVertical: rs(8) },
   dismissText:  { color: C.textMuted, fontSize: ms(12), fontFamily: C.reg, fontWeight: '400', letterSpacing: ls(12) },
 }; }

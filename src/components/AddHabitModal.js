@@ -24,7 +24,7 @@ const DEFAULT_REMINDER = new Date(2000, 0, 1, 9, 0);
 
 const TYPE_OPTIONS = [
   { key: 'daily',    Icon: CheckCircle, label: 'Daily',   sub: 'Check off once per day' },
-  { key: 'volume',   Icon: Repeat2,     label: 'Volume',  sub: 'Count reps / sessions'  },
+  { key: 'volume',   Icon: Repeat2,     label: 'Volume',  sub: 'Count reps or sessions' },
   { key: 'timer',    Icon: Timer,       label: 'Timer',   sub: 'Track minutes per day'  },
   { key: 'negative', Icon: Ban,         label: 'Avoid',   sub: 'Break a bad habit'      },
 ];
@@ -119,18 +119,18 @@ export default function AddHabitModal({ visible, onClose, onAdd, editingHabit })
         <View style={styles.sheet}>
           <View style={styles.handle} />
           <View style={styles.sheetHeader}>
-            <Text style={styles.title}>{isEditing ? 'Edit Habit' : 'New Habit'}</Text>
+            <Text style={styles.title}>{isEditing ? 'Edit habit' : 'New habit'}</Text>
             <TouchableOpacity style={styles.closeBtn} onPress={handleClose} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-              <XCircle size={rs(28)} color={C.textMuted} strokeWidth={1.75} />
+              <XCircle size={rs(24)} color={C.textMuted} strokeWidth={1.75} />
             </TouchableOpacity>
           </View>
+
           <ScrollView
             bounces={false}
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.scrollContent}
           >
-
             {/* Name */}
             <TextInput
               style={styles.input}
@@ -144,24 +144,21 @@ export default function AddHabitModal({ visible, onClose, onAdd, editingHabit })
             />
 
             {/* Emoji */}
-            <Text style={styles.label}>Pick an emoji</Text>
-
+            <Text style={styles.label}>Emoji</Text>
             <TouchableOpacity
               style={[styles.emojiPreviewRow, showEmojiGrid && styles.emojiPreviewRowOpen]}
               onPress={() => setShowEmojiGrid(v => !v)}
               activeOpacity={0.75}
             >
               <View style={styles.emojiDisplayTile}>
-                <Text style={{ fontSize: ms(30) }}>{emoji}</Text>
+                <Text style={{ fontSize: ms(28) }}>{emoji}</Text>
               </View>
-
-              <View style={{ flex: 1, marginLeft: rs(14) }}>
+              <View style={{ flex: 1, marginLeft: rs(12) }}>
                 <Text style={styles.emojiPreviewTitle}>Habit emoji</Text>
                 <Text style={styles.emojiPreviewSub}>
-                  {showEmojiGrid ? 'Close picker' : `Browse ${EMOJIS.length} emojis`}
+                  {showEmojiGrid ? 'Close picker' : `Browse ${EMOJIS.length} options`}
                 </Text>
               </View>
-
               <View style={[styles.emojiActionBadge, showEmojiGrid && styles.emojiActionBadgeOpen]}>
                 {showEmojiGrid
                   ? <X size={rs(16)} color={C.primary} strokeWidth={2.5} />
@@ -193,28 +190,32 @@ export default function AddHabitModal({ visible, onClose, onAdd, editingHabit })
             )}
 
             {/* Type */}
-            <Text style={styles.label}>Habit type</Text>
+            <Text style={styles.label}>Type</Text>
             <View style={styles.typeGrid}>
-              {TYPE_OPTIONS.map(({ key, Icon, label, sub }) => (
-                <TouchableOpacity
-                  key={key}
-                  style={[styles.typeBtn, type === key && styles.typeBtnActive]}
-                  onPress={() => {
-                    setType(key);
-                    if (key === 'timer')  setTargetCount(20);
-                    if (key === 'volume') setTargetCount(3);
-                  }}
-                >
-                  <Icon
-                    size={rs(20)}
-                    color={type === key ? '#fff' : C.textSub}
-                    strokeWidth={type === key ? 2.5 : 1.75}
-                    style={{ marginBottom: rs(4) }}
-                  />
-                  <Text style={[styles.typeBtnText, type === key && styles.typeBtnTextActive]}>{label}</Text>
-                  <Text style={[styles.typeBtnSub, type === key && { color: 'rgba(255,255,255,0.6)' }]}>{sub}</Text>
-                </TouchableOpacity>
-              ))}
+              {TYPE_OPTIONS.map(({ key, Icon, label, sub }) => {
+                const active = type === key;
+                return (
+                  <TouchableOpacity
+                    key={key}
+                    style={[styles.typeBtn, active && styles.typeBtnActive]}
+                    onPress={() => {
+                      setType(key);
+                      if (key === 'timer')  setTargetCount(20);
+                      if (key === 'volume') setTargetCount(3);
+                    }}
+                    activeOpacity={0.85}
+                  >
+                    <Icon
+                      size={rs(18)}
+                      color={active ? '#fff' : C.textSub}
+                      strokeWidth={active ? 2.5 : 1.75}
+                      style={{ marginBottom: rs(6) }}
+                    />
+                    <Text style={[styles.typeBtnText, active && styles.typeBtnTextActive]}>{label}</Text>
+                    <Text style={[styles.typeBtnSub, active && { color: 'rgba(255,255,255,0.7)' }]}>{sub}</Text>
+                  </TouchableOpacity>
+                );
+              })}
             </View>
 
             {/* Target for volume / timer */}
@@ -230,7 +231,7 @@ export default function AddHabitModal({ visible, onClose, onAdd, editingHabit })
                       type === 'timer' ? Math.max(5, targetCount - 5) : Math.max(2, targetCount - 1)
                     )}
                   >
-                    <Minus size={rs(18)} color={C.text} strokeWidth={2} />
+                    <Minus size={rs(16)} color={C.text} strokeWidth={2} />
                   </TouchableOpacity>
                   <Text style={styles.countNum}>
                     {type === 'timer' ? `${targetCount} min` : `${targetCount}×`}
@@ -241,18 +242,17 @@ export default function AddHabitModal({ visible, onClose, onAdd, editingHabit })
                       type === 'timer' ? Math.min(180, targetCount + 5) : Math.min(99, targetCount + 1)
                     )}
                   >
-                    <Plus size={rs(18)} color={C.text} strokeWidth={2} />
+                    <Plus size={rs(16)} color={C.text} strokeWidth={2} />
                   </TouchableOpacity>
                 </View>
               </View>
             )}
 
-            {/* ── Daily Reminder ───────────────────────────────── */}
-            <Text style={styles.label}>Daily Reminder</Text>
-
+            {/* Reminder */}
+            <Text style={styles.label}>Daily reminder</Text>
             <View style={styles.reminderToggleRow}>
               <AlarmClock
-                size={rs(20)}
+                size={rs(18)}
                 color={reminderEnabled ? C.primary : C.textMuted}
                 strokeWidth={reminderEnabled ? 2.5 : 1.75}
               />
@@ -262,7 +262,7 @@ export default function AddHabitModal({ visible, onClose, onAdd, editingHabit })
               <Switch
                 value={reminderEnabled}
                 onValueChange={toggleReminder}
-                trackColor={{ false: C.border, true: C.primaryLight }}
+                trackColor={{ false: C.border, true: C.primarySoft }}
                 thumbColor={reminderEnabled ? C.primary : C.textMuted}
                 ios_backgroundColor={C.border}
               />
@@ -270,7 +270,7 @@ export default function AddHabitModal({ visible, onClose, onAdd, editingHabit })
 
             {reminderEnabled && !showPicker && (
               <TouchableOpacity style={styles.changeTimeBtn} onPress={() => setShowPicker(true)}>
-                <Clock size={rs(16)} color={C.primary} strokeWidth={2} />
+                <Clock size={rs(14)} color={C.primary} strokeWidth={2} />
                 <Text style={styles.changeTimeBtnText}>Change time</Text>
               </TouchableOpacity>
             )}
@@ -300,8 +300,8 @@ export default function AddHabitModal({ visible, onClose, onAdd, editingHabit })
               />
             )}
 
-            <TouchableOpacity style={styles.addBtn} onPress={handleSubmit}>
-              <Text style={styles.addBtnText}>{isEditing ? 'Save Changes' : 'Add Habit'}</Text>
+            <TouchableOpacity style={styles.addBtn} onPress={handleSubmit} activeOpacity={0.88}>
+              <Text style={styles.addBtnText}>{isEditing ? 'Save changes' : 'Add habit'}</Text>
             </TouchableOpacity>
           </ScrollView>
         </View>
@@ -311,70 +311,69 @@ export default function AddHabitModal({ visible, onClose, onAdd, editingHabit })
 }
 
 function makeStyles(C) { return {
-  kav: { flex: 1, justifyContent: 'flex-end' },
-  overlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.6)' },
+  kav:     { flex: 1, justifyContent: 'flex-end' },
+  overlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.55)' },
   sheet: {
     backgroundColor: C.card,
-    borderTopLeftRadius: rs(28),
-    borderTopRightRadius: rs(28),
-    paddingHorizontal: rs(24),
-    paddingTop: rs(12),
+    borderTopLeftRadius: rs(20),
+    borderTopRightRadius: rs(20),
+    borderTopWidth: 1, borderColor: C.borderStrong,
+    paddingHorizontal: rs(20),
+    paddingTop: rs(10),
     paddingBottom: rs(8),
     maxHeight: '92%',
   },
   handle: {
-    width: rs(40), height: rs(4), borderRadius: rs(2),
-    backgroundColor: C.border, alignSelf: 'center', marginBottom: rs(16),
+    width: rs(36), height: rs(4), borderRadius: rs(2),
+    backgroundColor: C.borderStrong, alignSelf: 'center', marginBottom: rs(14),
   },
   sheetHeader: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
     marginBottom: rs(20),
   },
-  closeBtn: {
-    width: rs(36), height: rs(36), alignItems: 'center', justifyContent: 'center',
-  },
+  closeBtn:      { width: rs(36), height: rs(36), alignItems: 'center', justifyContent: 'center' },
   scrollContent: { paddingBottom: rs(40) },
-  title: { fontSize: ms(20), fontFamily: C.bold, fontWeight: '700', color: C.text, letterSpacing: ls(20) },
+  title:         { fontSize: ms(18), fontFamily: C.bold, fontWeight: '700', color: C.text, letterSpacing: ls(18) },
   input: {
-    borderWidth: 1.5, borderColor: C.border, borderRadius: rs(14),
-    padding: rs(14), fontSize: ms(15), color: C.text,
+    borderWidth: 1, borderColor: C.border, borderRadius: rs(12),
+    paddingHorizontal: rs(14), paddingVertical: rs(13),
+    fontSize: ms(15), color: C.text,
     backgroundColor: C.cardHigh, marginBottom: rs(20),
     fontFamily: C.reg, fontWeight: '400', letterSpacing: ls(15),
   },
   label: {
-    fontSize: ms(12), fontFamily: C.bold, fontWeight: '700', color: C.textSub,
-    marginBottom: rs(10), textTransform: 'uppercase', letterSpacing: ls(12),
+    fontSize: ms(11), fontFamily: C.bold, fontWeight: '700', color: C.textMuted,
+    marginBottom: rs(10), textTransform: 'uppercase', letterSpacing: 0.8,
   },
   emojiPreviewRow: {
     flexDirection: 'row', alignItems: 'center',
-    backgroundColor: C.cardHigh, borderRadius: rs(18),
-    padding: rs(14), borderWidth: 1.5, borderColor: C.border,
+    backgroundColor: C.cardHigh, borderRadius: rs(14),
+    padding: rs(12), borderWidth: 1, borderColor: C.border,
     marginBottom: rs(10),
   },
   emojiPreviewRowOpen: { borderColor: C.primary },
   emojiDisplayTile: {
-    width: rs(58), height: rs(58), borderRadius: rs(18),
-    backgroundColor: C.primaryLight,
-    borderWidth: 1.5, borderColor: C.primary,
+    width: rs(50), height: rs(50), borderRadius: rs(14),
+    backgroundColor: C.primarySoft,
     alignItems: 'center', justifyContent: 'center',
   },
-  emojiPreviewTitle: { fontSize: ms(14), fontFamily: C.bold, fontWeight: '700', color: C.text, letterSpacing: ls(14) },
-  emojiPreviewSub:   { fontSize: ms(11), color: C.textSub, marginTop: rs(3), fontFamily: C.reg, fontWeight: '400', letterSpacing: ls(11) },
+  emojiPreviewTitle: { fontSize: ms(14), fontFamily: C.semi, fontWeight: '600', color: C.text, letterSpacing: ls(14) },
+  emojiPreviewSub:   { fontSize: ms(11), color: C.textMuted, marginTop: rs(2), fontFamily: C.reg, fontWeight: '400', letterSpacing: ls(11) },
   emojiActionBadge: {
-    width: rs(36), height: rs(36), borderRadius: rs(11),
+    width: rs(32), height: rs(32), borderRadius: rs(10),
     backgroundColor: C.card, borderWidth: 1, borderColor: C.border,
     alignItems: 'center', justifyContent: 'center',
   },
-  emojiActionBadgeOpen: { backgroundColor: C.primaryLight, borderColor: C.primary },
+  emojiActionBadgeOpen: { backgroundColor: C.primarySoft, borderColor: C.primary },
   emojiGridScroll: {
-    backgroundColor: C.cardHigh, borderRadius: rs(16),
-    borderWidth: 1.5, borderColor: C.border,
+    backgroundColor: C.cardHigh, borderRadius: rs(14),
+    borderWidth: 1, borderColor: C.border,
     marginBottom: rs(20),
     maxHeight: rs(258),
   },
   emojiGrid: {
     flexDirection: 'row', flexWrap: 'wrap',
-    paddingHorizontal: rs(10), paddingTop: rs(10), paddingBottom: rs(4),
+    paddingHorizontal: rs(8), paddingTop: rs(8), paddingBottom: rs(4),
   },
   emojiGridBtn: {
     width: rs(42), height: rs(42), borderRadius: rs(10),
@@ -382,41 +381,41 @@ function makeStyles(C) { return {
     backgroundColor: C.card,
     margin: rs(3),
   },
-  emojiGridBtnActive: { backgroundColor: C.primaryLight, borderWidth: 2, borderColor: C.primary },
+  emojiGridBtnActive: { backgroundColor: C.primarySoft, borderWidth: 1.5, borderColor: C.primary },
   typeGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: rs(10), marginBottom: rs(20) },
   typeBtn: {
-    width: '47%', padding: rs(12), borderRadius: rs(14),
-    borderWidth: 1.5, borderColor: C.border, backgroundColor: C.cardHigh,
+    width: '47%', padding: rs(12), borderRadius: rs(12),
+    borderWidth: 1, borderColor: C.border, backgroundColor: C.cardHigh,
   },
-  typeBtnActive: { backgroundColor: C.primary, borderColor: C.primary },
-  typeBtnText: { fontSize: ms(13), fontFamily: C.bold, fontWeight: '700', color: C.text, letterSpacing: ls(13) },
+  typeBtnActive:     { backgroundColor: C.primary, borderColor: C.primary },
+  typeBtnText:       { fontSize: ms(13), fontFamily: C.semi, fontWeight: '600', color: C.text, letterSpacing: ls(13) },
   typeBtnTextActive: { color: '#fff' },
-  typeBtnSub: { fontSize: ms(10), color: C.textMuted, marginTop: rs(2), fontFamily: C.reg, fontWeight: '400', letterSpacing: ls(10) },
-  countRow: { marginBottom: rs(20) },
-  countControls: { flexDirection: 'row', alignItems: 'center', gap: rs(16) },
+  typeBtnSub:        { fontSize: ms(10), color: C.textMuted, marginTop: rs(2), fontFamily: C.reg, fontWeight: '400', letterSpacing: ls(10) },
+  countRow:          { marginBottom: rs(20) },
+  countControls:     { flexDirection: 'row', alignItems: 'center', gap: rs(16) },
   countBtn: {
-    width: rs(36), height: rs(36), borderRadius: rs(18),
-    borderWidth: 1.5, borderColor: C.border,
+    width: rs(34), height: rs(34), borderRadius: rs(10),
+    borderWidth: 1, borderColor: C.borderStrong,
     alignItems: 'center', justifyContent: 'center',
     backgroundColor: C.cardHigh,
   },
-  countNum: { fontSize: ms(20), fontFamily: C.bold, fontWeight: '700', color: C.primary, minWidth: rs(40), textAlign: 'center', letterSpacing: ls(20) },
+  countNum: { fontSize: ms(18), fontFamily: C.bold, fontWeight: '700', color: C.primary, minWidth: rs(72), textAlign: 'center', letterSpacing: ls(18) },
   reminderToggleRow: {
     flexDirection: 'row', alignItems: 'center', gap: rs(10),
-    backgroundColor: C.cardHigh, borderRadius: rs(14),
-    padding: rs(14), borderWidth: 1.5, borderColor: C.border,
+    backgroundColor: C.cardHigh, borderRadius: rs(12),
+    padding: rs(13), borderWidth: 1, borderColor: C.border,
     marginBottom: rs(10),
   },
-  reminderToggleLabel: { flex: 1, fontSize: ms(14), color: C.textSub, fontFamily: C.med, fontWeight: '500', letterSpacing: ls(14) },
+  reminderToggleLabel: { flex: 1, fontSize: ms(13), color: C.textSub, fontFamily: C.med, fontWeight: '500', letterSpacing: ls(13) },
   changeTimeBtn: {
     flexDirection: 'row', alignItems: 'center', gap: rs(6),
     alignSelf: 'flex-start', marginBottom: rs(14),
     paddingVertical: rs(6), paddingHorizontal: rs(12),
-    backgroundColor: C.primaryLight, borderRadius: rs(20),
+    backgroundColor: C.primarySoft, borderRadius: rs(20),
   },
-  changeTimeBtnText: { fontSize: ms(13), fontFamily: C.semi, fontWeight: '600', color: C.primary, letterSpacing: ls(13) },
+  changeTimeBtnText: { fontSize: ms(12), fontFamily: C.semi, fontWeight: '600', color: C.primary, letterSpacing: ls(12) },
   pickerCard: {
-    backgroundColor: C.cardHigh, borderRadius: rs(14),
+    backgroundColor: C.cardHigh, borderRadius: rs(12),
     borderWidth: 1, borderColor: C.border,
     marginBottom: rs(14), overflow: 'hidden',
   },
@@ -426,8 +425,8 @@ function makeStyles(C) { return {
   },
   pickerDoneText: { fontSize: ms(14), fontFamily: C.bold, fontWeight: '700', color: C.primary, letterSpacing: ls(14) },
   addBtn: {
-    backgroundColor: C.primary, borderRadius: rs(16),
-    padding: rs(18), alignItems: 'center', marginTop: rs(8),
+    backgroundColor: C.primary, borderRadius: rs(12),
+    paddingVertical: rs(16), alignItems: 'center', marginTop: rs(8),
   },
-  addBtnText: { color: '#fff', fontSize: ms(16), fontFamily: C.bold, fontWeight: '700', letterSpacing: ls(16) },
+  addBtnText: { color: '#fff', fontSize: ms(15), fontFamily: C.bold, fontWeight: '700', letterSpacing: ls(15) },
 }; }

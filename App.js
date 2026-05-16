@@ -25,7 +25,7 @@ SplashScreen.preventAutoHideAsync();
 import { StoreProvider, useStore } from './src/store';
 import { ThemeProvider, useTheme } from './src/ThemeContext';
 import { AuthProvider, useAuth } from './src/AuthContext';
-import { rs } from './src/utils/responsive';
+import { rs, ms } from './src/utils/responsive';
 import { ensureAndroidChannel } from './src/utils/notifications';
 import TodayScreen from './src/screens/TodayScreen';
 import ChallengeScreen from './src/screens/ChallengeScreen';
@@ -47,7 +47,7 @@ const TAB_ICON_MAP = {
 
 function TabIcon({ name, focused, color }) {
   const Icon = TAB_ICON_MAP[name];
-  return <Icon size={rs(22)} color={color} strokeWidth={focused ? 2.5 : 1.75} />;
+  return <Icon size={rs(20)} color={color} strokeWidth={focused ? 2.5 : 1.75} />;
 }
 
 function AppNavigator() {
@@ -67,28 +67,26 @@ function AppNavigator() {
           tabBarIcon: ({ focused, color }) => <TabIcon name={route.name} focused={focused} color={color} />,
           tabBarLabel: ({ focused }) => (
             <Text style={{
-              fontSize: rs(10),
+              fontSize: ms(10),
               color: focused ? C.primary : C.textMuted,
-              fontFamily: focused ? C.bold : C.reg,
-              fontWeight: focused ? '700' : '400',
-              letterSpacing: -0.5,
+              fontFamily: focused ? C.semi : C.med,
+              fontWeight: focused ? '600' : '500',
+              letterSpacing: 0.2,
+              marginTop: rs(2),
             }}>
               {route.name}
             </Text>
           ),
-          tabBarActiveTintColor: C.primary,
+          tabBarActiveTintColor:   C.primary,
           tabBarInactiveTintColor: C.textMuted,
           tabBarStyle: {
             backgroundColor: C.card,
             borderTopWidth: 1,
             borderTopColor: C.border,
-            elevation: 30,
-            shadowColor: C.primary,
-            shadowOpacity: state.themeMode !== 'light' ? 0.3 : 0.1,
-            shadowRadius: rs(20),
-            shadowOffset: { width: 0, height: -rs(4) },
-            height: rs(70),
-            paddingBottom: rs(12),
+            elevation: 0,
+            shadowOpacity: 0,
+            height: rs(64),
+            paddingBottom: rs(10),
             paddingTop: rs(8),
           },
         })}

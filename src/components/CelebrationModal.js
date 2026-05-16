@@ -3,7 +3,6 @@ import { View, Text, Modal, TouchableOpacity, Animated } from 'react-native';
 import { useTheme } from '../ThemeContext';
 import { rs, ms, ls } from '../utils/responsive';
 
-const CONFETTI_COLORS = ['#F57B51', '#FDF6F0', '#FBBC58', '#6B9970', '#C8502A', '#FEE4D8'];
 const PARTICLE_COUNT = 24;
 
 function Particle({ color, index }) {
@@ -22,23 +21,21 @@ function Particle({ color, index }) {
   }, []);
 
   const translateY = anim.interpolate({ inputRange: [0, 1], outputRange: [-10, 280] });
-  const opacity = anim.interpolate({ inputRange: [0, 0.7, 1], outputRange: [1, 1, 0] });
-  const rotate = anim.interpolate({ inputRange: [0, 1], outputRange: ['0deg', `${(index % 2 ? 360 : -360)}deg`] });
+  const opacity    = anim.interpolate({ inputRange: [0, 0.7, 1], outputRange: [1, 1, 0] });
+  const rotate     = anim.interpolate({ inputRange: [0, 1], outputRange: ['0deg', `${(index % 2 ? 360 : -360)}deg`] });
 
   return (
     <Animated.View
-      style={[
-        {
-          position: 'absolute', top: 0,
-          backgroundColor: color,
-          left: `${30 + (index / PARTICLE_COUNT) * 40}%`,
-          transform: [{ translateX: Number(x) * 0.4 }, { translateY }, { rotate }],
-          opacity,
-          width: index % 3 === 0 ? rs(10) : rs(7),
-          height: index % 3 === 0 ? rs(10) : rs(7),
-          borderRadius: index % 2 === 0 ? rs(5) : rs(2),
-        },
-      ]}
+      style={{
+        position: 'absolute', top: 0,
+        backgroundColor: color,
+        left: `${30 + (index / PARTICLE_COUNT) * 40}%`,
+        transform: [{ translateX: Number(x) * 0.4 }, { translateY }, { rotate }],
+        opacity,
+        width: index % 3 === 0 ? rs(10) : rs(7),
+        height: index % 3 === 0 ? rs(10) : rs(7),
+        borderRadius: index % 2 === 0 ? rs(5) : rs(2),
+      }}
     />
   );
 }
@@ -46,8 +43,10 @@ function Particle({ color, index }) {
 export default function CelebrationModal({ visible, title, subtitle, onClose, type = 'daily' }) {
   const C = useTheme();
   const styles = makeStyles(C);
-  const scale = useRef(new Animated.Value(0.5)).current;
+  const scale   = useRef(new Animated.Value(0.5)).current;
   const opacity = useRef(new Animated.Value(0)).current;
+
+  const confettiColors = [C.primary, C.success, C.warning, C.text, C.primaryMuted];
 
   useEffect(() => {
     if (visible) {
@@ -66,16 +65,16 @@ export default function CelebrationModal({ visible, title, subtitle, onClose, ty
       <View style={styles.overlay}>
         <View style={styles.confettiContainer} pointerEvents="none">
           {Array.from({ length: PARTICLE_COUNT }).map((_, i) => (
-            <Particle key={i} index={i} color={CONFETTI_COLORS[i % CONFETTI_COLORS.length]} />
+            <Particle key={i} index={i} color={confettiColors[i % confettiColors.length]} />
           ))}
         </View>
         <Animated.View style={[styles.card, { transform: [{ scale }], opacity }]}>
           <Text style={styles.bigEmoji}>{type === 'challenge' ? '🏆' : '🎉'}</Text>
           <Text style={styles.title}>{title}</Text>
           {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
-          <TouchableOpacity style={styles.btn} onPress={onClose}>
+          <TouchableOpacity style={styles.btn} onPress={onClose} activeOpacity={0.85}>
             <Text style={styles.btnText}>
-              {type === 'challenge' ? 'Claim Reward' : 'Keep it up!'}
+              {type === 'challenge' ? 'Claim reward' : 'Keep it up'}
             </Text>
           </TouchableOpacity>
         </Animated.View>
@@ -87,7 +86,7 @@ export default function CelebrationModal({ visible, title, subtitle, onClose, ty
 function makeStyles(C) { return {
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(4,2,20,0.85)',
+    backgroundColor: 'rgba(0,0,0,0.72)',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -95,26 +94,23 @@ function makeStyles(C) { return {
   card: {
     backgroundColor: C.card,
     borderWidth: 1,
-    borderColor: C.primaryLight,
-    borderRadius: rs(28),
-    padding: rs(36),
+    borderColor: C.borderStrong,
+    borderRadius: rs(20),
+    paddingVertical: rs(32),
+    paddingHorizontal: rs(28),
     alignItems: 'center',
-    width: '80%',
-    shadowColor: '#000',
-    shadowOpacity: 0.2,
-    shadowRadius: rs(24),
-    shadowOffset: { width: 0, height: rs(8) },
-    elevation: 12,
+    width: '82%',
   },
-  bigEmoji: { fontSize: ms(64), marginBottom: rs(16) },
-  title: { fontSize: ms(24), fontFamily: C.xbold, fontWeight: '800', color: C.text, textAlign: 'center', marginBottom: rs(10), letterSpacing: ls(24) },
-  subtitle: { fontSize: ms(15), color: C.textSub, textAlign: 'center', marginBottom: rs(24), lineHeight: ms(22), fontFamily: C.reg, fontWeight: '400', letterSpacing: ls(15) },
+  bigEmoji: { fontSize: ms(56), marginBottom: rs(16) },
+  title:    { fontSize: ms(22), fontFamily: C.bold, fontWeight: '700', color: C.text, textAlign: 'center', marginBottom: rs(8), letterSpacing: ls(22) },
+  subtitle: { fontSize: ms(14), color: C.textSub, textAlign: 'center', marginBottom: rs(24), lineHeight: ms(22), fontFamily: C.reg, fontWeight: '400', letterSpacing: ls(14) },
   btn: {
     backgroundColor: C.primary,
-    borderRadius: rs(16),
-    paddingVertical: rs(16),
-    paddingHorizontal: rs(40),
-    marginTop: rs(8),
+    borderRadius: rs(12),
+    paddingVertical: rs(14),
+    paddingHorizontal: rs(36),
+    alignSelf: 'stretch',
+    alignItems: 'center',
   },
-  btnText: { color: '#fff', fontSize: ms(16), fontFamily: C.bold, fontWeight: '700', letterSpacing: ls(16) },
+  btnText: { color: '#fff', fontSize: ms(15), fontFamily: C.bold, fontWeight: '700', letterSpacing: ls(15) },
 }; }
