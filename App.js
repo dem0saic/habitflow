@@ -8,8 +8,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Text } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
-import { StyledProvider } from '@gluestack-style/react';
+import { Home, Trophy, Calendar, BarChart2, Settings } from 'lucide-react-native';
 import { useFonts } from 'expo-font';
 import { RussoOne_400Regular } from '@expo-google-fonts/russo-one';
 import {
@@ -26,7 +25,6 @@ SplashScreen.preventAutoHideAsync();
 import { StoreProvider, useStore } from './src/store';
 import { ThemeProvider, useTheme } from './src/ThemeContext';
 import { AuthProvider, useAuth } from './src/AuthContext';
-import { gluestackUIConfig } from './src/gluestack.config';
 import { rs } from './src/utils/responsive';
 import { ensureAndroidChannel } from './src/utils/notifications';
 import TodayScreen from './src/screens/TodayScreen';
@@ -39,23 +37,17 @@ import AuthScreen from './src/screens/AuthScreen';
 
 const Tab = createBottomTabNavigator();
 
-const TAB_ICONS = {
-  Today:     { focused: 'home',      outline: 'home-outline' },
-  Challenge: { focused: 'trophy',    outline: 'trophy-outline' },
-  History:   { focused: 'calendar',  outline: 'calendar-outline' },
-  Stats:     { focused: 'bar-chart', outline: 'bar-chart-outline' },
-  Settings:  { focused: 'settings',  outline: 'settings-outline' },
+const TAB_ICON_MAP = {
+  Today:     Home,
+  Challenge: Trophy,
+  History:   Calendar,
+  Stats:     BarChart2,
+  Settings:  Settings,
 };
 
 function TabIcon({ name, focused, color }) {
-  const icon = TAB_ICONS[name];
-  return (
-    <Ionicons
-      name={focused ? icon.focused : icon.outline}
-      size={rs(22)}
-      color={color}
-    />
-  );
+  const Icon = TAB_ICON_MAP[name];
+  return <Icon size={rs(22)} color={color} strokeWidth={focused ? 2.5 : 1.75} />;
 }
 
 function AppNavigator() {
@@ -115,20 +107,6 @@ function AppNavigator() {
   );
 }
 
-/**
- * Bridges the persisted store `themeMode` into GluestackUIProvider's
- * colorMode prop so gluestack's useColorMode() always reflects the
- * user's saved preference.
- */
-function GluestackWrapper({ children }) {
-  const { state } = useStore();
-  return (
-    <StyledProvider config={gluestackUIConfig} colorMode={state.themeMode}>
-      {children}
-    </StyledProvider>
-  );
-}
-
 export default function App() {
   const [fontsLoaded] = useFonts({
     RussoOne_400Regular,
@@ -149,11 +127,9 @@ export default function App() {
     <SafeAreaProvider>
       <AuthProvider>
         <StoreProvider>
-          <GluestackWrapper>
-            <ThemeProvider>
-              <InnerApp />
-            </ThemeProvider>
-          </GluestackWrapper>
+          <ThemeProvider>
+            <InnerApp />
+          </ThemeProvider>
         </StoreProvider>
       </AuthProvider>
     </SafeAreaProvider>
@@ -165,7 +141,6 @@ function InnerApp() {
 
   useEffect(() => { ensureAndroidChannel(); }, []);
 
-  // Handle password-reset deep links: habitflow://reset-password#access_token=...&type=recovery
   useEffect(() => {
     function handleUrl(url) {
       if (!url || !url.includes('type=recovery')) return;
@@ -186,7 +161,6 @@ function InnerApp() {
 
   return (
     <>
-      {/* Read themeMode directly from store — useColorMode() from gluestack never re-renders */}
       <StatusBar style={state.themeMode === 'dark' ? 'light' : 'dark'} />
       <AppNavigator />
     </>

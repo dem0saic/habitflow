@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, FlatList, TouchableOpacity, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons } from '@expo/vector-icons';
+import { AlarmClock, HelpCircle, Settings, Plus } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useStore, useTodayCompletions } from '../store';
 import { useTheme } from '../ThemeContext';
@@ -95,7 +94,7 @@ export default function TodayScreen() {
       padding: rs(12),
     }}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: rs(6), marginBottom: rs(8) }}>
-        <Ionicons name="alarm" size={rs(14)} color={C.primary} />
+        <AlarmClock size={rs(14)} color={C.primary} strokeWidth={2.5} />
         <Text style={{ fontSize: ms(11), fontWeight: '700', color: C.primary, textTransform: 'uppercase', letterSpacing: 0.5 }}>
           {habitsWithReminder.length} Reminder{habitsWithReminder.length !== 1 ? 's' : ''} Active
         </Text>
@@ -133,20 +132,21 @@ export default function TodayScreen() {
             onPress={() => { lightTap(); dispatch({ type: 'RESET_ONBOARDING' }); }}
             style={styles.iconBtn}
           >
-            <Ionicons name="help-circle-outline" size={rs(18)} color={C.textSub} />
+            <HelpCircle size={rs(18)} color={C.textSub} strokeWidth={1.75} />
           </TouchableOpacity>
           <TouchableOpacity
             onPress={() => { lightTap(); navigation.navigate('Settings'); }}
             style={styles.iconBtn}
           >
-            <Ionicons name="settings-outline" size={rs(18)} color={C.textSub} />
+            <Settings size={rs(18)} color={C.textSub} strokeWidth={1.75} />
           </TouchableOpacity>
         </View>
       </View>
 
-      {/* Floating hero card */}
+      {/* Hero card — solid dark with accent */}
       <View style={styles.heroWrap}>
-        <LinearGradient colors={['#061519', '#1A4A56']} style={styles.heroCard}>
+        <View style={styles.heroCard}>
+          <View style={styles.heroTopLine} />
           <View style={styles.heroStatsRow}>
             <View style={styles.heroStat}>
               <Text style={[styles.heroStatNum, styles.heroStatNumDone]}>{doneCount}</Text>
@@ -173,7 +173,7 @@ export default function TodayScreen() {
               ? '🔥 All done — great work today!'
               : `${habits.length - doneCount} habit${habits.length - doneCount !== 1 ? 's' : ''} left for today`}
           </Text>
-        </LinearGradient>
+        </View>
       </View>
 
       <FlatList
@@ -212,17 +212,15 @@ export default function TodayScreen() {
         }}
         onPress={() => { lightTap(); setAddVisible(true); }}
       >
-        <Ionicons name="add" size={rs(30)} color="#fff" />
+        <Plus size={rs(30)} color="#fff" strokeWidth={2.5} />
       </TouchableOpacity>
 
-      {/* Add new habit */}
       <AddHabitModal
         visible={addVisible}
         onClose={() => setAddVisible(false)}
         onAdd={handleAdd}
       />
 
-      {/* Edit existing habit */}
       <AddHabitModal
         visible={editingHabit != null}
         onClose={() => setEditingHabit(null)}
@@ -265,9 +263,17 @@ function makeStyles(C) { return {
   },
   heroWrap: { paddingHorizontal: rs(16), marginBottom: rs(8) },
   heroCard: {
-    borderRadius: rs(24), padding: rs(24),
-    shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: rs(12),
-    shadowOffset: { width: 0, height: rs(6) }, elevation: 8,
+    backgroundColor: '#071D26',
+    borderRadius: rs(24), padding: rs(24), paddingTop: rs(22),
+    borderWidth: 1.5, borderColor: 'rgba(245,123,81,0.22)',
+    shadowColor: C.primary,
+    shadowOpacity: 0.18, shadowRadius: rs(18),
+    shadowOffset: { width: 0, height: rs(5) }, elevation: 8,
+    overflow: 'hidden',
+  },
+  heroTopLine: {
+    position: 'absolute', top: 0, left: 0, right: 0,
+    height: rs(3), backgroundColor: C.primary,
   },
   heroStatsRow: { flexDirection: 'row', marginBottom: rs(20) },
   heroStat: { flex: 1, alignItems: 'center' },

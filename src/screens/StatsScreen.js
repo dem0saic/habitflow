@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons } from '@expo/vector-icons';
+import { RotateCw } from 'lucide-react-native';
 import { useStore, calcStreak } from '../store';
 import { useTheme } from '../ThemeContext';
 import { rs, ms, ls } from '../utils/responsive';
@@ -55,7 +54,6 @@ function ContributionGraph({ completions, habits, C }) {
     <View>
       <ScrollView horizontal showsHorizontalScrollIndicator={false}>
         <View style={{ flexDirection: 'row' }}>
-          {/* Day labels column */}
           <View style={{ paddingTop: rs(20), marginRight: GAP }}>
             {DAY_LABELS.map((label, i) => (
               <View key={i} style={{ width: rs(10), height: CELL, marginBottom: i < 6 ? GAP : 0, justifyContent: 'center' }}>
@@ -65,7 +63,6 @@ function ContributionGraph({ completions, habits, C }) {
               </View>
             ))}
           </View>
-          {/* Week columns */}
           {grid.map(({ week, monthLabel }, w) => (
             <View key={w} style={{ marginRight: GAP }}>
               <Text style={{ fontSize: ms(9), color: monthLabel ? C.textSub : 'transparent', height: rs(18), lineHeight: rs(18) }}>
@@ -85,7 +82,6 @@ function ContributionGraph({ completions, habits, C }) {
           ))}
         </View>
       </ScrollView>
-      {/* Legend */}
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: GAP, marginTop: rs(10), justifyContent: 'flex-end' }}>
         <Text style={{ fontSize: ms(9), color: C.textMuted }}>Less</Text>
         {[C.border, C.primaryLight, C.primaryDark, C.primary, C.success].map((color, i) => (
@@ -168,9 +164,10 @@ export default function StatsScreen() {
         </View>
       </View>
 
-      {/* Floating hero card */}
+      {/* Hero card — solid dark with accent */}
       <View style={styles.heroWrap}>
-        <LinearGradient colors={['#061519', '#2A5E70']} style={styles.heroCard}>
+        <View style={styles.heroCard}>
+          <View style={styles.heroTopLine} />
           <View style={styles.heroStatsRow}>
             <View style={styles.heroStat}>
               <Text style={styles.heroStatNum}>{bestStreak}</Text>
@@ -194,7 +191,7 @@ export default function StatsScreen() {
               ? `🔥 ${bestStreak}-day streak — incredible!`
               : `🔥 Best streak: ${bestStreak} day${bestStreak !== 1 ? 's' : ''}`}
           </Text>
-        </LinearGradient>
+        </View>
       </View>
 
       <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
@@ -229,7 +226,7 @@ export default function StatsScreen() {
           <View style={styles.aiNudgeHeader}>
             <Text style={styles.aiNudgeTitle}>✦ Today's nudge</Text>
             <TouchableOpacity onPress={refreshNudge} disabled={nudgeLoading} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-              <Ionicons name="reload-outline" size={rs(16)} color={nudgeLoading ? C.textMuted : C.primary} />
+              <RotateCw size={rs(16)} color={nudgeLoading ? C.textMuted : C.primary} strokeWidth={2} />
             </TouchableOpacity>
           </View>
           {nudgeLoading ? (
@@ -296,9 +293,17 @@ function makeStyles(C) { return {
   topTitle: { fontSize: ms(17), fontFamily: C.xbold, fontWeight: '800', color: C.text, marginTop: rs(2), letterSpacing: ls(17) },
   heroWrap: { paddingHorizontal: rs(16), marginBottom: rs(8) },
   heroCard: {
-    borderRadius: rs(24), padding: rs(24),
-    shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: rs(12),
-    shadowOffset: { width: 0, height: rs(6) }, elevation: 8,
+    backgroundColor: '#071D26',
+    borderRadius: rs(24), padding: rs(24), paddingTop: rs(22),
+    borderWidth: 1.5, borderColor: 'rgba(245,123,81,0.22)',
+    shadowColor: C.primary,
+    shadowOpacity: 0.18, shadowRadius: rs(18),
+    shadowOffset: { width: 0, height: rs(5) }, elevation: 8,
+    overflow: 'hidden',
+  },
+  heroTopLine: {
+    position: 'absolute', top: 0, left: 0, right: 0,
+    height: rs(3), backgroundColor: C.primary,
   },
   heroStatsRow: { flexDirection: 'row', marginBottom: rs(16) },
   heroStat: { flex: 1, alignItems: 'center' },

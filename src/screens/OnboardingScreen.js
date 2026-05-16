@@ -2,10 +2,9 @@ import React, { useRef, useEffect } from 'react';
 import {
   View, Text, TouchableOpacity, Animated, Easing, Dimensions,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { CheckCheck, Flame, Trophy, Rocket, CheckCircle, Flag } from 'lucide-react-native';
 import { useStore } from '../store';
 import { useAuth } from '../AuthContext';
 import { useTheme } from '../ThemeContext';
@@ -21,21 +20,21 @@ const STEPS = [
     title: 'Track daily habits',
     body: 'Check off habits each day and build streaks that keep you consistent.',
     color: '#F57B51',
-    icon: 'checkmark-circle-outline',
+    Icon: CheckCircle,
   },
   {
     emoji: '🔥',
     title: 'Earn rewards',
     body: 'Complete all habits in a day and unlock a celebration with haptic feedback.',
     color: '#FBBC58',
-    icon: 'trophy-outline',
+    Icon: Trophy,
   },
   {
     emoji: '🏆',
     title: 'Conquer challenges',
     body: 'Take on 3, 7, or 21-day challenges and claim your well-earned reward.',
     color: '#F57B51',
-    icon: 'flag-outline',
+    Icon: Flag,
   },
 ];
 
@@ -114,7 +113,7 @@ function AppLogo() {
               width: rs(54), height: rs(54), borderRadius: rs(16),
               backgroundColor: 'rgba(245,123,81,0.25)',
             }} />
-            <Ionicons name="checkmark-done" size={rs(36)} color="#fff" />
+            <CheckCheck size={rs(36)} color="#fff" strokeWidth={2.5} />
           </View>
         </View>
       </Animated.View>
@@ -128,7 +127,7 @@ function AppLogo() {
         borderWidth: 2, borderColor: 'rgba(255,255,255,0.35)',
         transform: [{ scale: flamePulse }],
       }}>
-        <Ionicons name="flame" size={rs(14)} color="#fff" />
+        <Flame size={rs(14)} color="#fff" strokeWidth={2.5} />
       </Animated.View>
 
       {/* Trophy badge */}
@@ -140,7 +139,7 @@ function AppLogo() {
         borderWidth: 2, borderColor: 'rgba(255,255,255,0.35)',
         transform: [{ scale: trophyPulse }],
       }}>
-        <Ionicons name="trophy" size={rs(12)} color="#fff" />
+        <Trophy size={rs(12)} color="#fff" strokeWidth={2.5} />
       </Animated.View>
     </Animated.View>
   );
@@ -173,10 +172,8 @@ export default function OnboardingScreen() {
   return (
     <>
       <StatusBar style="light" />
-      <LinearGradient
-        colors={['#061519', '#0B2A32', '#0D3040']}
-        style={[styles.root, { paddingTop: insets.top + rs(20), paddingBottom: Math.max(insets.bottom, rs(12)) + rs(16) }]}
-      >
+      <View style={[styles.root, { paddingTop: insets.top + rs(20), paddingBottom: Math.max(insets.bottom, rs(12)) + rs(16) }]}>
+
         {/* ── Header ── */}
         <View style={styles.header}>
           <AppLogo />
@@ -203,35 +200,38 @@ export default function OnboardingScreen() {
           style={{ flex: 1 }}
           contentContainerStyle={{ alignItems: 'center' }}
         >
-          {STEPS.map((step, i) => (
-            <View key={i} style={[styles.slide, { width }]}>
-              {/* Large emoji circle */}
-              <View style={[styles.slideCircle, {
-                borderColor: step.color + '55',
-                backgroundColor: step.color + '15',
-              }]}>
-                <View style={[styles.slideCircleInner, {
-                  backgroundColor: step.color + '22',
+          {STEPS.map((step, i) => {
+            const { Icon } = step;
+            return (
+              <View key={i} style={[styles.slide, { width }]}>
+                {/* Large emoji circle */}
+                <View style={[styles.slideCircle, {
+                  borderColor: step.color + '55',
+                  backgroundColor: step.color + '15',
                 }]}>
-                  <AnimatedEmoji emoji={step.emoji} size={ms(64)} />
+                  <View style={[styles.slideCircleInner, {
+                    backgroundColor: step.color + '22',
+                  }]}>
+                    <AnimatedEmoji emoji={step.emoji} size={ms(64)} />
+                  </View>
                 </View>
-              </View>
 
-              {/* Step number */}
-              <View style={[styles.stepPill, {
-                backgroundColor: step.color + '20',
-                borderColor: step.color + '50',
-              }]}>
-                <View style={[styles.stepDot, { backgroundColor: step.color }]} />
-                <Text style={[styles.stepPillText, { color: step.color }]}>
-                  Step {i + 1} of {STEPS.length}
-                </Text>
-              </View>
+                {/* Step number */}
+                <View style={[styles.stepPill, {
+                  backgroundColor: step.color + '20',
+                  borderColor: step.color + '50',
+                }]}>
+                  <View style={[styles.stepDot, { backgroundColor: step.color }]} />
+                  <Text style={[styles.stepPillText, { color: step.color }]}>
+                    Step {i + 1} of {STEPS.length}
+                  </Text>
+                </View>
 
-              <Text style={styles.slideTitle}>{step.title}</Text>
-              <Text style={styles.slideBody}>{step.body}</Text>
-            </View>
-          ))}
+                <Text style={styles.slideTitle}>{step.title}</Text>
+                <Text style={styles.slideBody}>{step.body}</Text>
+              </View>
+            );
+          })}
         </Animated.ScrollView>
 
         {/* ── Animated dots ── */}
@@ -253,7 +253,7 @@ export default function OnboardingScreen() {
         {/* ── CTA ── */}
         <View style={styles.ctaWrap}>
           <TouchableOpacity style={styles.btn} onPress={finish} activeOpacity={0.85}>
-            <Ionicons name="rocket-outline" size={rs(18)} color="#fff" style={{ marginRight: rs(8) }} />
+            <Rocket size={rs(18)} color="#fff" strokeWidth={2} style={{ marginRight: rs(8) }} />
             <Text style={styles.btnText}>
               {state.onboardingDone ? 'Back to App' : 'Get Started'}
             </Text>
@@ -268,13 +268,13 @@ export default function OnboardingScreen() {
             <Text style={styles.signOutText}>Sign out</Text>
           </TouchableOpacity>
         )}
-      </LinearGradient>
+      </View>
     </>
   );
 }
 
 function makeStyles(C) { return {
-  root: { flex: 1, alignItems: 'center' },
+  root: { flex: 1, alignItems: 'center', backgroundColor: '#061519' },
 
   header: { alignItems: 'center', paddingBottom: rs(4) },
   brandRow: { flexDirection: 'row', alignItems: 'center', gap: rs(10), marginTop: rs(12) },

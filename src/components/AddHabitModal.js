@@ -4,7 +4,10 @@ import {
   Pressable, ScrollView, KeyboardAvoidingView, Platform,
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { Ionicons } from '@expo/vector-icons';
+import {
+  XCircle, LayoutGrid, X, CheckCircle, Repeat2, Timer, Ban,
+  AlarmClock, Clock, Minus, Plus,
+} from 'lucide-react-native';
 import { useTheme } from '../ThemeContext';
 import { EMOJIS } from '../theme';
 import { rs, ms, ls } from '../utils/responsive';
@@ -19,11 +22,13 @@ function formatTime(date) {
 
 const DEFAULT_REMINDER = new Date(2000, 0, 1, 9, 0);
 
-/**
- * Dual-purpose modal: add a new habit (no `editingHabit`) or edit an
- * existing one (`editingHabit` prop provided). When editing, `onAdd`
- * receives the full updated habit object including the original `id`.
- */
+const TYPE_OPTIONS = [
+  { key: 'daily',    Icon: CheckCircle, label: 'Daily',   sub: 'Check off once per day' },
+  { key: 'volume',   Icon: Repeat2,     label: 'Volume',  sub: 'Count reps / sessions'  },
+  { key: 'timer',    Icon: Timer,       label: 'Timer',   sub: 'Track minutes per day'  },
+  { key: 'negative', Icon: Ban,         label: 'Avoid',   sub: 'Break a bad habit'      },
+];
+
 export default function AddHabitModal({ visible, onClose, onAdd, editingHabit }) {
   const C = useTheme();
   const styles = makeStyles(C);
@@ -38,7 +43,6 @@ export default function AddHabitModal({ visible, onClose, onAdd, editingHabit })
   const [showPicker, setShowPicker] = useState(false);
   const [showEmojiGrid, setShowEmojiGrid] = useState(false);
 
-  // Populate fields when modal opens
   useEffect(() => {
     if (!visible) return;
     if (editingHabit) {
@@ -117,7 +121,7 @@ export default function AddHabitModal({ visible, onClose, onAdd, editingHabit })
           <View style={styles.sheetHeader}>
             <Text style={styles.title}>{isEditing ? 'Edit Habit' : 'New Habit'}</Text>
             <TouchableOpacity style={styles.closeBtn} onPress={handleClose} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
-              <Ionicons name="close-circle-outline" size={rs(28)} color={C.textMuted} />
+              <XCircle size={rs(28)} color={C.textMuted} strokeWidth={1.75} />
             </TouchableOpacity>
           </View>
           <ScrollView
@@ -142,18 +146,15 @@ export default function AddHabitModal({ visible, onClose, onAdd, editingHabit })
             {/* Emoji */}
             <Text style={styles.label}>Pick an emoji</Text>
 
-            {/* Preview row — tap to expand/collapse the grid */}
             <TouchableOpacity
               style={[styles.emojiPreviewRow, showEmojiGrid && styles.emojiPreviewRowOpen]}
               onPress={() => setShowEmojiGrid(v => !v)}
               activeOpacity={0.75}
             >
-              {/* Large emoji tile */}
               <View style={styles.emojiDisplayTile}>
                 <Text style={{ fontSize: ms(30) }}>{emoji}</Text>
               </View>
 
-              {/* Label */}
               <View style={{ flex: 1, marginLeft: rs(14) }}>
                 <Text style={styles.emojiPreviewTitle}>Habit emoji</Text>
                 <Text style={styles.emojiPreviewSub}>
@@ -161,17 +162,14 @@ export default function AddHabitModal({ visible, onClose, onAdd, editingHabit })
                 </Text>
               </View>
 
-              {/* Action badge */}
               <View style={[styles.emojiActionBadge, showEmojiGrid && styles.emojiActionBadgeOpen]}>
-                <Ionicons
-                  name={showEmojiGrid ? 'close' : 'apps-outline'}
-                  size={rs(16)}
-                  color={showEmojiGrid ? C.primary : C.textSub}
-                />
+                {showEmojiGrid
+                  ? <X size={rs(16)} color={C.primary} strokeWidth={2.5} />
+                  : <LayoutGrid size={rs(16)} color={C.textSub} strokeWidth={1.75} />
+                }
               </View>
             </TouchableOpacity>
 
-            {/* Collapsible emoji grid — limited to 5 rows, rest scrollable */}
             {showEmojiGrid && (
               <ScrollView
                 style={styles.emojiGridScroll}
@@ -197,29 +195,24 @@ export default function AddHabitModal({ visible, onClose, onAdd, editingHabit })
             {/* Type */}
             <Text style={styles.label}>Habit type</Text>
             <View style={styles.typeGrid}>
-              {[
-                { key: 'daily',    icon: 'checkmark-circle-outline', label: 'Daily',   sub: 'Check off once per day' },
-                { key: 'volume',   icon: 'repeat-outline',           label: 'Volume',  sub: 'Count reps / sessions'  },
-                { key: 'timer',    icon: 'timer-outline',            label: 'Timer',   sub: 'Track minutes per day'  },
-                { key: 'negative', icon: 'ban-outline',              label: 'Avoid',   sub: 'Break a bad habit'      },
-              ].map(t => (
+              {TYPE_OPTIONS.map(({ key, Icon, label, sub }) => (
                 <TouchableOpacity
-                  key={t.key}
-                  style={[styles.typeBtn, type === t.key && styles.typeBtnActive]}
+                  key={key}
+                  style={[styles.typeBtn, type === key && styles.typeBtnActive]}
                   onPress={() => {
-                    setType(t.key);
-                    if (t.key === 'timer')  setTargetCount(20);
-                    if (t.key === 'volume') setTargetCount(3);
+                    setType(key);
+                    if (key === 'timer')  setTargetCount(20);
+                    if (key === 'volume') setTargetCount(3);
                   }}
                 >
-                  <Ionicons
-                    name={t.icon}
+                  <Icon
                     size={rs(20)}
-                    color={type === t.key ? '#fff' : C.textSub}
+                    color={type === key ? '#fff' : C.textSub}
+                    strokeWidth={type === key ? 2.5 : 1.75}
                     style={{ marginBottom: rs(4) }}
                   />
-                  <Text style={[styles.typeBtnText, type === t.key && styles.typeBtnTextActive]}>{t.label}</Text>
-                  <Text style={[styles.typeBtnSub, type === t.key && { color: 'rgba(255,255,255,0.6)' }]}>{t.sub}</Text>
+                  <Text style={[styles.typeBtnText, type === key && styles.typeBtnTextActive]}>{label}</Text>
+                  <Text style={[styles.typeBtnSub, type === key && { color: 'rgba(255,255,255,0.6)' }]}>{sub}</Text>
                 </TouchableOpacity>
               ))}
             </View>
@@ -237,7 +230,7 @@ export default function AddHabitModal({ visible, onClose, onAdd, editingHabit })
                       type === 'timer' ? Math.max(5, targetCount - 5) : Math.max(2, targetCount - 1)
                     )}
                   >
-                    <Ionicons name="remove" size={rs(18)} color={C.text} />
+                    <Minus size={rs(18)} color={C.text} strokeWidth={2} />
                   </TouchableOpacity>
                   <Text style={styles.countNum}>
                     {type === 'timer' ? `${targetCount} min` : `${targetCount}×`}
@@ -248,7 +241,7 @@ export default function AddHabitModal({ visible, onClose, onAdd, editingHabit })
                       type === 'timer' ? Math.min(180, targetCount + 5) : Math.min(99, targetCount + 1)
                     )}
                   >
-                    <Ionicons name="add" size={rs(18)} color={C.text} />
+                    <Plus size={rs(18)} color={C.text} strokeWidth={2} />
                   </TouchableOpacity>
                 </View>
               </View>
@@ -258,10 +251,10 @@ export default function AddHabitModal({ visible, onClose, onAdd, editingHabit })
             <Text style={styles.label}>Daily Reminder</Text>
 
             <View style={styles.reminderToggleRow}>
-              <Ionicons
-                name={reminderEnabled ? 'alarm' : 'alarm-outline'}
+              <AlarmClock
                 size={rs(20)}
                 color={reminderEnabled ? C.primary : C.textMuted}
+                strokeWidth={reminderEnabled ? 2.5 : 1.75}
               />
               <Text style={[styles.reminderToggleLabel, reminderEnabled && { color: C.text }]}>
                 {reminderEnabled ? `Remind me at ${formatTime(reminderDate)}` : 'No reminder'}
@@ -277,7 +270,7 @@ export default function AddHabitModal({ visible, onClose, onAdd, editingHabit })
 
             {reminderEnabled && !showPicker && (
               <TouchableOpacity style={styles.changeTimeBtn} onPress={() => setShowPicker(true)}>
-                <Ionicons name="time-outline" size={rs(16)} color={C.primary} />
+                <Clock size={rs(16)} color={C.primary} strokeWidth={2} />
                 <Text style={styles.changeTimeBtnText}>Change time</Text>
               </TouchableOpacity>
             )}

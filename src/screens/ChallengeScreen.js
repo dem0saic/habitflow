@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons } from '@expo/vector-icons';
+import { Calendar, CheckCircle, ChevronRight, AlarmClock, Check } from 'lucide-react-native';
 import { useStore, useChallengeProgress, useTodayCompletions } from '../store';
 import { useTheme } from '../ThemeContext';
 import { rs, ms, ls } from '../utils/responsive';
@@ -53,9 +52,10 @@ export default function ChallengeScreen() {
         </View>
       </View>
 
-      {/* Floating hero card */}
+      {/* Hero card — solid dark with accent */}
       <View style={styles.heroWrap}>
-        <LinearGradient colors={['#061519', '#1A4A56']} style={styles.heroCard}>
+        <View style={styles.heroCard}>
+          <View style={styles.heroTopLine} />
           {!challenge ? (
             <View style={styles.heroStatsRow}>
               <View style={styles.heroStat}>
@@ -100,11 +100,10 @@ export default function ChallengeScreen() {
               ? '🏅 Challenge conquered — well done!'
               : `Keep going — you're building something real.`}
           </Text>
-        </LinearGradient>
+        </View>
       </View>
 
       {!challenge ? (
-        /* ── Preset picker ─────────────────────────────────────── */
         <ScrollView contentContainerStyle={styles.presetList} showsVerticalScrollIndicator={false}>
           <Text style={styles.pickLabel}>Choose a challenge</Text>
           {PRESETS.map(p => (
@@ -122,16 +121,16 @@ export default function ChallengeScreen() {
                 <Text style={styles.presetSub}>{p.desc}</Text>
                 <View style={styles.presetMeta}>
                   <View style={styles.presetPill}>
-                    <Ionicons name="calendar-outline" size={rs(11)} color={C.gold} />
+                    <Calendar size={rs(11)} color={C.gold} strokeWidth={2} />
                     <Text style={styles.presetPillText}>{p.durationDays} days</Text>
                   </View>
                   <View style={styles.presetPill}>
-                    <Ionicons name="checkmark-circle-outline" size={rs(11)} color={C.gold} />
+                    <CheckCircle size={rs(11)} color={C.gold} strokeWidth={2} />
                     <Text style={styles.presetPillText}>{habits.length} habit{habits.length !== 1 ? 's' : ''}</Text>
                   </View>
                 </View>
               </View>
-              <Ionicons name="chevron-forward" size={rs(20)} color={C.textMuted} />
+              <ChevronRight size={rs(20)} color={C.textMuted} strokeWidth={1.75} />
             </TouchableOpacity>
           ))}
           {habits.length === 0 && (
@@ -143,7 +142,6 @@ export default function ChallengeScreen() {
           )}
         </ScrollView>
       ) : (
-        /* ── Active challenge ──────────────────────────────────── */
         <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
 
           {/* Day circles */}
@@ -165,7 +163,6 @@ export default function ChallengeScreen() {
                 : `Keep going — you're building something real.`}
           </Text>
 
-          {/* ── Tracked habits ─────────────────────────────── */}
           <Text style={styles.sectionLabel}>Tracked habits</Text>
 
           {habits.length === 0 ? (
@@ -182,7 +179,6 @@ export default function ChallengeScreen() {
 
               return (
                 <View key={h.id} style={[styles.habitCard, isDone && styles.habitCardDone]}>
-                  {/* Left: emoji + info */}
                   <View style={styles.habitCardEmoji}>
                     <AnimatedEmoji emoji={h.emoji} size={ms(24)} />
                   </View>
@@ -194,14 +190,13 @@ export default function ChallengeScreen() {
                       </Text>
                       {isDone && (
                         <View style={styles.doneTag}>
-                          <Ionicons name="checkmark" size={rs(10)} color="#fff" />
+                          <Check size={rs(10)} color="#fff" strokeWidth={3} />
                           <Text style={styles.doneTagText}>Done</Text>
                         </View>
                       )}
                     </View>
 
                     <View style={{ flexDirection: 'row', alignItems: 'center', gap: rs(8) }}>
-                      {/* Type pill */}
                       <View style={styles.typePill}>
                         <Text style={styles.typePillText}>
                           {h.type === 'volume'   ? `${count}/${target}×`
@@ -210,10 +205,9 @@ export default function ChallengeScreen() {
                          : 'Daily'}
                         </Text>
                       </View>
-                      {/* Reminder indicator */}
                       {h.reminderTime && (
                         <View style={styles.reminderPill}>
-                          <Ionicons name="alarm-outline" size={rs(10)} color={C.primary} />
+                          <AlarmClock size={rs(10)} color={C.primary} strokeWidth={2} />
                           <Text style={styles.reminderPillText}>
                             {(() => {
                               const hr = h.reminderTime.hour % 12 || 12;
@@ -225,7 +219,6 @@ export default function ChallengeScreen() {
                       )}
                     </View>
 
-                    {/* Progress bar for volume and timer habits */}
                     {(h.type === 'volume' || h.type === 'timer') && (
                       <View style={styles.progressTrack}>
                         <View style={[styles.progressFill, {
@@ -236,10 +229,9 @@ export default function ChallengeScreen() {
                     )}
                   </View>
 
-                  {/* Right: status icon */}
                   <View style={[styles.statusDot, { backgroundColor: isDone ? C.success : C.border }]}>
                     {isDone
-                      ? <Ionicons name="checkmark" size={rs(14)} color="#fff" />
+                      ? <Check size={rs(14)} color="#fff" strokeWidth={3} />
                       : <View style={{ width: rs(6), height: rs(6), borderRadius: rs(3), backgroundColor: C.textMuted }} />
                     }
                   </View>
@@ -248,7 +240,6 @@ export default function ChallengeScreen() {
             })
           )}
 
-          {/* Action buttons */}
           {canClaimReward && (
             <TouchableOpacity style={styles.claimBtn} onPress={claimReward}>
               <Text style={styles.claimBtnText}>🏆 Claim Your Reward</Text>
@@ -280,9 +271,17 @@ function makeStyles(C) { return {
   topTitle: { fontSize: ms(17), fontFamily: C.xbold, fontWeight: '800', color: C.text, marginTop: rs(2), letterSpacing: ls(17) },
   heroWrap: { paddingHorizontal: rs(16), marginBottom: rs(8) },
   heroCard: {
-    borderRadius: rs(24), padding: rs(24),
-    shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: rs(12),
-    shadowOffset: { width: 0, height: rs(6) }, elevation: 8,
+    backgroundColor: '#071D26',
+    borderRadius: rs(24), padding: rs(24), paddingTop: rs(22),
+    borderWidth: 1.5, borderColor: 'rgba(245,123,81,0.22)',
+    shadowColor: C.primary,
+    shadowOpacity: 0.18, shadowRadius: rs(18),
+    shadowOffset: { width: 0, height: rs(5) }, elevation: 8,
+    overflow: 'hidden',
+  },
+  heroTopLine: {
+    position: 'absolute', top: 0, left: 0, right: 0,
+    height: rs(3), backgroundColor: C.primary,
   },
   heroStatsRow: { flexDirection: 'row', marginBottom: rs(16) },
   heroStat: { flex: 1, alignItems: 'center' },

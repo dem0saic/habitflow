@@ -1,7 +1,6 @@
 import React from 'react';
 import { View, Text, FlatList } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useStore } from '../store';
 import { useTheme } from '../ThemeContext';
 import { rs, ms, ls } from '../utils/responsive';
@@ -49,9 +48,10 @@ export default function HistoryScreen() {
         </View>
       </View>
 
-      {/* Floating hero card */}
+      {/* Hero card — solid dark with accent */}
       <View style={styles.heroWrap}>
-        <LinearGradient colors={['#061519', '#1A4A56']} style={styles.heroCard}>
+        <View style={styles.heroCard}>
+          <View style={styles.heroTopLine} />
           <View style={styles.heroStatsRow}>
             <View style={styles.heroStat}>
               <Text style={styles.heroStatNum}>{totalDays}</Text>
@@ -75,7 +75,7 @@ export default function HistoryScreen() {
               ? `⭐ ${perfectDays} perfect day${perfectDays !== 1 ? 's' : ''} — keep it up!`
               : `📅 ${totalDays} day${totalDays !== 1 ? 's' : ''} of consistency`}
           </Text>
-        </LinearGradient>
+        </View>
       </View>
 
       <View style={styles.heatRow}>
@@ -145,9 +145,17 @@ function makeStyles(C) { return {
   topTitle: { fontSize: ms(17), fontFamily: C.xbold, fontWeight: '800', color: C.text, marginTop: rs(2), letterSpacing: ls(17) },
   heroWrap: { paddingHorizontal: rs(16), marginBottom: rs(8) },
   heroCard: {
-    borderRadius: rs(24), padding: rs(24),
-    shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: rs(12),
-    shadowOffset: { width: 0, height: rs(6) }, elevation: 8,
+    backgroundColor: '#071D26',
+    borderRadius: rs(24), padding: rs(24), paddingTop: rs(22),
+    borderWidth: 1.5, borderColor: 'rgba(245,123,81,0.22)',
+    shadowColor: C.primary,
+    shadowOpacity: 0.18, shadowRadius: rs(18),
+    shadowOffset: { width: 0, height: rs(5) }, elevation: 8,
+    overflow: 'hidden',
+  },
+  heroTopLine: {
+    position: 'absolute', top: 0, left: 0, right: 0,
+    height: rs(3), backgroundColor: C.primary,
   },
   heroStatsRow: { flexDirection: 'row', marginBottom: rs(16) },
   heroStat: { flex: 1, alignItems: 'center' },

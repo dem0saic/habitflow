@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, Switch, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
+import {
+  Moon, Smartphone, Bell, Volume2, Mail, KeyRound, LogOut,
+  Play, Info, AlertCircle, CheckCircle, ChevronRight,
+} from 'lucide-react-native';
 import * as Notifications from 'expo-notifications';
 import { useStore } from '../store';
 import { useAuth } from '../AuthContext';
@@ -12,10 +15,10 @@ import { lightTap } from '../utils/haptics';
 
 const APP_VERSION = '1.0.0';
 
-function IconTile({ name, color, bg }) {
+function IconTile({ Icon, color, bg }) {
   return (
     <View style={{ width: rs(34), height: rs(34), borderRadius: rs(10), backgroundColor: bg, alignItems: 'center', justifyContent: 'center', marginRight: rs(12) }}>
-      <Ionicons name={name} size={rs(17)} color={color} />
+      <Icon size={rs(17)} color={color} strokeWidth={2} />
     </View>
   );
 }
@@ -114,12 +117,10 @@ export default function SettingsScreen() {
       <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
         {!!banner.text && (
           <View style={[styles.banner, banner.type === 'error' ? styles.bannerError : styles.bannerInfo]}>
-            <Ionicons
-              name={banner.type === 'error' ? 'alert-circle' : 'checkmark-circle'}
-              size={rs(16)}
-              color={banner.type === 'error' ? '#ff6b6b' : C.primary}
-              style={{ marginRight: rs(8) }}
-            />
+            {banner.type === 'error'
+              ? <AlertCircle size={rs(16)} color="#ff6b6b" strokeWidth={2} style={{ marginRight: rs(8) }} />
+              : <CheckCircle size={rs(16)} color={C.primary} strokeWidth={2} style={{ marginRight: rs(8) }} />
+            }
             <Text style={[styles.bannerText, banner.type === 'error' ? styles.bannerTextError : styles.bannerTextInfo]}>
               {banner.text}
             </Text>
@@ -131,7 +132,7 @@ export default function SettingsScreen() {
         <View style={styles.card}>
           <View style={[styles.row, styles.rowBorder]}>
             <View style={styles.rowLeft}>
-              <IconTile name="moon-outline" color={C.textSub} bg={C.cardHigh} />
+              <IconTile Icon={Moon} color={C.textSub} bg={C.cardHigh} />
               <Text style={styles.rowLabel}>Dark mode</Text>
             </View>
             <Switch
@@ -143,7 +144,7 @@ export default function SettingsScreen() {
           </View>
           <View style={styles.row}>
             <View style={styles.rowLeft}>
-              <IconTile name="phone-portrait-outline" color={C.textSub} bg={C.cardHigh} />
+              <IconTile Icon={Smartphone} color={C.textSub} bg={C.cardHigh} />
               <Text style={styles.rowLabel}>Haptic feedback</Text>
             </View>
             <Switch
@@ -160,7 +161,7 @@ export default function SettingsScreen() {
         <View style={styles.card}>
           <View style={[styles.row, styles.rowBorder]}>
             <View style={styles.rowLeft}>
-              <IconTile name="notifications-outline" color={C.textSub} bg={C.cardHigh} />
+              <IconTile Icon={Bell} color={C.textSub} bg={C.cardHigh} />
               <View style={styles.rowTextGroup}>
                 <Text style={styles.rowLabel}>Daily reminders</Text>
                 <Text style={styles.rowSub}>9:00 AM and 8:00 PM</Text>
@@ -176,7 +177,7 @@ export default function SettingsScreen() {
           </View>
           <View style={styles.row}>
             <View style={styles.rowLeft}>
-              <IconTile name="volume-medium-outline" color={C.textSub} bg={C.cardHigh} />
+              <IconTile Icon={Volume2} color={C.textSub} bg={C.cardHigh} />
               <View style={styles.rowTextGroup}>
                 <Text style={styles.rowLabel}>Notification sound</Text>
                 <Text style={styles.rowSub}>Silent uses vibration only</Text>
@@ -196,7 +197,7 @@ export default function SettingsScreen() {
         <View style={styles.card}>
           <View style={[styles.row, styles.rowBorder]}>
             <View style={styles.rowLeft}>
-              <IconTile name="mail-outline" color={C.textSub} bg={C.cardHigh} />
+              <IconTile Icon={Mail} color={C.textSub} bg={C.cardHigh} />
               <Text style={styles.rowLabel}>Email</Text>
             </View>
             <Text style={styles.rowValue} numberOfLines={1}>{email}</Text>
@@ -207,10 +208,10 @@ export default function SettingsScreen() {
             activeOpacity={0.7}
           >
             <View style={styles.rowLeft}>
-              <IconTile name="key-outline" color={C.textSub} bg={C.cardHigh} />
+              <IconTile Icon={KeyRound} color={C.textSub} bg={C.cardHigh} />
               <Text style={styles.rowLabel}>Change Password</Text>
             </View>
-            <Ionicons name="chevron-forward" size={rs(18)} color={C.textMuted} />
+            <ChevronRight size={rs(18)} color={C.textMuted} strokeWidth={1.75} />
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.row}
@@ -219,7 +220,7 @@ export default function SettingsScreen() {
             disabled={signingOut}
           >
             <View style={styles.rowLeft}>
-              <IconTile name="log-out-outline" color="#ff6b6b" bg="rgba(255,107,107,0.12)" />
+              <IconTile Icon={LogOut} color="#ff6b6b" bg="rgba(255,107,107,0.12)" />
               <Text style={[styles.rowLabel, styles.danger]}>
                 {signingOut ? 'Signing out...' : 'Sign Out'}
               </Text>
@@ -236,17 +237,17 @@ export default function SettingsScreen() {
             activeOpacity={0.7}
           >
             <View style={styles.rowLeft}>
-              <IconTile name="play-outline" color={C.textSub} bg={C.cardHigh} />
+              <IconTile Icon={Play} color={C.textSub} bg={C.cardHigh} />
               <View style={styles.rowTextGroup}>
                 <Text style={styles.rowLabel}>View Onboarding</Text>
                 <Text style={styles.rowSub}>Replay the intro walkthrough</Text>
               </View>
             </View>
-            <Ionicons name="chevron-forward" size={rs(18)} color={C.textMuted} />
+            <ChevronRight size={rs(18)} color={C.textMuted} strokeWidth={1.75} />
           </TouchableOpacity>
           <View style={styles.row}>
             <View style={styles.rowLeft}>
-              <IconTile name="information-circle-outline" color={C.textSub} bg={C.cardHigh} />
+              <IconTile Icon={Info} color={C.textSub} bg={C.cardHigh} />
               <Text style={styles.rowLabel}>Version</Text>
             </View>
             <Text style={styles.rowValue}>{APP_VERSION}</Text>

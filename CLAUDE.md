@@ -21,7 +21,7 @@ On Windows PowerShell use `npx.cmd` instead of `npx` (e.g. `& "C:\Program Files\
 
 Install **Expo Go** on the device (iOS App Store / Android Play Store) and scan the QR code. Use `--tunnel` when the phone and dev machine are on different networks.
 
-**Installing packages:** this project has peer dependency conflicts from `@gluestack-ui/themed`. Always use `--legacy-peer-deps`:
+**Installing packages:** use `--legacy-peer-deps` as a default for any package that has historical peer-dep conflicts in the resolved tree:
 ```bash
 & "C:\Program Files\nodejs\npm.cmd" install --save --legacy-peer-deps <package>
 # or for expo-managed packages:
@@ -66,12 +66,11 @@ Fonts are loaded at the top of `App` via `useFonts` (expo-font) before any provi
 SafeAreaProvider
   └─ AuthProvider           ← Supabase session (session, loading, signIn, signUp, signOut, resetPassword, updatePassword, recoveryMode)
        └─ StoreProvider     ← global state + AsyncStorage cache + Supabase sync
-            └─ GluestackWrapper  ← gluestack-style colorMode (reads state.themeMode directly)
-                 └─ ThemeProvider ← resolves DARK/LIGHT palette → useTheme()
-                      └─ InnerApp ← StatusBar + AppNavigator
+            └─ ThemeProvider ← resolves DARK/LIGHT palette → useTheme()
+                 └─ InnerApp ← StatusBar + AppNavigator
 ```
 
-`InnerApp` reads `state.themeMode` directly from the store — **do not use `useColorMode()` from `@gluestack-style/react`**, it sets a module-level flag on first render and never updates.
+`InnerApp` reads `state.themeMode` directly from the store to drive the active theme.
 
 ### Routing (`AppNavigator` in `App.js`)
 
@@ -195,9 +194,9 @@ The Edge Function source lives in `supabase/functions/<name>/index.ts` and is wr
 
 All six font variants are pre-loaded in `App.js`. If you add a new font, load it there and add a token to `FONTS`.
 
-**Active palette — Color Palette 62 (Bonfire · Backlight · Golden Rambler · Nocturnal Sea):** `#F57B51` · `#FDF6F0` · `#FBBC58` · `#095D6A`. `C.primary` is `#F57B51` in dark, `#C8502A` in light. The same palette is mirrored in `src/gluestack.config.js`.
+**Active palette — Color Palette 62 (Bonfire · Backlight · Golden Rambler · Nocturnal Sea):** `#F57B51` · `#FDF6F0` · `#FBBC58` · `#095D6A`. `C.primary` is `#F57B51` in dark, `#C8502A` in light.
 
-When changing colors, update **both** `src/theme.js` and `src/gluestack.config.js` together — they must stay in sync.
+When changing colors, edit `src/theme.js` — it is the single source of truth for the design tokens consumed via `useTheme()`.
 
 **Style pattern used everywhere:**
 ```js

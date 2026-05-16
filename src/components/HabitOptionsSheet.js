@@ -3,7 +3,7 @@ import {
   View, Text, TouchableOpacity, Modal, Pressable, Platform,
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { Ionicons } from '@expo/vector-icons';
+import { Pencil, ChevronRight, AlarmClock, XCircle, Trash2 } from 'lucide-react-native';
 import { useTheme } from '../ThemeContext';
 import { rs, ms, ls } from '../utils/responsive';
 
@@ -66,13 +66,13 @@ export default function HabitOptionsSheet({
           onPress={() => { onEdit(habit); handleClose(); }}
         >
           <View style={[styles.actionIcon, { backgroundColor: C.primaryLight }]}>
-            <Ionicons name="pencil" size={rs(16)} color={C.primary} />
+            <Pencil size={rs(16)} color={C.primary} strokeWidth={2} />
           </View>
           <View style={{ flex: 1 }}>
             <Text style={styles.actionTitle}>Edit habit</Text>
             <Text style={styles.actionSub}>Change name, emoji, type or reminder</Text>
           </View>
-          <Ionicons name="chevron-forward" size={rs(16)} color={C.textMuted} />
+          <ChevronRight size={rs(16)} color={C.textMuted} strokeWidth={1.75} />
         </TouchableOpacity>
 
         {/* Quick reminder toggle */}
@@ -81,10 +81,10 @@ export default function HabitOptionsSheet({
           onPress={() => setShowPicker(true)}
         >
           <View style={[styles.actionIcon, { backgroundColor: hasReminder ? 'rgba(52,211,153,0.15)' : C.cardHigh }]}>
-            <Ionicons
-              name={hasReminder ? 'alarm' : 'alarm-outline'}
+            <AlarmClock
               size={rs(16)}
               color={hasReminder ? C.success : C.textSub}
+              strokeWidth={hasReminder ? 2.5 : 1.75}
             />
           </View>
           <View style={{ flex: 1 }}>
@@ -102,10 +102,10 @@ export default function HabitOptionsSheet({
               onPress={() => onSetReminder(habit.id, null)}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
-              <Ionicons name="close-circle" size={rs(20)} color={C.textMuted} />
+              <XCircle size={rs(20)} color={C.textMuted} strokeWidth={1.75} />
             </TouchableOpacity>
           )}
-          {!hasReminder && <Ionicons name="chevron-forward" size={rs(16)} color={C.textMuted} />}
+          {!hasReminder && <ChevronRight size={rs(16)} color={C.textMuted} strokeWidth={1.75} />}
         </TouchableOpacity>
 
         {/* iOS inline picker */}
@@ -141,7 +141,7 @@ export default function HabitOptionsSheet({
           onPress={() => { onDelete(habit.id); handleClose(); }}
         >
           <View style={[styles.actionIcon, { backgroundColor: 'rgba(239,68,68,0.1)' }]}>
-            <Ionicons name="trash-outline" size={rs(16)} color="#EF4444" />
+            <Trash2 size={rs(16)} color="#EF4444" strokeWidth={2} />
           </View>
           <Text style={styles.deleteBtnText}>Delete habit</Text>
         </TouchableOpacity>

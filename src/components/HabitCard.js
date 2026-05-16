@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, Animated, Modal, Pressable, Platform } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { Ionicons } from '@expo/vector-icons';
+import { AlarmClock, Timer, Ban, ShieldCheck, Check, Minus, Plus } from 'lucide-react-native';
 import { useTheme } from '../ThemeContext';
 import { rs, ms, ls } from '../utils/responsive';
 import AnimatedEmoji from './AnimatedEmoji';
@@ -140,17 +140,17 @@ export default function HabitCard({ habit, count, onToggle, onIncrement, onDecre
                   <Text style={[styles.name, isDone && styles.nameDone]} numberOfLines={1}>{habit.name}</Text>
                   {habit.type === 'timer' && (
                     <View style={styles.typeBadge}>
-                      <Ionicons name="timer-outline" size={rs(9)} color={C.textMuted} />
+                      <Timer size={rs(9)} color={C.textMuted} strokeWidth={2} />
                       <Text style={styles.typeBadgeText}>timer</Text>
                     </View>
                   )}
                 </View>
 
                 <TouchableOpacity onPress={handleBellPress} style={styles.bellRow} hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}>
-                  <Ionicons
-                    name={habit.reminderTime ? 'alarm' : 'alarm-outline'}
+                  <AlarmClock
                     size={rs(11)}
                     color={habit.reminderTime ? C.primary : C.textMuted}
+                    strokeWidth={habit.reminderTime ? 2.5 : 1.75}
                   />
                   {habit.reminderTime
                     ? <Text style={styles.bellLabel}>{fmtTime(habit.reminderTime)}</Text>
@@ -165,13 +165,13 @@ export default function HabitCard({ habit, count, onToggle, onIncrement, onDecre
 
               <View style={styles.counter}>
                 <TouchableOpacity style={styles.counterBtn} onPress={onDecrement} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                  <Ionicons name="remove" size={rs(18)} color={C.textSub} />
+                  <Minus size={rs(18)} color={C.textSub} strokeWidth={2} />
                 </TouchableOpacity>
                 <Text style={[styles.counterNum, isDone && { color: C.success }]}>
                   {count}<Text style={styles.counterTotal}>/{habit.targetCount}{unit}</Text>
                 </Text>
                 <TouchableOpacity style={[styles.counterBtn, styles.counterBtnPlus]} onPress={onIncrement} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                  <Ionicons name="add" size={rs(18)} color="#fff" />
+                  <Plus size={rs(18)} color="#fff" strokeWidth={2.5} />
                 </TouchableOpacity>
               </View>
             </TouchableOpacity>
@@ -208,7 +208,7 @@ export default function HabitCard({ habit, count, onToggle, onIncrement, onDecre
                   <Text style={[styles.name, isDone && styles.nameDone]} numberOfLines={1}>{habit.name}</Text>
                   {isNegative && (
                     <View style={[styles.typeBadge, isDone && { backgroundColor: 'rgba(107,153,112,0.15)' }]}>
-                      <Ionicons name="ban-outline" size={rs(9)} color={isDone ? C.success : C.warning} />
+                      <Ban size={rs(9)} color={isDone ? C.success : C.warning} strokeWidth={2} />
                       <Text style={[styles.typeBadgeText, { color: isDone ? C.success : C.warning }]}>
                         {isDone ? 'Avoided' : 'Avoid'}
                       </Text>
@@ -226,16 +226,19 @@ export default function HabitCard({ habit, count, onToggle, onIncrement, onDecre
               style={styles.bellIconBtn}
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             >
-              <Ionicons
-                name={habit.reminderTime ? 'alarm' : 'alarm-outline'}
+              <AlarmClock
                 size={rs(17)}
                 color={habit.reminderTime ? C.primary : C.textMuted}
+                strokeWidth={habit.reminderTime ? 2.5 : 1.75}
               />
             </TouchableOpacity>
 
             <View style={styles.checkContainer}>
               <Animated.View style={[styles.check, isDone && styles.checkDone, { transform: [{ scale: checkScale }] }]}>
-                <Ionicons name={isNegative && isDone ? 'shield-checkmark' : 'checkmark'} size={rs(16)} color="#fff" />
+                {isNegative && isDone
+                  ? <ShieldCheck size={rs(16)} color="#fff" strokeWidth={2.5} />
+                  : <Check size={rs(16)} color="#fff" strokeWidth={3} />
+                }
               </Animated.View>
               {!isDone && <View style={[styles.checkEmpty, isNegative && styles.checkEmptyNegative]} />}
             </View>

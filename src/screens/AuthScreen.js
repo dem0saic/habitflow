@@ -4,10 +4,11 @@ import {
   ActivityIndicator, KeyboardAvoidingView, Platform,
   ScrollView, Pressable,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import {
+  CheckCheck, AlertCircle, CheckCircle, Mail, Lock, Eye, EyeOff, ArrowLeft,
+} from 'lucide-react-native';
 import { useAuth } from '../AuthContext';
 import { useTheme } from '../ThemeContext';
 import { rs, ms, ls } from '../utils/responsive';
@@ -17,7 +18,7 @@ export default function AuthScreen() {
   const C = useTheme();
   const insets = useSafeAreaInsets();
 
-  const [mode, setMode] = useState('signIn');   // 'signIn' | 'signUp' | 'forgotPassword'
+  const [mode, setMode] = useState('signIn');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
@@ -119,10 +120,14 @@ export default function AuthScreen() {
   return (
     <>
       <StatusBar style="light" />
-      <LinearGradient
-        colors={['#061519', '#0A2830', '#C8502A']}
-        style={{ flex: 1 }}
-      >
+      {/* Solid dark background with warm decorative glow */}
+      <View style={{ flex: 1, backgroundColor: '#061519' }}>
+        <View style={{
+          position: 'absolute',
+          bottom: -rs(60), left: -rs(40), right: -rs(40),
+          height: rs(260), borderRadius: rs(130),
+          backgroundColor: '#C8502A', opacity: 0.12,
+        }} />
         <KeyboardAvoidingView
           style={{ flex: 1 }}
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -138,7 +143,7 @@ export default function AuthScreen() {
             {/* Branding */}
             <View style={styles.brandRow}>
               <View style={styles.iconTile}>
-                <Ionicons name="checkmark-done" size={rs(28)} color="#fff" />
+                <CheckCheck size={rs(28)} color="#fff" strokeWidth={2.5} />
               </View>
               <Text style={styles.logoText}>HabitFlow</Text>
             </View>
@@ -148,18 +153,17 @@ export default function AuthScreen() {
             <View style={styles.card}>
 
               {recoveryMode ? (
-                /* ── Reset Password (arrived via deep link) ── */
                 <>
                   <Text style={styles.recoveryHint}>
                     Choose a new password for your account.
                   </Text>
 
-                  {!!error && <Banner type="error" icon="alert-circle" text={error} styles={styles} />}
-                  {!!info  && <Banner type="info"  icon="checkmark-circle" text={info} styles={styles} />}
+                  {!!error && <Banner type="error" Icon={AlertCircle} text={error} styles={styles} />}
+                  {!!info  && <Banner type="info"  Icon={CheckCircle} text={info} styles={styles} />}
 
                   <Text style={styles.label}>New Password</Text>
                   <View style={styles.inputRow}>
-                    <Ionicons name="lock-closed-outline" size={rs(17)} color={C.textMuted} style={styles.inputIcon} />
+                    <Lock size={rs(17)} color={C.textMuted} strokeWidth={1.75} style={styles.inputIcon} />
                     <TextInput
                       style={[styles.input, { flex: 1 }]}
                       value={password}
@@ -172,13 +176,16 @@ export default function AuthScreen() {
                       returnKeyType="next"
                     />
                     <Pressable onPress={() => setShowPass(v => !v)} style={styles.eyeBtn} hitSlop={rs(8)}>
-                      <Ionicons name={showPass ? 'eye-off-outline' : 'eye-outline'} size={rs(18)} color={C.textMuted} />
+                      {showPass
+                        ? <EyeOff size={rs(18)} color={C.textMuted} strokeWidth={1.75} />
+                        : <Eye size={rs(18)} color={C.textMuted} strokeWidth={1.75} />
+                      }
                     </Pressable>
                   </View>
 
                   <Text style={styles.label}>Confirm Password</Text>
                   <View style={styles.inputRow}>
-                    <Ionicons name="lock-closed-outline" size={rs(17)} color={C.textMuted} style={styles.inputIcon} />
+                    <Lock size={rs(17)} color={C.textMuted} strokeWidth={1.75} style={styles.inputIcon} />
                     <TextInput
                       style={[styles.input, { flex: 1 }]}
                       value={confirm}
@@ -192,7 +199,10 @@ export default function AuthScreen() {
                       onSubmitEditing={handleSubmit}
                     />
                     <Pressable onPress={() => setShowConfirm(v => !v)} style={styles.eyeBtn} hitSlop={rs(8)}>
-                      <Ionicons name={showConfirm ? 'eye-off-outline' : 'eye-outline'} size={rs(18)} color={C.textMuted} />
+                      {showConfirm
+                        ? <EyeOff size={rs(18)} color={C.textMuted} strokeWidth={1.75} />
+                        : <Eye size={rs(18)} color={C.textMuted} strokeWidth={1.75} />
+                      }
                     </Pressable>
                   </View>
 
@@ -200,19 +210,18 @@ export default function AuthScreen() {
                 </>
 
               ) : mode === 'forgotPassword' ? (
-                /* ── Forgot Password ── */
                 <>
                   <TouchableOpacity onPress={goBackToSignIn} style={styles.backRow} hitSlop={rs(8)}>
-                    <Ionicons name="arrow-back" size={rs(16)} color={C.primary} />
+                    <ArrowLeft size={rs(16)} color={C.primary} strokeWidth={2} />
                     <Text style={styles.backText}>Back to Sign In</Text>
                   </TouchableOpacity>
 
-                  {!!error && <Banner type="error" icon="alert-circle" text={error} styles={styles} />}
-                  {!!info  && <Banner type="info"  icon="checkmark-circle" text={info} styles={styles} />}
+                  {!!error && <Banner type="error" Icon={AlertCircle} text={error} styles={styles} />}
+                  {!!info  && <Banner type="info"  Icon={CheckCircle} text={info} styles={styles} />}
 
                   <Text style={styles.label}>Email</Text>
                   <View style={styles.inputRow}>
-                    <Ionicons name="mail-outline" size={rs(17)} color={C.textMuted} style={styles.inputIcon} />
+                    <Mail size={rs(17)} color={C.textMuted} strokeWidth={1.75} style={styles.inputIcon} />
                     <TextInput
                       style={styles.input}
                       value={email}
@@ -231,7 +240,6 @@ export default function AuthScreen() {
                 </>
 
               ) : (
-                /* ── Sign In / Sign Up ── */
                 <>
                   <View style={styles.tabs}>
                     <TouchableOpacity
@@ -250,12 +258,12 @@ export default function AuthScreen() {
                     </TouchableOpacity>
                   </View>
 
-                  {!!error && <Banner type="error" icon="alert-circle" text={error} styles={styles} />}
-                  {!!info  && <Banner type="info"  icon="checkmark-circle" text={info} styles={styles} />}
+                  {!!error && <Banner type="error" Icon={AlertCircle} text={error} styles={styles} />}
+                  {!!info  && <Banner type="info"  Icon={CheckCircle} text={info} styles={styles} />}
 
                   <Text style={styles.label}>Email</Text>
                   <View style={styles.inputRow}>
-                    <Ionicons name="mail-outline" size={rs(17)} color={C.textMuted} style={styles.inputIcon} />
+                    <Mail size={rs(17)} color={C.textMuted} strokeWidth={1.75} style={styles.inputIcon} />
                     <TextInput
                       style={styles.input}
                       value={email}
@@ -271,7 +279,7 @@ export default function AuthScreen() {
 
                   <Text style={styles.label}>Password</Text>
                   <View style={styles.inputRow}>
-                    <Ionicons name="lock-closed-outline" size={rs(17)} color={C.textMuted} style={styles.inputIcon} />
+                    <Lock size={rs(17)} color={C.textMuted} strokeWidth={1.75} style={styles.inputIcon} />
                     <TextInput
                       style={[styles.input, { flex: 1 }]}
                       value={password}
@@ -285,7 +293,10 @@ export default function AuthScreen() {
                       onSubmitEditing={mode === 'signIn' ? handleSubmit : undefined}
                     />
                     <Pressable onPress={() => setShowPass(v => !v)} style={styles.eyeBtn} hitSlop={rs(8)}>
-                      <Ionicons name={showPass ? 'eye-off-outline' : 'eye-outline'} size={rs(18)} color={C.textMuted} />
+                      {showPass
+                        ? <EyeOff size={rs(18)} color={C.textMuted} strokeWidth={1.75} />
+                        : <Eye size={rs(18)} color={C.textMuted} strokeWidth={1.75} />
+                      }
                     </Pressable>
                   </View>
 
@@ -299,7 +310,7 @@ export default function AuthScreen() {
                     <>
                       <Text style={styles.label}>Confirm Password</Text>
                       <View style={styles.inputRow}>
-                        <Ionicons name="lock-closed-outline" size={rs(17)} color={C.textMuted} style={styles.inputIcon} />
+                        <Lock size={rs(17)} color={C.textMuted} strokeWidth={1.75} style={styles.inputIcon} />
                         <TextInput
                           style={[styles.input, { flex: 1 }]}
                           value={confirm}
@@ -313,7 +324,10 @@ export default function AuthScreen() {
                           onSubmitEditing={handleSubmit}
                         />
                         <Pressable onPress={() => setShowConfirm(v => !v)} style={styles.eyeBtn} hitSlop={rs(8)}>
-                          <Ionicons name={showConfirm ? 'eye-off-outline' : 'eye-outline'} size={rs(18)} color={C.textMuted} />
+                          {showConfirm
+                            ? <EyeOff size={rs(18)} color={C.textMuted} strokeWidth={1.75} />
+                            : <Eye size={rs(18)} color={C.textMuted} strokeWidth={1.75} />
+                          }
                         </Pressable>
                       </View>
                     </>
@@ -337,15 +351,15 @@ export default function AuthScreen() {
             </View>
           </ScrollView>
         </KeyboardAvoidingView>
-      </LinearGradient>
+      </View>
     </>
   );
 }
 
-function Banner({ type, icon, text, styles }) {
+function Banner({ type, Icon, text, styles }) {
   return (
     <View style={type === 'error' ? styles.errorBanner : styles.infoBanner}>
-      <Ionicons name={icon} size={rs(15)} color={type === 'error' ? '#ff6b6b' : '#6bffb8'} />
+      <Icon size={rs(15)} color={type === 'error' ? '#ff6b6b' : '#6bffb8'} strokeWidth={2} />
       <Text style={type === 'error' ? styles.errorText : styles.infoText}>{text}</Text>
     </View>
   );
