@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useReducer, useEffect, useRef, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { todayKey } from './utils/date';
-import { scheduleHabitReminder, scheduleDailyReminders, ensureAndroidChannel } from './utils/notifications';
+import { scheduleHabitReminder, scheduleDailyReminders, ensureAndroidChannel, setNotificationSound } from './utils/notifications';
 import { setHapticsEnabled } from './utils/haptics';
 import { supabase } from './lib/supabase';
 import { pullUserData, pushAllData, syncActionToSupabase } from './lib/supabaseSync';
@@ -12,6 +12,7 @@ const defaultState = {
   onboardingDone: false,
   themeMode: 'dark',
   hapticsEnabled: true,
+  notificationSound: true,
   habits: [],
   completions: {},  // { 'YYYY-MM-DD': { [habitId]: number } }
   challenge: null,  // { id, title, durationDays, startDate, habitIds, completed, rewardClaimed }
@@ -32,6 +33,9 @@ function reducer(state, action) {
 
     case 'SET_HAPTICS':
       return { ...state, hapticsEnabled: action.enabled };
+
+    case 'SET_NOTIFICATION_SOUND':
+      return { ...state, notificationSound: action.enabled };
 
     case 'ADD_HABIT': {
       const habit = {
@@ -202,6 +206,11 @@ export function StoreProvider({ children }) {
   useEffect(() => {
     setHapticsEnabled(state.hapticsEnabled ?? true);
   }, [state.hapticsEnabled]);
+
+  // Keep notification sound module flag in sync with stored preference
+  useEffect(() => {
+    setNotificationSound(state.notificationSound ?? true);
+  }, [state.notificationSound]);
 
   // Wrapped dispatch: ensures generated IDs are stable, then syncs to Supabase
   function syncedDispatch(action) {

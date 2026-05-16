@@ -6,7 +6,7 @@ import { useStore } from '../store';
 import { useAuth } from '../AuthContext';
 import { useTheme } from '../ThemeContext';
 import { rs, ms, ls } from '../utils/responsive';
-import { scheduleDailyReminders, requestPermissions } from '../utils/notifications';
+import { scheduleDailyReminders, scheduleHabitReminder, requestPermissions, setNotificationSound } from '../utils/notifications';
 import { lightTap } from '../utils/haptics';
 
 const APP_VERSION = '1.0.0';
@@ -39,6 +39,19 @@ export default function SettingsScreen() {
 
   function toggleHaptics(value) {
     dispatch({ type: 'SET_HAPTICS', enabled: value });
+  }
+
+  async function toggleNotificationSound(value) {
+    setNotificationSound(value);
+    dispatch({ type: 'SET_NOTIFICATION_SOUND', enabled: value });
+    if (remindersOn) {
+      await scheduleDailyReminders(state.habits.map(h => h.name));
+      await Promise.all(
+        state.habits
+          .filter(h => h.reminderTime)
+          .map(h => scheduleHabitReminder(h.id, h.name, h.emoji, h.reminderTime.hour, h.reminderTime.minute))
+      );
+    }
   }
 
   async function toggleReminders(value) {
@@ -124,7 +137,7 @@ export default function SettingsScreen() {
         {/* ── Notifications ── */}
         <Text style={styles.sectionLabel}>Notifications</Text>
         <View style={styles.card}>
-          <View style={styles.row}>
+          <View style={[styles.row, styles.rowBorder]}>
             <View style={styles.rowTextGroup}>
               <Text style={styles.rowLabel}>Daily reminders</Text>
               <Text style={styles.rowSub}>9:00 AM and 8:00 PM</Text>
@@ -133,6 +146,18 @@ export default function SettingsScreen() {
               value={!!remindersOn}
               onValueChange={toggleReminders}
               disabled={remindersOn === null}
+              trackColor={{ false: C.border, true: C.primary }}
+              thumbColor="#fff"
+            />
+          </View>
+          <View style={styles.row}>
+            <View style={styles.rowTextGroup}>
+              <Text style={styles.rowLabel}>Notification sound</Text>
+              <Text style={styles.rowSub}>Silent uses vibration only</Text>
+            </View>
+            <Switch
+              value={state.notificationSound ?? true}
+              onValueChange={toggleNotificationSound}
               trackColor={{ false: C.border, true: C.primary }}
               thumbColor="#fff"
             />

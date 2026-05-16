@@ -10,18 +10,33 @@ Notifications.setNotificationHandler({
   }),
 });
 
-const CHANNEL_ID  = 'habitflow-reminders';
-const MORNING_ID  = 'habitflow_morning';
-const EVENING_ID  = 'habitflow_evening';
+const CHANNEL_ID        = 'habitflow-reminders';
+const SILENT_CHANNEL_ID = 'habitflow-reminders-silent';
+const MORNING_ID        = 'habitflow_morning';
+const EVENING_ID        = 'habitflow_evening';
+
+let _soundEnabled = true;
+export function setNotificationSound(enabled) { _soundEnabled = enabled; }
 
 // Android 8.0+ requires a notification channel or notifications are silently dropped.
 // Safe to call multiple times — it's a no-op on iOS.
+// Two channels are created: one with sound and one silent (Android sound is channel-level
+// and cannot be changed after creation, so switching requires a different channel ID).
 export async function ensureAndroidChannel() {
   if (Platform.OS !== 'android') return;
   await Notifications.setNotificationChannelAsync(CHANNEL_ID, {
     name: 'Habit Reminders',
     importance: Notifications.AndroidImportance.MAX,
     sound: 'default',
+    vibrationPattern: [0, 250, 250, 250],
+    lightColor: '#988686',
+    enableVibrate: true,
+    showBadge: true,
+  });
+  await Notifications.setNotificationChannelAsync(SILENT_CHANNEL_ID, {
+    name: 'Habit Reminders (Silent)',
+    importance: Notifications.AndroidImportance.DEFAULT,
+    sound: null,
     vibrationPattern: [0, 250, 250, 250],
     lightColor: '#988686',
     enableVibrate: true,
@@ -42,8 +57,7 @@ function dailyTrigger(hour, minute) {
     type: Notifications.SchedulableTriggerInputTypes.DAILY,
     hour,
     minute,
-    // Android must route through the channel
-    ...(Platform.OS === 'android' && { channelId: CHANNEL_ID }),
+    ...(Platform.OS === 'android' && { channelId: _soundEnabled ? CHANNEL_ID : SILENT_CHANNEL_ID }),
   };
 }
 
@@ -65,13 +79,13 @@ export async function scheduleDailyReminders(habitNames = []) {
 
   await Notifications.scheduleNotificationAsync({
     identifier: MORNING_ID,
-    content: { title: '🌅 HabitFlow', body: morning, sound: true },
+    content: { title: '🌅 HabitFlow', body: morning, sound: _soundEnabled },
     trigger: dailyTrigger(9, 0),
   });
 
   await Notifications.scheduleNotificationAsync({
     identifier: EVENING_ID,
-    content: { title: '🌙 HabitFlow', body: evening, sound: true },
+    content: { title: '🌙 HabitFlow', body: evening, sound: _soundEnabled },
     trigger: dailyTrigger(20, 0),
   });
 }
@@ -85,7 +99,7 @@ export async function scheduleHabitReminder(habitId, habitName, habitEmoji, hour
     content: {
       title: `${habitEmoji} Time for "${habitName}"`,
       body: `Your daily reminder — let's keep that streak going! 🔥`,
-      sound: true,
+      sound: _soundEnabled,
     },
     trigger: dailyTrigger(hour, minute),
   });
