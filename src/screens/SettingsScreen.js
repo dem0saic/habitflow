@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, Switch, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, Switch, ScrollView, Modal, TextInput, Pressable, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   Moon, Smartphone, Bell, Volume2, Mail, KeyRound, LogOut,
-  Play, Info, AlertCircle, CheckCircle, ChevronRight,
+  Play, Info, AlertCircle, CheckCircle, ChevronRight, Trash2,
 } from 'lucide-react-native';
 import * as Notifications from 'expo-notifications';
 import { useStore } from '../store';
@@ -29,13 +29,16 @@ function IconTile({ Icon, color, bg }) {
 
 export default function SettingsScreen() {
   const { state, dispatch } = useStore();
-  const { session, signOut, resetPassword } = useAuth();
+  const { session, signOut, resetPassword, deleteAccount } = useAuth();
   const C = useTheme();
   const styles = makeStyles(C);
 
   const [remindersOn, setRemindersOn] = useState(null);
   const [banner, setBanner] = useState({ text: '', type: 'info' });
   const [signingOut, setSigningOut] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState('');
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     Notifications.getAllScheduledNotificationsAsync().then(all => {
@@ -107,6 +110,25 @@ export default function SettingsScreen() {
   function handleViewOnboarding() {
     lightTap();
     dispatch({ type: 'RESET_ONBOARDING' });
+  }
+
+  function openDeleteFlow() {
+    lightTap();
+    setDeleteConfirm('');
+    setDeleteOpen(true);
+  }
+
+  async function handleDeleteAccount() {
+    if (deleteConfirm.trim().toLowerCase() !== 'delete') return;
+    setDeleting(true);
+    try {
+      await deleteAccount();
+      // signOut inside deleteAccount fires SIGNED_OUT → AppNavigator returns to AuthScreen.
+    } catch (e) {
+      setDeleting(false);
+      setDeleteOpen(false);
+      showBanner(e?.message || 'Could not delete account. Please try again.', 'error');
+    }
   }
 
   const email = session?.user?.email ?? '';
@@ -222,17 +244,31 @@ export default function SettingsScreen() {
             <ChevronRight size={rs(17)} color={C.textMuted} strokeWidth={1.75} />
           </TouchableOpacity>
           <TouchableOpacity
-            style={styles.row}
+            style={[styles.row, styles.rowBorder]}
             onPress={handleSignOut}
             activeOpacity={0.7}
             disabled={signingOut}
           >
             <View style={styles.rowLeft}>
-              <IconTile Icon={LogOut} color={C.danger} bg={C.dangerSoft} />
-              <Text style={[styles.rowLabel, { color: C.danger }]}>
+              <IconTile Icon={LogOut} color={C.textSub} bg={C.cardHigh} />
+              <Text style={styles.rowLabel}>
                 {signingOut ? 'Signing out…' : 'Sign out'}
               </Text>
             </View>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.row}
+            onPress={openDeleteFlow}
+            activeOpacity={0.7}
+          >
+            <View style={styles.rowLeft}>
+              <IconTile Icon={Trash2} color={C.danger} bg={C.dangerSoft} />
+              <View style={styles.rowTextGroup}>
+                <Text style={[styles.rowLabel, { color: C.danger }]}>Delete account</Text>
+                <Text style={styles.rowSub}>Permanently erase all your data</Text>
+              </View>
+            </View>
+            <ChevronRight size={rs(17)} color={C.danger} strokeWidth={1.75} />
           </TouchableOpacity>
         </View>
 
@@ -262,6 +298,64 @@ export default function SettingsScreen() {
           </View>
         </View>
       </ScrollView>
+
+      {/* Delete account confirmation */}
+      <Modal
+        visible={deleteOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => !deleting && setDeleteOpen(false)}
+      >
+        <Pressable
+          style={styles.deleteOverlay}
+          onPress={() => !deleting && setDeleteOpen(false)}
+        >
+          <Pressable style={styles.deleteCard}>
+            <View style={styles.deleteIconWrap}>
+              <Trash2 size={rs(22)} color={C.danger} strokeWidth={2} />
+            </View>
+            <Text style={styles.deleteTitle}>Delete account?</Text>
+            <Text style={styles.deleteBody}>
+              This permanently removes your habits, completions, challenges and AI coaching history. This cannot be undone.
+            </Text>
+            <Text style={styles.deletePromptLabel}>Type <Text style={{ color: C.danger, fontFamily: C.bold }}>delete</Text> to confirm</Text>
+            <TextInput
+              style={styles.deleteInput}
+              value={deleteConfirm}
+              onChangeText={setDeleteConfirm}
+              placeholder="delete"
+              placeholderTextColor={C.textMuted}
+              autoCapitalize="none"
+              autoCorrect={false}
+              editable={!deleting}
+            />
+            <View style={styles.deleteBtnRow}>
+              <TouchableOpacity
+                style={[styles.deleteCancelBtn, deleting && { opacity: 0.5 }]}
+                onPress={() => !deleting && setDeleteOpen(false)}
+                activeOpacity={0.85}
+                disabled={deleting}
+              >
+                <Text style={styles.deleteCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.deleteConfirmBtn,
+                  (deleteConfirm.trim().toLowerCase() !== 'delete' || deleting) && { opacity: 0.5 },
+                ]}
+                onPress={handleDeleteAccount}
+                activeOpacity={0.85}
+                disabled={deleteConfirm.trim().toLowerCase() !== 'delete' || deleting}
+              >
+                {deleting
+                  ? <ActivityIndicator color="#fff" size="small" />
+                  : <Text style={styles.deleteConfirmText}>Delete</Text>
+                }
+              </TouchableOpacity>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -303,5 +397,44 @@ function makeStyles(C) {
     rowLabel:    { fontSize: ms(14), fontFamily: C.semi, fontWeight: '600', color: C.text, letterSpacing: ls(14) },
     rowSub:      { fontSize: ms(11), color: C.textMuted, fontFamily: C.reg, fontWeight: '400', marginTop: rs(2), letterSpacing: ls(11) },
     rowValue:    { fontSize: ms(13), color: C.textMuted, fontFamily: C.reg, fontWeight: '400', maxWidth: '50%', textAlign: 'right', letterSpacing: ls(13) },
+
+    // Delete account modal
+    deleteOverlay: {
+      flex: 1, backgroundColor: 'rgba(0,0,0,0.65)',
+      alignItems: 'center', justifyContent: 'center',
+      paddingHorizontal: rs(24),
+    },
+    deleteCard: {
+      backgroundColor: C.card, borderRadius: rs(18),
+      borderWidth: 1, borderColor: C.borderStrong,
+      padding: rs(22), width: '100%',
+    },
+    deleteIconWrap: {
+      width: rs(48), height: rs(48), borderRadius: rs(14),
+      backgroundColor: C.dangerSoft,
+      alignItems: 'center', justifyContent: 'center',
+      marginBottom: rs(14),
+    },
+    deleteTitle: { fontSize: ms(18), fontFamily: C.bold, fontWeight: '700', color: C.text, marginBottom: rs(8), letterSpacing: ls(18) },
+    deleteBody:  { fontSize: ms(13), color: C.textSub, lineHeight: ms(20), fontFamily: C.reg, fontWeight: '400', marginBottom: rs(18), letterSpacing: ls(13) },
+    deletePromptLabel: { fontSize: ms(11), color: C.textMuted, fontFamily: C.med, fontWeight: '500', marginBottom: rs(8), letterSpacing: ls(11) },
+    deleteInput: {
+      backgroundColor: C.cardHigh, borderWidth: 1, borderColor: C.border,
+      borderRadius: rs(10), paddingHorizontal: rs(12), paddingVertical: rs(11),
+      fontSize: ms(14), color: C.text, fontFamily: C.reg, fontWeight: '400',
+      marginBottom: rs(16), letterSpacing: ls(14),
+    },
+    deleteBtnRow: { flexDirection: 'row', gap: rs(10) },
+    deleteCancelBtn: {
+      flex: 1, paddingVertical: rs(13), borderRadius: rs(10),
+      borderWidth: 1, borderColor: C.borderStrong, alignItems: 'center',
+      backgroundColor: 'transparent',
+    },
+    deleteCancelText: { fontSize: ms(14), fontFamily: C.semi, fontWeight: '600', color: C.textSub, letterSpacing: ls(14) },
+    deleteConfirmBtn: {
+      flex: 1, paddingVertical: rs(13), borderRadius: rs(10),
+      alignItems: 'center', backgroundColor: C.danger,
+    },
+    deleteConfirmText: { fontSize: ms(14), fontFamily: C.bold, fontWeight: '700', color: '#fff', letterSpacing: ls(14) },
   };
 }

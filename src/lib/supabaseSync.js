@@ -159,8 +159,8 @@ export async function syncActionToSupabase(action, stateRef) {
       break;
 
     case 'LOG_HABIT': {
-      const today = todayKey();
-      const dayMap = s.completions[today] || {};
+      const date = action.date || todayKey();
+      const dayMap = s.completions[date] || {};
       const habit = s.habits.find(x => x.id === action.id);
       let newCount;
       if (habit?.type === 'daily' || habit?.type === 'negative') {
@@ -168,7 +168,7 @@ export async function syncActionToSupabase(action, stateRef) {
       } else {
         newCount = Math.max(0, (dayMap[action.id] || 0) + (action.delta || 1));
       }
-      await pushCompletion(userId, action.id, today, newCount);
+      await pushCompletion(userId, action.id, date, newCount);
       break;
     }
 

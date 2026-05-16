@@ -1,10 +1,13 @@
-import React from 'react';
-import { View, Text, FlatList } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, FlatList, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Pencil } from 'lucide-react-native';
 import { useStore } from '../store';
 import { useTheme } from '../ThemeContext';
 import { rs, ms, ls } from '../utils/responsive';
-import { last7Days, formatDisplay } from '../utils/date';
+import { last7Days, formatDisplay, todayKey } from '../utils/date';
+import PastDayLogSheet from '../components/PastDayLogSheet';
+import { lightTap } from '../utils/haptics';
 
 export default function HistoryScreen() {
   const { state } = useStore();
@@ -12,6 +15,15 @@ export default function HistoryScreen() {
   const styles = makeStyles(C);
   const { habits, completions } = state;
   const days = last7Days().reverse();
+  const today = todayKey();
+
+  const [editDate, setEditDate] = useState(null);
+
+  function openLogger(date) {
+    if (date > today) return;
+    lightTap();
+    setEditDate(date);
+  }
 
   function pctForDay(dateStr) {
     if (!habits.length) return 0;
@@ -46,7 +58,7 @@ export default function HistoryScreen() {
   }
 
   const statusText = totalDays === 0
-    ? 'Start tracking to see your history'
+    ? 'Tap any day below to log retroactively'
     : perfectDays > 0
     ? `${perfectDays} perfect day${perfectDays !== 1 ? 's' : ''} — keep it up`
     : `${totalDays} day${totalDays !== 1 ? 's' : ''} of consistency`;
@@ -58,7 +70,7 @@ export default function HistoryScreen() {
         <Text style={styles.topTitle}>Your progress log</Text>
       </View>
 
-      {/* Hero card */}
+      {/* Hero */}
       <View style={styles.heroWrap}>
         <View style={styles.heroCard}>
           <View style={styles.heroTopLine} />
@@ -82,13 +94,18 @@ export default function HistoryScreen() {
         </View>
       </View>
 
-      {/* 7-day heat row */}
+      {/* 7-day heat row — tappable to log */}
       <View style={styles.heatRow}>
         {days.map(d => {
           const pct = pctForDay(d);
-          const isToday = d === new Date().toISOString().slice(0, 10);
+          const isToday = d === today;
           return (
-            <View key={d} style={styles.heatCell}>
+            <TouchableOpacity
+              key={d}
+              style={styles.heatCell}
+              onPress={() => openLogger(d)}
+              activeOpacity={0.7}
+            >
               <View style={[
                 styles.heatBox,
                 { backgroundColor: cellColor(pct) },
@@ -97,7 +114,7 @@ export default function HistoryScreen() {
               <Text style={[styles.heatLabel, isToday && { color: C.primary, fontFamily: C.bold }]}>
                 {new Date(d + 'T12:00').toLocaleDateString('en-US', { weekday: 'narrow' })}
               </Text>
-            </View>
+            </TouchableOpacity>
           );
         })}
       </View>
@@ -116,32 +133,53 @@ export default function HistoryScreen() {
         ))}
       </View>
 
-      <Text style={styles.sectionLabel}>All logged days</Text>
+      <View style={styles.sectionRow}>
+        <Text style={styles.sectionLabel}>All logged days</Text>
+        <Text style={styles.sectionHint}>Tap to edit</Text>
+      </View>
+
       <FlatList
         data={allDates}
         keyExtractor={d => d}
         contentContainerStyle={styles.list}
         showsVerticalScrollIndicator={false}
-        ListEmptyComponent={<Text style={styles.empty}>No history yet — start tracking</Text>}
+        ListEmptyComponent={
+          <View style={styles.emptyState}>
+            <Text style={styles.empty}>No history yet</Text>
+            <Text style={styles.emptySub}>Log today on the Today tab, or tap a day above to back-fill</Text>
+          </View>
+        }
         renderItem={({ item: d }) => {
           const dayMap = completions[d] || {};
           const done = habits.filter(h => (dayMap[h.id] || 0) >= (h.targetCount || 1));
           const pct = habits.length ? done.length / habits.length : 0;
           return (
-            <View style={styles.dayRow}>
+            <TouchableOpacity
+              style={styles.dayRow}
+              onPress={() => openLogger(d)}
+              activeOpacity={0.7}
+            >
               <View style={[styles.dayDot, { backgroundColor: pct >= 1 ? C.success : pct > 0 ? C.primary : C.border }]} />
               <View style={styles.dayInfo}>
                 <Text style={styles.dayDate}>{formatDisplay(d)}</Text>
                 <Text style={styles.daySub}>{done.length}/{habits.length} habits · {Math.round(pct * 100)}%</Text>
               </View>
-              {pct >= 1 && (
+              {pct >= 1 ? (
                 <View style={styles.perfectBadge}>
                   <Text style={styles.perfectBadgeText}>PERFECT</Text>
                 </View>
+              ) : (
+                <Pencil size={rs(14)} color={C.textMuted} strokeWidth={1.75} />
               )}
-            </View>
+            </TouchableOpacity>
           );
         }}
+      />
+
+      <PastDayLogSheet
+        visible={editDate != null}
+        date={editDate}
+        onClose={() => setEditDate(null)}
       />
     </SafeAreaView>
   );
@@ -184,12 +222,23 @@ function makeStyles(C) { return {
   legendDot:  { width: rs(12), height: rs(12), borderRadius: rs(3) },
   legendText: { fontSize: ms(11), color: C.textMuted, fontFamily: C.reg, fontWeight: '400', letterSpacing: ls(11) },
 
+  sectionRow: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
+    paddingHorizontal: rs(20), marginBottom: rs(10),
+  },
   sectionLabel: {
     fontSize: ms(11), fontFamily: C.bold, fontWeight: '700', color: C.textMuted,
-    textTransform: 'uppercase', letterSpacing: 0.8, paddingHorizontal: rs(20), marginBottom: rs(10),
+    textTransform: 'uppercase', letterSpacing: 0.8,
   },
-  list:  { paddingHorizontal: rs(20), paddingBottom: rs(100) },
-  empty: { color: C.textMuted, textAlign: 'center', marginTop: rs(24), fontSize: ms(13), fontFamily: C.reg, fontWeight: '400', letterSpacing: ls(13) },
+  sectionHint: {
+    fontSize: ms(10), color: C.textMuted, fontFamily: C.med, fontWeight: '500',
+    textTransform: 'uppercase', letterSpacing: 0.6,
+  },
+
+  list:       { paddingHorizontal: rs(20), paddingBottom: rs(100) },
+  emptyState: { alignItems: 'center', marginTop: rs(24), paddingHorizontal: rs(20) },
+  empty:      { color: C.textSub, fontSize: ms(14), fontFamily: C.semi, fontWeight: '600', letterSpacing: ls(14), marginBottom: rs(4) },
+  emptySub:   { color: C.textMuted, fontSize: ms(12), fontFamily: C.reg, fontWeight: '400', textAlign: 'center', letterSpacing: ls(12) },
 
   dayRow: {
     flexDirection: 'row', alignItems: 'center',

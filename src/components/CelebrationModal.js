@@ -40,13 +40,15 @@ function Particle({ color, index }) {
   );
 }
 
-export default function CelebrationModal({ visible, title, subtitle, onClose, type = 'daily' }) {
+export default function CelebrationModal({ visible, title, subtitle, onClose, type = 'daily', emoji, actionLabel }) {
   const C = useTheme();
   const styles = makeStyles(C);
   const scale   = useRef(new Animated.Value(0.5)).current;
   const opacity = useRef(new Animated.Value(0)).current;
 
   const confettiColors = [C.primary, C.success, C.warning, C.text, C.primaryMuted];
+  const displayEmoji = emoji ?? (type === 'challenge' ? '🏆' : type === 'milestone' ? '🔥' : '🎉');
+  const displayAction = actionLabel ?? (type === 'challenge' ? 'Claim reward' : 'Keep it up');
 
   useEffect(() => {
     if (visible) {
@@ -69,13 +71,11 @@ export default function CelebrationModal({ visible, title, subtitle, onClose, ty
           ))}
         </View>
         <Animated.View style={[styles.card, { transform: [{ scale }], opacity }]}>
-          <Text style={styles.bigEmoji}>{type === 'challenge' ? '🏆' : '🎉'}</Text>
+          <Text style={styles.bigEmoji}>{displayEmoji}</Text>
           <Text style={styles.title}>{title}</Text>
           {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
           <TouchableOpacity style={styles.btn} onPress={onClose} activeOpacity={0.85}>
-            <Text style={styles.btnText}>
-              {type === 'challenge' ? 'Claim reward' : 'Keep it up'}
-            </Text>
+            <Text style={styles.btnText}>{displayAction}</Text>
           </TouchableOpacity>
         </Animated.View>
       </View>

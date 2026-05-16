@@ -3,7 +3,7 @@ import { View, Text, FlatList, TouchableOpacity, ScrollView } from 'react-native
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AlarmClock, Settings, Plus } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
-import { useStore, useTodayCompletions } from '../store';
+import { useStore, useTodayCompletions, calcStreak } from '../store';
 import { useTheme } from '../ThemeContext';
 import { rs, ms, ls } from '../utils/responsive';
 import HabitCard from '../components/HabitCard';
@@ -12,6 +12,18 @@ import CelebrationModal from '../components/CelebrationModal';
 import HabitOptionsSheet from '../components/HabitOptionsSheet';
 import { lightTap, successBurst } from '../utils/haptics';
 import { scheduleDailyReminders, scheduleHabitReminder, cancelHabitReminder } from '../utils/notifications';
+
+const MILESTONE_DAYS = [7, 14, 30, 60, 100, 200, 365];
+
+function milestoneCopy(streak) {
+  if (streak >= 365) return { title: `${streak}-day streak`,  subtitle: 'A full year of showing up. That is character.' };
+  if (streak >= 200) return { title: `${streak}-day streak`,  subtitle: 'Two hundred days in. This is who you are now.' };
+  if (streak >= 100) return { title: `${streak}-day streak`,  subtitle: 'Triple digits. You earned every single one of these.' };
+  if (streak >= 60)  return { title: `${streak}-day streak`,  subtitle: 'Sixty days deep. The habit is wired in.' };
+  if (streak >= 30)  return { title: `${streak}-day streak`,  subtitle: 'A full month. This is no longer a goal — it is a routine.' };
+  if (streak >= 14)  return { title: `${streak}-day streak`,  subtitle: 'Two weeks of consistency. Momentum is real now.' };
+  return { title: `${streak}-day streak`, subtitle: 'A full week. Keep the chain alive.' };
+}
 
 function formatReminderTime(hour, minute) {
   const h = hour % 12 || 12;
@@ -28,8 +40,10 @@ export default function TodayScreen() {
   const [addVisible, setAddVisible] = useState(false);
   const [editingHabit, setEditingHabit] = useState(null);
   const [celebrate, setCelebrate] = useState(false);
+  const [milestone, setMilestone] = useState(null);
   const [optionsHabit, setOptionsHabit] = useState(null);
   const wasAllDoneRef = useRef(false);
+  const celebratedMilestonesRef = useRef({});
 
   const { habits } = state;
   const habitsWithReminder = habits.filter(h => h.reminderTime);
@@ -44,6 +58,23 @@ export default function TodayScreen() {
     }
     if (!allDone) wasAllDoneRef.current = false;
   }, [allDone]);
+
+  // Streak milestones — fire once per (habit, milestone) per session.
+  // We rely on streak === milestone (the day it crosses) to avoid celebrating
+  // every render past the threshold.
+  useEffect(() => {
+    if (milestone) return;
+    for (const habit of habits) {
+      const streak = calcStreak(habit.id, state.completions);
+      if (!MILESTONE_DAYS.includes(streak)) continue;
+      const already = celebratedMilestonesRef.current[habit.id] || [];
+      if (already.includes(streak)) continue;
+      celebratedMilestonesRef.current[habit.id] = [...already, streak];
+      successBurst();
+      setTimeout(() => setMilestone({ habit, streak }), 400);
+      break;
+    }
+  }, [habits, state.completions, milestone]);
 
   function handleToggle(id)              { lightTap(); dispatch({ type: 'LOG_HABIT', id }); }
   function handleIncrement(id, delta=1)  { lightTap(); dispatch({ type: 'LOG_HABIT', id, delta }); }
@@ -226,6 +257,16 @@ export default function TodayScreen() {
         subtitle={`You completed all ${habits.length} habits today. Keep the streak alive.`}
         onClose={() => setCelebrate(false)}
         type="daily"
+      />
+
+      <CelebrationModal
+        visible={milestone != null}
+        type="milestone"
+        emoji={milestone?.habit?.emoji}
+        title={milestone ? milestoneCopy(milestone.streak).title : ''}
+        subtitle={milestone ? `${milestone.habit.name} — ${milestoneCopy(milestone.streak).subtitle}` : ''}
+        actionLabel="Nice"
+        onClose={() => setMilestone(null)}
       />
     </SafeAreaView>
   );

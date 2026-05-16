@@ -89,8 +89,10 @@ Both `loading` (from `AuthProvider`) and `storeReady` (from `StoreProvider`) mus
 
 `AuthProvider` wraps the Supabase session lifecycle. `useAuth()` returns:
 ```js
-{ session, loading, signIn, signUp, signOut, resetPassword, updatePassword, recoveryMode }
+{ session, loading, signIn, signUp, signOut, resetPassword, updatePassword, deleteAccount, recoveryMode }
 ```
+
+`deleteAccount()` invokes the `delete-account` Edge Function (which cascades all user rows and removes the `auth.users` row using the service role key) and then calls `signOut()`. On success the `SIGNED_OUT` listener in `StoreProvider` resets local state and `AppNavigator` returns to `AuthScreen`.
 
 `recoveryMode` is a boolean that becomes `true` when Supabase fires the `PASSWORD_RECOVERY` auth event (triggered by the deep link after the user clicks a password-reset email). It resets to `false` on `USER_UPDATED` or `SIGNED_OUT`.
 
@@ -122,7 +124,7 @@ Single global store via React `useReducer` + `AsyncStorage` (key: `@habitapp_sta
 }
 ```
 
-**Habit types:** `daily` (toggle), `volume` (count reps), `timer` (minutes, steps of 5), `negative` (avoidance toggle). The `LOG_HABIT` action toggles `daily`/`negative` and uses `delta` for `volume`/`timer`.
+**Habit types:** `daily` (toggle), `volume` (count reps), `timer` (minutes, steps of 5), `negative` (avoidance toggle). The `LOG_HABIT` action toggles `daily`/`negative` and uses `delta` for `volume`/`timer`. Pass `action.date` (a `YYYY-MM-DD` string) to log for a past day; if omitted, defaults to `todayKey()`. The same fallback runs in `syncActionToSupabase` so past-day logs persist to the correct `(habitId, date)` row.
 
 **Exported hooks/helpers:** `useStore()`, `useTodayCompletions()`, `useChallengeProgress(state)`, `calcStreak(habitId, completions)`.
 
@@ -162,16 +164,17 @@ Five tables in the `public` schema, all with RLS enabled. Every table has a poli
 
 `ai_insights` is never touched by `supabaseSync.js` — it is read and written exclusively by the Edge Functions.
 
-### AI Coaching (`src/lib/aiCoaching.js`, `supabase/functions/`)
+### Edge Functions (`supabase/functions/`)
 
-Two Supabase Edge Functions call Claude Sonnet and write results to `ai_insights`. The app calls them via `supabase.functions.invoke()` with the user's JWT — the functions use the service-role key internally and bypass RLS.
+Three Supabase Edge Functions invoked via `supabase.functions.invoke()` with the user's JWT. All three set `verify_jwt: true` at the gateway and use the service-role key internally to bypass RLS.
 
 - **`ai-coaching-nudge`** — invoked on `StatsScreen` mount. Checks for a cached row in `ai_insights` where `type='nudge'` and `created_at >= today`. If found, returns it immediately; otherwise reads habits + completions, calls Claude, stores and returns the result. One Claude call per user per day maximum.
 - **`ai-reflection-summary`** — invoked when the user taps Weekly or Monthly in StatsScreen. Caches by `(user_id, type, period_start)` so the same period never re-generates. Computes per-habit consistency and weakest day-of-week before calling Claude.
+- **`delete-account`** — invoked from `AuthContext.deleteAccount()` (wired into Settings → Account → Delete account). Resolves the caller's `user.id` from the JWT, deletes their rows from all five public tables (`completions`, `challenges`, `habits`, `ai_insights`, `user_settings`), then calls `auth.admin.deleteUser(userId)`. Required by App Store guideline 5.1.1(v). Deploy with `npx supabase functions deploy delete-account --project-ref <ref>`.
 
 `src/lib/aiCoaching.js` is a thin client: `fetchCoachingNudge()` and `fetchReflectionSummary(period)` both get the session, pass the JWT in the Authorization header, and return `data.content`. All error handling is fire-and-forget at the call site (StatsScreen catches silently and shows a retry prompt).
 
-The Edge Function source lives in `supabase/functions/<name>/index.ts` and is written in Deno TypeScript. It imports from `npm:@supabase/supabase-js@2` and `npm:@anthropic-ai/sdk`. Both functions use `claude-sonnet-4-6` with `verify_jwt: true` at the gateway level.
+The Edge Function source lives in `supabase/functions/<name>/index.ts` and is written in Deno TypeScript. AI functions import from `npm:@supabase/supabase-js@2` and `npm:@anthropic-ai/sdk` and use `claude-sonnet-4-6`. `delete-account` only needs `@supabase/supabase-js`. All three set `verify_jwt: true` at the gateway level.
 
 **Prompt constraints (do not remove):** Both edge function prompts include the rule `"Never use dashes of any kind (no hyphens, em dashes, or en dashes) anywhere in the response"`. This is intentional — dashes make the output feel AI-generated. If you edit these prompts, preserve this constraint.
 
@@ -223,23 +226,27 @@ Baseline: iPhone 14 (390×844).
 
 ### Screens (`src/screens/`)
 
-The four main tab screens share the same header pattern: a plain top row (title + action buttons) followed by a floating `LinearGradient` hero card with 3-column stats. Each screen uses `SafeAreaView` from `react-native-safe-area-context` (not from `react-native`).
+The four main tab screens share the same header pattern: a plain top row (title) followed by a `heroSurface` hero card with 3-column stats, a 3px `primary` top accent strip, and a 1px `borderStrong` border (no shadow, no gradient). Each screen uses `SafeAreaView` from `react-native-safe-area-context` (not from `react-native`).
 
-| Screen | Hero card gradient | Key data shown |
-|---|---|---|
-| `TodayScreen` | `#000000 → #3D2E2E` | Done / Remaining / Complete% + progress bar |
-| `ChallengeScreen` | `#000000 → #5C4E4E` | Habit count or Day / Total / Left |
-| `HistoryScreen` | `#000000 → #5C4E4E` | Days tracked / Perfect days / This week% |
-| `StatsScreen` | `#000000 → #988686` | Best streak / 7-day avg / Perfect days |
+| Screen | Key data shown |
+|---|---|
+| `TodayScreen` | Done / Remaining / Complete% + progress bar |
+| `ChallengeScreen` | Habit count or Day / Total / Left |
+| `HistoryScreen` | Days tracked / Perfect days / This week% |
+| `StatsScreen` | Best streak / 7-day avg / Perfect days |
 
-`TodayScreen`'s top row has two icon buttons: `?` (triggers `RESET_ONBOARDING`) and a gear icon that calls `navigation.navigate('Settings')` via `useNavigation`. The Settings tab is registered in the Tab.Navigator but hidden from the tab bar (`tabBarButton: () => null`, `tabBarItemStyle: { display: 'none' }`) so it is only reachable via this header button.
+`TodayScreen`'s top row has a single gear icon that calls `navigation.navigate('Settings')` via `useNavigation`. The Settings tab is registered in the Tab.Navigator but hidden from the tab bar (`tabBarButton: () => null`, `tabBarItemStyle: { display: 'none' }`) so it is only reachable via this header button.
+
+**Streak milestones (`TodayScreen`):** a `useEffect` on `state.completions` walks each habit, computes the current streak via `calcStreak`, and fires a `CelebrationModal` (with `type="milestone"`) when the streak equals one of `[7, 14, 30, 60, 100, 200, 365]`. A session ref `celebratedMilestonesRef` tracks which `(habitId, milestone)` pairs already fired this session so the celebration does not repeat after a toggle-off-and-on. The state is intentionally session-only — if you reinstall on a milestone day you will get the celebration again on first sync, which we accept as a feature.
+
+**Past-day logging (`HistoryScreen` + `PastDayLogSheet`):** the 7-day heat row and every row in "All logged days" are tappable. Tapping opens `PastDayLogSheet`, a bottom-sheet that renders each habit with the same control patterns as Today (toggle for daily/negative, +/− stepper for volume/timer) and dispatches `LOG_HABIT` with the explicit `date` field. Future dates are blocked by `openLogger`.
 
 `StatsScreen` includes a GitHub-style contribution graph (`ContributionGraph` component, 16 weeks × 7 days grid, horizontally scrollable) and an **AI Coach** section at the bottom: a daily nudge card (auto-fetched on mount, cached per day) and Weekly/Monthly reflection report buttons (each generates on first tap, cached per period start date). Both use skeleton loading states and call the Edge Functions via `src/lib/aiCoaching.js`.
 
 `SettingsScreen` is the 5th tab (gear icon). It has four grouped card sections:
 - **Appearance** — dark/light mode toggle (`SET_THEME`), haptic feedback toggle (`SET_HAPTICS`)
 - **Notifications** — daily reminders toggle (reads live from `Notifications.getAllScheduledNotificationsAsync()`); notification sound toggle (`SET_NOTIFICATION_SOUND` — when changed, all active reminders are immediately rescheduled with the new sound/channel setting)
-- **Account** — read-only email, Change Password (calls `resetPassword(email)` and shows a timed banner), Sign Out
+- **Account** — read-only email, Change Password (calls `resetPassword(email)` and shows a timed banner), Sign Out, **Delete account** (opens a confirmation modal that requires typing `delete`; on confirm it calls `useAuth().deleteAccount()` which invokes the `delete-account` Edge Function and then `signOut`s — the app returns to `AuthScreen` via the `SIGNED_OUT` event)
 - **App** — View Onboarding (dispatches `RESET_ONBOARDING`), Version (static `1.0.0`)
 
 `OnboardingScreen` uses `useSafeAreaInsets()` for padding and has an animated `AppLogo` (float, breathe, badge bounce — all via RN `Animated` with `useNativeDriver: true`).
@@ -250,7 +257,8 @@ The four main tab screens share the same header pattern: a plain top row (title 
 - **`HabitCard`** — renders a single habit row for all 4 habit types. The daily/negative card uses `Animated.View` as the outer wrapper (not `TouchableOpacity`) so the bell button and toggle are sibling tap targets and don't interfere. Bell icon (`alarm`/`alarm-outline`) is a dedicated column outside the toggle area; tapping it when active clears the reminder immediately, tapping when inactive opens a time picker.
 - **`AddHabitModal`** — bottom-sheet modal for creating/editing habits; has a close (×) button in the fixed header row above the `ScrollView`. Emoji grid uses `ScrollView` with `nestedScrollEnabled` and `maxHeight: rs(258)` (5 rows visible). Default emoji for new habits is 🚀.
 - **`HabitOptionsSheet`** — long-press bottom sheet: edit / delete / set reminder (uses `@react-native-community/datetimepicker`).
-- **`CelebrationModal`** — full-screen celebration overlay triggered on all-habits-done or challenge reward claim.
+- **`PastDayLogSheet`** — bottom-sheet opened from `HistoryScreen`. Lists every habit with toggle/stepper controls for a given `date` prop and dispatches `LOG_HABIT` with that date.
+- **`CelebrationModal`** — full-screen celebration overlay. `type` (`'daily' | 'challenge' | 'milestone'`) picks the default emoji and button label; optional `emoji` and `actionLabel` props override either. Fired from TodayScreen for all-habits-done and streak milestones, and from ChallengeScreen for reward claims.
 
 ### Notifications (`src/utils/notifications.js`)
 

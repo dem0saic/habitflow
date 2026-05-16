@@ -82,8 +82,8 @@ function reducer(state, action) {
     }
 
     case 'LOG_HABIT': {
-      const today = todayKey();
-      const dayMap = { ...(state.completions[today] || {}) };
+      const date = action.date || todayKey();
+      const dayMap = { ...(state.completions[date] || {}) };
       const habit = state.habits.find(h => h.id === action.id);
       if (!habit) return state;
 
@@ -98,7 +98,7 @@ function reducer(state, action) {
       }
       return {
         ...state,
-        completions: { ...state.completions, [today]: dayMap },
+        completions: { ...state.completions, [date]: dayMap },
       };
     }
 
