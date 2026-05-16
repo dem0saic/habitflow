@@ -105,7 +105,11 @@ function AppNavigator() {
         <Tab.Screen name="Challenge" component={ChallengeScreen} />
         <Tab.Screen name="History"   component={HistoryScreen} />
         <Tab.Screen name="Stats"     component={StatsScreen} />
-        <Tab.Screen name="Settings"  component={SettingsScreen} />
+        <Tab.Screen
+          name="Settings"
+          component={SettingsScreen}
+          options={{ tabBarButton: () => null, tabBarItemStyle: { display: 'none' } }}
+        />
       </Tab.Navigator>
     </NavigationContainer>
   );

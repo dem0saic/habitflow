@@ -3,6 +3,7 @@ import { View, Text, FlatList, TouchableOpacity, ScrollView } from 'react-native
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
 import { useStore, useTodayCompletions } from '../store';
 import { useTheme } from '../ThemeContext';
 import { rs, ms, ls } from '../utils/responsive';
@@ -20,6 +21,7 @@ function formatReminderTime(hour, minute) {
 }
 
 export default function TodayScreen() {
+  const navigation = useNavigation();
   const { state, dispatch } = useStore();
   const C = useTheme();
   const styles = makeStyles(C);
@@ -132,6 +134,12 @@ export default function TodayScreen() {
             style={styles.iconBtn}
           >
             <Ionicons name="help-circle-outline" size={rs(18)} color={C.textSub} />
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => { lightTap(); navigation.navigate('Settings'); }}
+            style={styles.iconBtn}
+          >
+            <Ionicons name="settings-outline" size={rs(18)} color={C.textSub} />
           </TouchableOpacity>
         </View>
       </View>
