@@ -51,7 +51,7 @@ export default function HistoryScreen() {
 
       {/* Floating hero card */}
       <View style={styles.heroWrap}>
-        <LinearGradient colors={['#071C22', '#2A5560']} style={styles.heroCard}>
+        <LinearGradient colors={['#061519', '#1A4A56']} style={styles.heroCard}>
           <View style={styles.heroStatsRow}>
             <View style={styles.heroStat}>
               <Text style={styles.heroStatNum}>{totalDays}</Text>
@@ -145,15 +145,15 @@ function makeStyles(C) { return {
   topTitle: { fontSize: ms(17), fontFamily: C.xbold, fontWeight: '800', color: C.text, marginTop: rs(2), letterSpacing: ls(17) },
   heroWrap: { paddingHorizontal: rs(16), marginBottom: rs(8) },
   heroCard: {
-    borderRadius: rs(24), padding: rs(20),
-    shadowColor: '#93B1B5', shadowOpacity: 0.35, shadowRadius: rs(20),
-    shadowOffset: { width: 0, height: rs(8) }, elevation: 12,
+    borderRadius: rs(24), padding: rs(24),
+    shadowColor: '#F57B51', shadowOpacity: 0.4, shadowRadius: rs(24),
+    shadowOffset: { width: 0, height: rs(8) }, elevation: 14,
   },
-  heroStatsRow: { flexDirection: 'row', marginBottom: rs(12) },
+  heroStatsRow: { flexDirection: 'row', marginBottom: rs(16) },
   heroStat: { flex: 1, alignItems: 'center' },
-  heroStatNum: { fontSize: ms(26), fontFamily: C.xbold, fontWeight: '800', color: '#fff', letterSpacing: ls(26) },
-  heroStatLabel: { fontSize: ms(10), color: 'rgba(255,255,255,0.65)', marginTop: rs(2), fontFamily: C.med, fontWeight: '500', letterSpacing: ls(10) },
-  heroStatDivider: { width: 1, backgroundColor: 'rgba(255,255,255,0.2)', marginVertical: rs(4) },
+  heroStatNum: { fontSize: ms(38), fontFamily: C.xbold, fontWeight: '800', color: '#fff', letterSpacing: ls(26) },
+  heroStatLabel: { fontSize: ms(11), color: 'rgba(255,255,255,0.6)', marginTop: rs(4), fontFamily: C.med, fontWeight: '500', letterSpacing: ls(11) },
+  heroStatDivider: { width: 1, backgroundColor: 'rgba(255,255,255,0.18)', marginVertical: rs(6) },
   heroStatus: { fontSize: ms(12), color: 'rgba(255,255,255,0.8)', textAlign: 'center', fontFamily: C.med, fontWeight: '500', letterSpacing: ls(12) },
   heatRow: { flexDirection: 'row', justifyContent: 'space-around', paddingHorizontal: rs(20), paddingTop: rs(20), paddingBottom: rs(10) },
   heatCell: { alignItems: 'center', gap: rs(6) },

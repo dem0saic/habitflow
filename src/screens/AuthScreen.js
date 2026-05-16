@@ -120,7 +120,7 @@ export default function AuthScreen() {
     <>
       <StatusBar style="light" />
       <LinearGradient
-        colors={['#071C22', '#0B2E33', '#4F7C82']}
+        colors={['#061519', '#0A2830', '#C8502A']}
         style={{ flex: 1 }}
       >
         <KeyboardAvoidingView
@@ -546,18 +546,23 @@ function makeStyles(C) {
       marginBottom: rs(20),
     },
     btn: {
-      backgroundColor: '#fff',
+      backgroundColor: C.primary,
       borderRadius: rs(14),
       paddingVertical: rs(16),
       alignItems: 'center',
       marginTop: rs(6),
       marginBottom: rs(8),
+      shadowColor: C.primary,
+      shadowOpacity: 0.45,
+      shadowRadius: rs(12),
+      shadowOffset: { width: 0, height: rs(4) },
+      elevation: 5,
     },
     btnDisabled: {
       opacity: 0.6,
     },
     btnText: {
-      color: C.primary,
+      color: '#fff',
       fontSize: ms(15),
       fontFamily: C.bold,
       fontWeight: '700',

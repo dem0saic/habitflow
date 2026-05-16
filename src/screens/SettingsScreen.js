@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, Switch, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import * as Notifications from 'expo-notifications';
 import { useStore } from '../store';
 import { useAuth } from '../AuthContext';
@@ -10,6 +11,14 @@ import { scheduleDailyReminders, scheduleHabitReminder, requestPermissions, setN
 import { lightTap } from '../utils/haptics';
 
 const APP_VERSION = '1.0.0';
+
+function IconTile({ name, color, bg }) {
+  return (
+    <View style={{ width: rs(34), height: rs(34), borderRadius: rs(10), backgroundColor: bg, alignItems: 'center', justifyContent: 'center', marginRight: rs(12) }}>
+      <Ionicons name={name} size={rs(17)} color={color} />
+    </View>
+  );
+}
 
 export default function SettingsScreen() {
   const { state, dispatch } = useStore();
@@ -105,6 +114,12 @@ export default function SettingsScreen() {
       <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
         {!!banner.text && (
           <View style={[styles.banner, banner.type === 'error' ? styles.bannerError : styles.bannerInfo]}>
+            <Ionicons
+              name={banner.type === 'error' ? 'alert-circle' : 'checkmark-circle'}
+              size={rs(16)}
+              color={banner.type === 'error' ? '#ff6b6b' : C.primary}
+              style={{ marginRight: rs(8) }}
+            />
             <Text style={[styles.bannerText, banner.type === 'error' ? styles.bannerTextError : styles.bannerTextInfo]}>
               {banner.text}
             </Text>
@@ -115,7 +130,10 @@ export default function SettingsScreen() {
         <Text style={styles.sectionLabel}>Appearance</Text>
         <View style={styles.card}>
           <View style={[styles.row, styles.rowBorder]}>
-            <Text style={styles.rowLabel}>Dark mode</Text>
+            <View style={styles.rowLeft}>
+              <IconTile name="moon-outline" color={C.textSub} bg={C.cardHigh} />
+              <Text style={styles.rowLabel}>Dark mode</Text>
+            </View>
             <Switch
               value={state.themeMode === 'dark'}
               onValueChange={toggleTheme}
@@ -124,7 +142,10 @@ export default function SettingsScreen() {
             />
           </View>
           <View style={styles.row}>
-            <Text style={styles.rowLabel}>Haptic feedback</Text>
+            <View style={styles.rowLeft}>
+              <IconTile name="phone-portrait-outline" color={C.textSub} bg={C.cardHigh} />
+              <Text style={styles.rowLabel}>Haptic feedback</Text>
+            </View>
             <Switch
               value={state.hapticsEnabled ?? true}
               onValueChange={toggleHaptics}
@@ -138,9 +159,12 @@ export default function SettingsScreen() {
         <Text style={styles.sectionLabel}>Notifications</Text>
         <View style={styles.card}>
           <View style={[styles.row, styles.rowBorder]}>
-            <View style={styles.rowTextGroup}>
-              <Text style={styles.rowLabel}>Daily reminders</Text>
-              <Text style={styles.rowSub}>9:00 AM and 8:00 PM</Text>
+            <View style={styles.rowLeft}>
+              <IconTile name="notifications-outline" color={C.textSub} bg={C.cardHigh} />
+              <View style={styles.rowTextGroup}>
+                <Text style={styles.rowLabel}>Daily reminders</Text>
+                <Text style={styles.rowSub}>9:00 AM and 8:00 PM</Text>
+              </View>
             </View>
             <Switch
               value={!!remindersOn}
@@ -151,9 +175,12 @@ export default function SettingsScreen() {
             />
           </View>
           <View style={styles.row}>
-            <View style={styles.rowTextGroup}>
-              <Text style={styles.rowLabel}>Notification sound</Text>
-              <Text style={styles.rowSub}>Silent uses vibration only</Text>
+            <View style={styles.rowLeft}>
+              <IconTile name="volume-medium-outline" color={C.textSub} bg={C.cardHigh} />
+              <View style={styles.rowTextGroup}>
+                <Text style={styles.rowLabel}>Notification sound</Text>
+                <Text style={styles.rowSub}>Silent uses vibration only</Text>
+              </View>
             </View>
             <Switch
               value={state.notificationSound ?? true}
@@ -168,7 +195,10 @@ export default function SettingsScreen() {
         <Text style={styles.sectionLabel}>Account</Text>
         <View style={styles.card}>
           <View style={[styles.row, styles.rowBorder]}>
-            <Text style={styles.rowLabel}>Email</Text>
+            <View style={styles.rowLeft}>
+              <IconTile name="mail-outline" color={C.textSub} bg={C.cardHigh} />
+              <Text style={styles.rowLabel}>Email</Text>
+            </View>
             <Text style={styles.rowValue} numberOfLines={1}>{email}</Text>
           </View>
           <TouchableOpacity
@@ -176,8 +206,11 @@ export default function SettingsScreen() {
             onPress={handleChangePassword}
             activeOpacity={0.7}
           >
-            <Text style={styles.rowLabel}>Change Password</Text>
-            <Text style={styles.rowChevron}>›</Text>
+            <View style={styles.rowLeft}>
+              <IconTile name="key-outline" color={C.textSub} bg={C.cardHigh} />
+              <Text style={styles.rowLabel}>Change Password</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={rs(18)} color={C.textMuted} />
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.row}
@@ -185,9 +218,12 @@ export default function SettingsScreen() {
             activeOpacity={0.7}
             disabled={signingOut}
           >
-            <Text style={[styles.rowLabel, styles.danger]}>
-              {signingOut ? 'Signing out...' : 'Sign Out'}
-            </Text>
+            <View style={styles.rowLeft}>
+              <IconTile name="log-out-outline" color="#ff6b6b" bg="rgba(255,107,107,0.12)" />
+              <Text style={[styles.rowLabel, styles.danger]}>
+                {signingOut ? 'Signing out...' : 'Sign Out'}
+              </Text>
+            </View>
           </TouchableOpacity>
         </View>
 
@@ -199,14 +235,20 @@ export default function SettingsScreen() {
             onPress={handleViewOnboarding}
             activeOpacity={0.7}
           >
-            <View style={styles.rowTextGroup}>
-              <Text style={styles.rowLabel}>View Onboarding</Text>
-              <Text style={styles.rowSub}>Replay the intro walkthrough</Text>
+            <View style={styles.rowLeft}>
+              <IconTile name="play-outline" color={C.textSub} bg={C.cardHigh} />
+              <View style={styles.rowTextGroup}>
+                <Text style={styles.rowLabel}>View Onboarding</Text>
+                <Text style={styles.rowSub}>Replay the intro walkthrough</Text>
+              </View>
             </View>
-            <Text style={styles.rowChevron}>›</Text>
+            <Ionicons name="chevron-forward" size={rs(18)} color={C.textMuted} />
           </TouchableOpacity>
           <View style={styles.row}>
-            <Text style={styles.rowLabel}>Version</Text>
+            <View style={styles.rowLeft}>
+              <IconTile name="information-circle-outline" color={C.textSub} bg={C.cardHigh} />
+              <Text style={styles.rowLabel}>Version</Text>
+            </View>
             <Text style={styles.rowValue}>{APP_VERSION}</Text>
           </View>
         </View>
@@ -223,12 +265,13 @@ function makeStyles(C) {
     topTitle: { fontSize: ms(17), fontFamily: C.xbold, fontWeight: '800', color: C.text, marginTop: rs(2), letterSpacing: ls(17) },
     body: { paddingHorizontal: rs(16), paddingBottom: rs(100) },
     banner: {
+      flexDirection: 'row', alignItems: 'center',
       borderRadius: rs(12), padding: rs(14), borderWidth: 1, marginBottom: rs(16),
     },
-    bannerInfo: { backgroundColor: C.primary + '22', borderColor: C.primary + '55' },
+    bannerInfo:  { backgroundColor: C.primary + '18', borderColor: C.primary + '44' },
     bannerError: { backgroundColor: 'rgba(255,107,107,0.12)', borderColor: 'rgba(255,107,107,0.25)' },
-    bannerText: { fontSize: ms(13), fontFamily: C.med, fontWeight: '500', letterSpacing: ls(13) },
-    bannerTextInfo: { color: C.primary },
+    bannerText: { flex: 1, fontSize: ms(13), fontFamily: C.med, fontWeight: '500', letterSpacing: ls(13) },
+    bannerTextInfo:  { color: C.primary },
     bannerTextError: { color: '#ff6b6b' },
     sectionLabel: {
       fontSize: ms(11), fontFamily: C.bold, fontWeight: '700', color: C.textSub,
@@ -240,14 +283,14 @@ function makeStyles(C) {
     },
     row: {
       flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-      paddingHorizontal: rs(18), paddingVertical: rs(16),
+      paddingHorizontal: rs(16), paddingVertical: rs(14),
     },
     rowBorder: { borderBottomWidth: 1, borderBottomColor: C.border },
+    rowLeft: { flexDirection: 'row', alignItems: 'center', flex: 1 },
     rowTextGroup: { flex: 1 },
-    rowLabel: { fontSize: ms(14), fontFamily: C.semi, fontWeight: '600', color: C.text, letterSpacing: ls(14) },
-    rowSub: { fontSize: ms(11), color: C.textMuted, fontFamily: C.reg, fontWeight: '400', marginTop: rs(2), letterSpacing: ls(11) },
-    rowValue: { fontSize: ms(13), color: C.textMuted, fontFamily: C.reg, fontWeight: '400', maxWidth: '55%', textAlign: 'right', letterSpacing: ls(13) },
-    rowChevron: { fontSize: ms(22), color: C.textMuted, lineHeight: ms(24) },
+    rowLabel:   { fontSize: ms(14), fontFamily: C.semi, fontWeight: '600', color: C.text, letterSpacing: ls(14) },
+    rowSub:     { fontSize: ms(11), color: C.textMuted, fontFamily: C.reg, fontWeight: '400', marginTop: rs(2), letterSpacing: ls(11) },
+    rowValue:   { fontSize: ms(13), color: C.textMuted, fontFamily: C.reg, fontWeight: '400', maxWidth: '40%', textAlign: 'right', letterSpacing: ls(13) },
     danger: { color: '#ff6b6b' },
   };
 }

@@ -3,7 +3,7 @@ import { View, Text, Modal, TouchableOpacity, Animated } from 'react-native';
 import { useTheme } from '../ThemeContext';
 import { rs, ms, ls } from '../utils/responsive';
 
-const CONFETTI_COLORS = ['#93B1B5', '#B8E3E9', '#4F7C82', '#6B9970', '#7AAAB4', '#DCF0F4'];
+const CONFETTI_COLORS = ['#F57B51', '#FDF6F0', '#FBBC58', '#6B9970', '#C8502A', '#FEE4D8'];
 const PARTICLE_COUNT = 24;
 
 function Particle({ color, index }) {

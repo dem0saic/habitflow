@@ -112,10 +112,10 @@ function AppLogo() {
       <Animated.View style={{
         position: 'absolute', top: rs(2), right: rs(10),
         width: rs(28), height: rs(28), borderRadius: rs(14),
-        backgroundColor: '#93B1B5',
+        backgroundColor: '#F57B51',
         alignItems: 'center', justifyContent: 'center',
         borderWidth: 2, borderColor: 'rgba(255,255,255,0.35)',
-        shadowColor: '#93B1B5', shadowOpacity: 0.9, shadowRadius: rs(8), shadowOffset: { width: 0, height: 0 },
+        shadowColor: '#F57B51', shadowOpacity: 0.9, shadowRadius: rs(8), shadowOffset: { width: 0, height: 0 },
         transform: [{ scale: flamePulse }],
       }}>
         <Ionicons name="flame" size={rs(14)} color="#fff" />
@@ -125,10 +125,10 @@ function AppLogo() {
       <Animated.View style={{
         position: 'absolute', bottom: rs(2), left: rs(10),
         width: rs(24), height: rs(24), borderRadius: rs(12),
-        backgroundColor: '#B8E3E9',
+        backgroundColor: '#FBBC58',
         alignItems: 'center', justifyContent: 'center',
         borderWidth: 2, borderColor: 'rgba(255,255,255,0.35)',
-        shadowColor: '#B8E3E9', shadowOpacity: 0.8, shadowRadius: rs(6), shadowOffset: { width: 0, height: 0 },
+        shadowColor: '#FBBC58', shadowOpacity: 0.8, shadowRadius: rs(6), shadowOffset: { width: 0, height: 0 },
         transform: [{ scale: trophyPulse }],
       }}>
         <Ionicons name="trophy" size={rs(12)} color="#fff" />
@@ -168,7 +168,7 @@ export default function OnboardingScreen() {
       {/* Always light so time/battery/Wi-Fi icons are white on the dark gradient */}
       <StatusBar style="light" />
       <LinearGradient
-        colors={['#071C22', '#0B2E33', '#4F7C82']}
+        colors={['#061519', '#0A2830', '#C8502A']}
         style={[styles.root, { paddingTop: insets.top + rs(28), paddingBottom: Math.max(insets.bottom, rs(12)) + rs(16) }]}
       >
         <AppLogo />
@@ -189,9 +189,13 @@ export default function OnboardingScreen() {
         >
           {STEPS.map((step, i) => (
             <View key={i} style={[styles.slide, { width }]}>
-              <AnimatedEmoji emoji={step.emoji} size={ms(68)} style={{ marginBottom: rs(20) }} />
-              <Text style={styles.slideTitle}>{step.title}</Text>
-              <Text style={styles.slideBody}>{step.body}</Text>
+              <View style={styles.slideCard}>
+                <View style={styles.slideEmojiWrap}>
+                  <AnimatedEmoji emoji={step.emoji} size={ms(52)} />
+                </View>
+                <Text style={styles.slideTitle}>{step.title}</Text>
+                <Text style={styles.slideBody}>{step.body}</Text>
+              </View>
             </View>
           ))}
         </Animated.ScrollView>
@@ -234,23 +238,41 @@ function makeStyles(C) { return {
     textTransform: 'uppercase', marginTop: rs(6), marginBottom: rs(8),
     fontFamily: C.med, fontWeight: '500',
   },
-  slide: { alignItems: 'center', justifyContent: 'center', paddingHorizontal: rs(44) },
+  slide: { alignItems: 'center', justifyContent: 'center', paddingHorizontal: rs(24) },
+  slideCard: {
+    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderRadius: rs(28),
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.14)',
+    padding: rs(32),
+    alignItems: 'center',
+    width: '100%',
+  },
+  slideEmojiWrap: {
+    width: rs(88), height: rs(88), borderRadius: rs(28),
+    backgroundColor: 'rgba(255,255,255,0.12)',
+    alignItems: 'center', justifyContent: 'center',
+    marginBottom: rs(20),
+  },
   slideTitle: {
     fontSize: ms(22), color: '#fff', textAlign: 'center', marginBottom: rs(10),
     fontFamily: C.xbold, fontWeight: '800', letterSpacing: ls(22),
   },
   slideBody: {
-    fontSize: ms(14), color: 'rgba(255,255,255,0.78)', textAlign: 'center', lineHeight: ms(22),
+    fontSize: ms(14), color: 'rgba(255,255,255,0.75)', textAlign: 'center', lineHeight: ms(22),
     fontFamily: C.reg, fontWeight: '400', letterSpacing: ls(14),
   },
-  dots: { flexDirection: 'row', gap: rs(8), marginTop: rs(4), marginBottom: rs(24) },
-  dot:  { width: rs(8), height: rs(8), borderRadius: rs(4), backgroundColor: '#fff' },
+  dots: { flexDirection: 'row', gap: rs(8), marginTop: rs(20), marginBottom: rs(24) },
+  dot:  { width: rs(8), height: rs(8), borderRadius: rs(4), backgroundColor: 'rgba(255,255,255,0.5)' },
   btn: {
-    backgroundColor: '#fff', borderRadius: rs(18),
+    backgroundColor: '#F57B51',
+    borderRadius: rs(18),
     paddingVertical: rs(18), paddingHorizontal: rs(32),
     marginHorizontal: rs(24), alignSelf: 'stretch', alignItems: 'center',
+    shadowColor: '#F57B51', shadowOpacity: 0.5, shadowRadius: rs(14),
+    shadowOffset: { width: 0, height: rs(4) }, elevation: 6,
   },
-  btnText: { color: C.primary, fontSize: ms(15), fontWeight: '700', fontFamily: C.bold, letterSpacing: ls(15) },
+  btnText: { color: '#fff', fontSize: ms(15), fontWeight: '700', fontFamily: C.bold, letterSpacing: ls(15) },
   signOutBtn: { marginTop: rs(16), paddingVertical: rs(8), alignItems: 'center' },
-  signOutText: { color: 'rgba(255,255,255,0.40)', fontSize: ms(12), fontFamily: C.reg, fontWeight: '400', letterSpacing: ls(12) },
+  signOutText: { color: 'rgba(255,255,255,0.35)', fontSize: ms(12), fontFamily: C.reg, fontWeight: '400', letterSpacing: ls(12) },
 }; }

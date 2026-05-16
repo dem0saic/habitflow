@@ -170,7 +170,7 @@ export default function StatsScreen() {
 
       {/* Floating hero card */}
       <View style={styles.heroWrap}>
-        <LinearGradient colors={['#071C22', '#4F7C82']} style={styles.heroCard}>
+        <LinearGradient colors={['#061519', '#2A5E70']} style={styles.heroCard}>
           <View style={styles.heroStatsRow}>
             <View style={styles.heroStat}>
               <Text style={styles.heroStatNum}>{bestStreak}</Text>
@@ -296,15 +296,15 @@ function makeStyles(C) { return {
   topTitle: { fontSize: ms(17), fontFamily: C.xbold, fontWeight: '800', color: C.text, marginTop: rs(2), letterSpacing: ls(17) },
   heroWrap: { paddingHorizontal: rs(16), marginBottom: rs(8) },
   heroCard: {
-    borderRadius: rs(24), padding: rs(20),
-    shadowColor: '#93B1B5', shadowOpacity: 0.35, shadowRadius: rs(20),
-    shadowOffset: { width: 0, height: rs(8) }, elevation: 12,
+    borderRadius: rs(24), padding: rs(24),
+    shadowColor: '#F57B51', shadowOpacity: 0.4, shadowRadius: rs(24),
+    shadowOffset: { width: 0, height: rs(8) }, elevation: 14,
   },
-  heroStatsRow: { flexDirection: 'row', marginBottom: rs(12) },
+  heroStatsRow: { flexDirection: 'row', marginBottom: rs(16) },
   heroStat: { flex: 1, alignItems: 'center' },
-  heroStatNum: { fontSize: ms(26), fontFamily: C.xbold, fontWeight: '800', color: '#fff', letterSpacing: ls(26) },
-  heroStatLabel: { fontSize: ms(10), color: 'rgba(255,255,255,0.65)', marginTop: rs(2), fontFamily: C.med, fontWeight: '500', letterSpacing: ls(10) },
-  heroStatDivider: { width: 1, backgroundColor: 'rgba(255,255,255,0.2)', marginVertical: rs(4) },
+  heroStatNum: { fontSize: ms(38), fontFamily: C.xbold, fontWeight: '800', color: '#fff', letterSpacing: ls(26) },
+  heroStatLabel: { fontSize: ms(11), color: 'rgba(255,255,255,0.6)', marginTop: rs(4), fontFamily: C.med, fontWeight: '500', letterSpacing: ls(11) },
+  heroStatDivider: { width: 1, backgroundColor: 'rgba(255,255,255,0.18)', marginVertical: rs(6) },
   heroStatus: { fontSize: ms(12), color: 'rgba(255,255,255,0.8)', textAlign: 'center', fontFamily: C.med, fontWeight: '500', letterSpacing: ls(12) },
   body: { padding: rs(20), paddingBottom: 100 },
   chartCard: {
@@ -316,14 +316,20 @@ function makeStyles(C) { return {
   empty: { color: C.textSub, textAlign: 'center', fontSize: ms(13), fontFamily: C.reg, fontWeight: '400', letterSpacing: ls(13) },
   streakRow: {
     flexDirection: 'row', alignItems: 'center', backgroundColor: C.card,
-    borderRadius: rs(16), padding: rs(14), marginBottom: rs(10),
+    borderRadius: rs(16), padding: rs(16), marginBottom: rs(10),
     borderWidth: 1, borderColor: C.border,
+    shadowColor: '#000', shadowOpacity: 0.06, shadowRadius: rs(6),
+    shadowOffset: { width: 0, height: rs(2) }, elevation: 1,
   },
   streakInfo: { flex: 1 },
   streakName: { fontSize: ms(14), fontFamily: C.semi, fontWeight: '600', color: C.text, letterSpacing: ls(14) },
   streakType: { fontSize: ms(11), color: C.textSub, marginTop: rs(2), fontFamily: C.reg, fontWeight: '400', letterSpacing: ls(11) },
-  streakBadge: { flexDirection: 'row', alignItems: 'center', gap: rs(4) },
-  streakNum: { fontSize: ms(20), fontFamily: C.xbold, fontWeight: '800', color: C.primary, letterSpacing: ls(20) },
+  streakBadge: {
+    flexDirection: 'row', alignItems: 'center', gap: rs(4),
+    backgroundColor: C.primary + '18', borderRadius: rs(12),
+    paddingHorizontal: rs(10), paddingVertical: rs(6),
+  },
+  streakNum: { fontSize: ms(22), fontFamily: C.xbold, fontWeight: '800', color: C.primary, letterSpacing: ls(20) },
   aiNudgeCard: {
     backgroundColor: C.card, borderRadius: rs(18), padding: rs(18), marginBottom: rs(20),
     borderWidth: 1, borderColor: C.primary + '40',

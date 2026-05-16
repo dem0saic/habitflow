@@ -195,7 +195,7 @@ The Edge Function source lives in `supabase/functions/<name>/index.ts` and is wr
 
 All six font variants are pre-loaded in `App.js`. If you add a new font, load it there and add a token to `FONTS`.
 
-**Active palette — Gothic Noir:** `#000000` · `#D1D0D0` · `#988686` · `#5C4E4E`. `C.primary` is `#988686` in dark, `#5C4E4E` in light. The same palette is mirrored in `src/gluestack.config.js`.
+**Active palette — Color Palette 62 (Bonfire · Backlight · Golden Rambler · Nocturnal Sea):** `#F57B51` · `#FDF6F0` · `#FBBC58` · `#095D6A`. `C.primary` is `#F57B51` in dark, `#C8502A` in light. The same palette is mirrored in `src/gluestack.config.js`.
 
 When changing colors, update **both** `src/theme.js` and `src/gluestack.config.js` together — they must stay in sync.
 

@@ -55,7 +55,7 @@ export default function ChallengeScreen() {
 
       {/* Floating hero card */}
       <View style={styles.heroWrap}>
-        <LinearGradient colors={['#071C22', '#2A5560']} style={styles.heroCard}>
+        <LinearGradient colors={['#061519', '#1A4A56']} style={styles.heroCard}>
           {!challenge ? (
             <View style={styles.heroStatsRow}>
               <View style={styles.heroStat}>
@@ -280,15 +280,15 @@ function makeStyles(C) { return {
   topTitle: { fontSize: ms(17), fontFamily: C.xbold, fontWeight: '800', color: C.text, marginTop: rs(2), letterSpacing: ls(17) },
   heroWrap: { paddingHorizontal: rs(16), marginBottom: rs(8) },
   heroCard: {
-    borderRadius: rs(24), padding: rs(20),
-    shadowColor: '#4F7C82', shadowOpacity: 0.35, shadowRadius: rs(20),
-    shadowOffset: { width: 0, height: rs(8) }, elevation: 12,
+    borderRadius: rs(24), padding: rs(24),
+    shadowColor: '#FBBC58', shadowOpacity: 0.4, shadowRadius: rs(24),
+    shadowOffset: { width: 0, height: rs(8) }, elevation: 14,
   },
-  heroStatsRow: { flexDirection: 'row', marginBottom: rs(12) },
+  heroStatsRow: { flexDirection: 'row', marginBottom: rs(16) },
   heroStat: { flex: 1, alignItems: 'center' },
-  heroStatNum: { fontSize: ms(26), fontFamily: C.xbold, fontWeight: '800', color: '#fff', letterSpacing: ls(26) },
-  heroStatLabel: { fontSize: ms(10), color: 'rgba(255,255,255,0.65)', marginTop: rs(2), fontFamily: C.med, fontWeight: '500', letterSpacing: ls(10) },
-  heroStatDivider: { width: 1, backgroundColor: 'rgba(255,255,255,0.2)', marginVertical: rs(4) },
+  heroStatNum: { fontSize: ms(38), fontFamily: C.xbold, fontWeight: '800', color: '#fff', letterSpacing: ls(26) },
+  heroStatLabel: { fontSize: ms(11), color: 'rgba(255,255,255,0.6)', marginTop: rs(4), fontFamily: C.med, fontWeight: '500', letterSpacing: ls(11) },
+  heroStatDivider: { width: 1, backgroundColor: 'rgba(255,255,255,0.18)', marginVertical: rs(6) },
   heroStatus: { fontSize: ms(12), color: 'rgba(255,255,255,0.8)', textAlign: 'center', fontFamily: C.med, fontWeight: '500', letterSpacing: ls(12) },
 
   presetList:  { padding: rs(20), paddingBottom: rs(40) },
@@ -300,7 +300,9 @@ function makeStyles(C) { return {
   },
   presetIconWrap: {
     width: rs(52), height: rs(52), borderRadius: rs(16),
-    backgroundColor: C.cardHigh, alignItems: 'center', justifyContent: 'center',
+    backgroundColor: C.primary + '22',
+    alignItems: 'center', justifyContent: 'center',
+    borderWidth: 1, borderColor: C.primary + '44',
   },
   presetInfo:   { flex: 1 },
   presetTitle:  { fontSize: ms(15), fontFamily: C.bold, fontWeight: '700', color: C.text, marginBottom: rs(2), letterSpacing: ls(15) },
@@ -323,13 +325,17 @@ function makeStyles(C) { return {
   body: { padding: rs(20), paddingBottom: 100 },
   daysRow: { flexDirection: 'row', gap: rs(8), justifyContent: 'center', marginBottom: rs(20), flexWrap: 'wrap' },
   dayCircle: {
-    width: rs(44), height: rs(44), borderRadius: rs(22),
+    width: rs(46), height: rs(46), borderRadius: rs(23),
     borderWidth: 2, borderColor: C.border, alignItems: 'center', justifyContent: 'center',
     backgroundColor: C.card,
   },
-  dayCircleDone: { backgroundColor: C.success, borderColor: C.success },
-  dayNum:        { fontSize: ms(14), fontFamily: C.bold, fontWeight: '700', color: C.textMuted, letterSpacing: ls(14) },
-  dayNumDone:    { color: '#fff' },
+  dayCircleDone: {
+    backgroundColor: '#FBBC58', borderColor: '#FBBC58',
+    shadowColor: '#FBBC58', shadowOpacity: 0.55, shadowRadius: rs(10), shadowOffset: { width: 0, height: 0 },
+    elevation: 5,
+  },
+  dayNum:     { fontSize: ms(14), fontFamily: C.bold, fontWeight: '700', color: C.textMuted, letterSpacing: ls(14) },
+  dayNumDone: { color: '#fff' },
   motiveLine: {
     fontSize: ms(13), color: C.textSub, textAlign: 'center',
     marginBottom: rs(24), lineHeight: ms(20), fontFamily: C.reg, fontWeight: '400', letterSpacing: ls(13),
@@ -345,7 +351,7 @@ function makeStyles(C) { return {
     padding: rs(14), marginBottom: rs(10),
     borderWidth: 1, borderColor: C.border,
   },
-  habitCardDone: { borderColor: C.success, backgroundColor: '#141010' },
+  habitCardDone: { borderColor: C.success, backgroundColor: '#082218' },
   habitCardEmoji: {
     width: rs(44), height: rs(44), borderRadius: rs(12),
     backgroundColor: C.cardHigh, alignItems: 'center', justifyContent: 'center',
@@ -382,6 +388,8 @@ function makeStyles(C) { return {
   claimBtn: {
     backgroundColor: C.gold, borderRadius: rs(16),
     padding: rs(18), alignItems: 'center', marginTop: rs(24),
+    shadowColor: C.gold, shadowOpacity: 0.55, shadowRadius: rs(14),
+    shadowOffset: { width: 0, height: rs(4) }, elevation: 6,
   },
   claimBtnText: { fontSize: ms(15), fontFamily: C.xbold, fontWeight: '800', color: '#fff', letterSpacing: ls(15) },
   dismissBtn:   { marginTop: rs(16), alignItems: 'center' },

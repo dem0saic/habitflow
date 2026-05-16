@@ -146,10 +146,10 @@ export default function TodayScreen() {
 
       {/* Floating hero card */}
       <View style={styles.heroWrap}>
-        <LinearGradient colors={['#071C22', '#1E4A54']} style={styles.heroCard}>
+        <LinearGradient colors={['#061519', '#1A4A56']} style={styles.heroCard}>
           <View style={styles.heroStatsRow}>
             <View style={styles.heroStat}>
-              <Text style={styles.heroStatNum}>{doneCount}</Text>
+              <Text style={[styles.heroStatNum, styles.heroStatNumDone]}>{doneCount}</Text>
               <Text style={styles.heroStatLabel}>Done</Text>
             </View>
             <View style={styles.heroStatDivider} />
@@ -265,16 +265,17 @@ function makeStyles(C) { return {
   },
   heroWrap: { paddingHorizontal: rs(16), marginBottom: rs(8) },
   heroCard: {
-    borderRadius: rs(24), padding: rs(20),
-    shadowColor: '#93B1B5', shadowOpacity: 0.35, shadowRadius: rs(20),
-    shadowOffset: { width: 0, height: rs(8) }, elevation: 12,
+    borderRadius: rs(24), padding: rs(24),
+    shadowColor: '#F57B51', shadowOpacity: 0.4, shadowRadius: rs(24),
+    shadowOffset: { width: 0, height: rs(8) }, elevation: 14,
   },
-  heroStatsRow: { flexDirection: 'row', marginBottom: rs(16) },
+  heroStatsRow: { flexDirection: 'row', marginBottom: rs(20) },
   heroStat: { flex: 1, alignItems: 'center' },
-  heroStatNum: { fontSize: ms(26), fontFamily: C.xbold, fontWeight: '800', color: '#fff', letterSpacing: ls(26) },
-  heroStatLabel: { fontSize: ms(10), color: 'rgba(255,255,255,0.65)', marginTop: rs(2), fontFamily: C.med, fontWeight: '500', letterSpacing: ls(10) },
-  heroStatDivider: { width: 1, backgroundColor: 'rgba(255,255,255,0.2)', marginVertical: rs(4) },
-  heroProgressTrack: { height: rs(6), backgroundColor: 'rgba(255,255,255,0.2)', borderRadius: rs(3), overflow: 'hidden', marginBottom: rs(10) },
-  heroProgressFill: { height: '100%', backgroundColor: '#fff', borderRadius: rs(3) },
-  heroStatus: { fontSize: ms(12), color: 'rgba(255,255,255,0.8)', textAlign: 'center', fontFamily: C.med, fontWeight: '500', letterSpacing: ls(12) },
+  heroStatNum: { fontSize: ms(42), fontFamily: C.xbold, fontWeight: '800', color: '#fff', letterSpacing: ls(26) },
+  heroStatNumDone: { color: '#FBBC58' },
+  heroStatLabel: { fontSize: ms(11), color: 'rgba(255,255,255,0.6)', marginTop: rs(4), fontFamily: C.med, fontWeight: '500', letterSpacing: ls(11) },
+  heroStatDivider: { width: 1, backgroundColor: 'rgba(255,255,255,0.18)', marginVertical: rs(6) },
+  heroProgressTrack: { height: rs(8), backgroundColor: 'rgba(255,255,255,0.15)', borderRadius: rs(4), overflow: 'hidden', marginBottom: rs(12) },
+  heroProgressFill: { height: '100%', backgroundColor: '#F57B51', borderRadius: rs(4) },
+  heroStatus: { fontSize: ms(12), color: 'rgba(255,255,255,0.75)', textAlign: 'center', fontFamily: C.med, fontWeight: '500', letterSpacing: ls(12) },
 }; }

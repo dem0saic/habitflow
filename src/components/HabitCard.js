@@ -19,8 +19,11 @@ export default function HabitCard({ habit, count, onToggle, onIncrement, onDecre
   const checkScale = useRef(new Animated.Value(count >= (habit.targetCount || 1) ? 1 : 0)).current;
 
   const isDone = count >= (habit.targetCount || 1);
+  const isNegative = habit.type === 'negative';
   const [showBellPicker, setShowBellPicker] = useState(false);
   const [bellDate, setBellDate]             = useState(new Date(2000, 0, 1, 9, 0));
+
+  const accentColor = isDone ? C.success : isNegative ? C.warning : C.primary;
 
   useEffect(() => {
     Animated.spring(checkScale, {
@@ -65,7 +68,6 @@ export default function HabitCard({ habit, count, onToggle, onIncrement, onDecre
     setShowBellPicker(false);
   }
 
-  // Bell time-picker — Android shows native dialog inline; iOS uses a centred modal
   function BellPicker() {
     return (
       <>
@@ -126,53 +128,54 @@ export default function HabitCard({ habit, count, onToggle, onIncrement, onDecre
     return (
       <>
         <Animated.View style={[styles.card, isDone && styles.cardDone, { transform: [{ scale }] }]}>
-          <TouchableOpacity style={styles.row} onLongPress={onLongPress} activeOpacity={0.8}>
-            {/* Emoji */}
-            <AnimatedEmoji emoji={habit.emoji} size={rs(24)} style={{ marginRight: rs(12) }} />
-
-            {/* Name + bell + progress */}
-            <View style={styles.info}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: rs(6), marginBottom: rs(3) }}>
-                <Text style={[styles.name, isDone && styles.nameDone]} numberOfLines={1}>{habit.name}</Text>
-                {habit.type === 'timer' && (
-                  <View style={styles.typeBadge}>
-                    <Ionicons name="timer-outline" size={rs(9)} color={C.textMuted} />
-                    <Text style={styles.typeBadgeText}>timer</Text>
-                  </View>
-                )}
+          <View style={[styles.accentStrip, { backgroundColor: accentColor }]} />
+          <View style={styles.cardContent}>
+            <TouchableOpacity style={styles.row} onLongPress={onLongPress} activeOpacity={0.8}>
+              <View style={[styles.emojiWrap, isDone && styles.emojiWrapDone]}>
+                <AnimatedEmoji emoji={habit.emoji} size={rs(22)} />
               </View>
 
-              {/* Bell row — inside the long-press-only area, safe from toggle conflict */}
-              <TouchableOpacity onPress={handleBellPress} style={styles.bellRow} hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}>
-                <Ionicons
-                  name={habit.reminderTime ? 'alarm' : 'alarm-outline'}
-                  size={rs(11)}
-                  color={habit.reminderTime ? C.primary : C.textMuted}
-                />
-                {habit.reminderTime
-                  ? <Text style={styles.bellLabel}>{fmtTime(habit.reminderTime)}</Text>
-                  : <Text style={[styles.bellLabel, { color: C.textMuted }]}>Set reminder</Text>
-                }
-              </TouchableOpacity>
+              <View style={styles.info}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: rs(6), marginBottom: rs(4) }}>
+                  <Text style={[styles.name, isDone && styles.nameDone]} numberOfLines={1}>{habit.name}</Text>
+                  {habit.type === 'timer' && (
+                    <View style={styles.typeBadge}>
+                      <Ionicons name="timer-outline" size={rs(9)} color={C.textMuted} />
+                      <Text style={styles.typeBadgeText}>timer</Text>
+                    </View>
+                  )}
+                </View>
 
-              <View style={styles.progressTrack}>
-                <View style={[styles.progressFill, { width: `${pct * 100}%`, backgroundColor: isDone ? C.success : C.primary }]} />
+                <TouchableOpacity onPress={handleBellPress} style={styles.bellRow} hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}>
+                  <Ionicons
+                    name={habit.reminderTime ? 'alarm' : 'alarm-outline'}
+                    size={rs(11)}
+                    color={habit.reminderTime ? C.primary : C.textMuted}
+                  />
+                  {habit.reminderTime
+                    ? <Text style={styles.bellLabel}>{fmtTime(habit.reminderTime)}</Text>
+                    : <Text style={[styles.bellLabel, { color: C.textMuted }]}>Set reminder</Text>
+                  }
+                </TouchableOpacity>
+
+                <View style={styles.progressTrack}>
+                  <View style={[styles.progressFill, { width: `${pct * 100}%`, backgroundColor: isDone ? C.success : C.primary }]} />
+                </View>
               </View>
-            </View>
 
-            {/* Counter */}
-            <View style={styles.counter}>
-              <TouchableOpacity style={styles.counterBtn} onPress={onDecrement} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                <Ionicons name="remove" size={rs(18)} color={C.textSub} />
-              </TouchableOpacity>
-              <Text style={[styles.counterNum, isDone && { color: C.success }]}>
-                {count}<Text style={styles.counterTotal}>/{habit.targetCount}{unit}</Text>
-              </Text>
-              <TouchableOpacity style={[styles.counterBtn, styles.counterBtnPlus]} onPress={onIncrement} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-                <Ionicons name="add" size={rs(18)} color="#fff" />
-              </TouchableOpacity>
-            </View>
-          </TouchableOpacity>
+              <View style={styles.counter}>
+                <TouchableOpacity style={styles.counterBtn} onPress={onDecrement} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                  <Ionicons name="remove" size={rs(18)} color={C.textSub} />
+                </TouchableOpacity>
+                <Text style={[styles.counterNum, isDone && { color: C.success }]}>
+                  {count}<Text style={styles.counterTotal}>/{habit.targetCount}{unit}</Text>
+                </Text>
+                <TouchableOpacity style={[styles.counterBtn, styles.counterBtnPlus]} onPress={onIncrement} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                  <Ionicons name="add" size={rs(18)} color="#fff" />
+                </TouchableOpacity>
+              </View>
+            </TouchableOpacity>
+          </View>
         </Animated.View>
         <BellPicker />
       </>
@@ -180,8 +183,6 @@ export default function HabitCard({ habit, count, onToggle, onIncrement, onDecre
   }
 
   // ── Daily / Negative card ──────────────────────────────────────────
-  const isNegative = habit.type === 'negative';
-
   return (
     <>
       <Animated.View style={[
@@ -190,52 +191,54 @@ export default function HabitCard({ habit, count, onToggle, onIncrement, onDecre
         isNegative && !isDone && styles.cardNegative,
         { transform: [{ scale }] },
       ]}>
-        <View style={styles.row}>
-          {/* Toggle area: emoji + name — this is the only tap target for toggling */}
-          <TouchableOpacity
-            style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}
-            onPress={handlePress}
-            onLongPress={onLongPress}
-            activeOpacity={0.85}
-          >
-            <AnimatedEmoji emoji={habit.emoji} size={rs(24)} style={{ marginRight: rs(12) }} />
-            <View style={{ flex: 1 }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: rs(6) }}>
-                <Text style={[styles.name, isDone && styles.nameDone]} numberOfLines={1}>{habit.name}</Text>
-                {isNegative && (
-                  <View style={[styles.typeBadge, isDone && { backgroundColor: 'rgba(52,211,153,0.15)' }]}>
-                    <Ionicons name="ban-outline" size={rs(9)} color={isDone ? C.success : C.warning} />
-                    <Text style={[styles.typeBadgeText, { color: isDone ? C.success : C.warning }]}>
-                      {isDone ? 'Avoided' : 'Avoid'}
-                    </Text>
-                  </View>
+        <View style={[styles.accentStrip, { backgroundColor: accentColor }]} />
+        <View style={styles.cardContent}>
+          <View style={styles.row}>
+            <TouchableOpacity
+              style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}
+              onPress={handlePress}
+              onLongPress={onLongPress}
+              activeOpacity={0.85}
+            >
+              <View style={[styles.emojiWrap, isDone && styles.emojiWrapDone]}>
+                <AnimatedEmoji emoji={habit.emoji} size={rs(22)} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: rs(6) }}>
+                  <Text style={[styles.name, isDone && styles.nameDone]} numberOfLines={1}>{habit.name}</Text>
+                  {isNegative && (
+                    <View style={[styles.typeBadge, isDone && { backgroundColor: 'rgba(107,153,112,0.15)' }]}>
+                      <Ionicons name="ban-outline" size={rs(9)} color={isDone ? C.success : C.warning} />
+                      <Text style={[styles.typeBadgeText, { color: isDone ? C.success : C.warning }]}>
+                        {isDone ? 'Avoided' : 'Avoid'}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+                {habit.reminderTime && (
+                  <Text style={styles.reminderTimeText}>{fmtTime(habit.reminderTime)}</Text>
                 )}
               </View>
-              {habit.reminderTime && (
-                <Text style={styles.reminderTimeText}>{fmtTime(habit.reminderTime)}</Text>
-              )}
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={handleBellPress}
+              style={styles.bellIconBtn}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <Ionicons
+                name={habit.reminderTime ? 'alarm' : 'alarm-outline'}
+                size={rs(17)}
+                color={habit.reminderTime ? C.primary : C.textMuted}
+              />
+            </TouchableOpacity>
+
+            <View style={styles.checkContainer}>
+              <Animated.View style={[styles.check, isDone && styles.checkDone, { transform: [{ scale: checkScale }] }]}>
+                <Ionicons name={isNegative && isDone ? 'shield-checkmark' : 'checkmark'} size={rs(16)} color="#fff" />
+              </Animated.View>
+              {!isDone && <View style={[styles.checkEmpty, isNegative && styles.checkEmptyNegative]} />}
             </View>
-          </TouchableOpacity>
-
-          {/* Bell button — separate from the toggle touchable, no conflict */}
-          <TouchableOpacity
-            onPress={handleBellPress}
-            style={styles.bellIconBtn}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          >
-            <Ionicons
-              name={habit.reminderTime ? 'alarm' : 'alarm-outline'}
-              size={rs(17)}
-              color={habit.reminderTime ? C.primary : C.textMuted}
-            />
-          </TouchableOpacity>
-
-          {/* Check circle — stacked inside a fixed-size container */}
-          <View style={styles.checkContainer}>
-            <Animated.View style={[styles.check, { transform: [{ scale: checkScale }] }]}>
-              <Ionicons name={isNegative && isDone ? 'shield-checkmark' : 'checkmark'} size={rs(16)} color="#fff" />
-            </Animated.View>
-            {!isDone && <View style={[styles.checkEmpty, isNegative && styles.checkEmptyNegative]} />}
           </View>
         </View>
       </Animated.View>
@@ -246,18 +249,36 @@ export default function HabitCard({ habit, count, onToggle, onIncrement, onDecre
 
 function makeStyles(C) { return {
   card: {
+    flexDirection: 'row',
     backgroundColor: C.card,
     borderRadius: rs(18),
-    padding: rs(14),
     marginBottom: rs(10),
     borderWidth: 1,
     borderColor: C.border,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowRadius: rs(8),
+    shadowOffset: { width: 0, height: rs(2) },
+    elevation: 2,
   },
-  cardDone:     { backgroundColor: '#0B2A1E', borderWidth: 1.5, borderColor: C.success },
+  cardDone:     { backgroundColor: '#082218', borderColor: C.success, borderWidth: 1.5 },
   cardNegative: { borderColor: C.warning, borderWidth: 1.5 },
+
+  accentStrip: { width: rs(4) },
+  cardContent: { flex: 1, padding: rs(14) },
+
   row: { flexDirection: 'row', alignItems: 'center' },
-  info:  { flex: 1, marginRight: rs(8) },
-  name:     { fontSize: ms(14), color: C.text, fontFamily: C.med, fontWeight: '500', flexShrink: 1, letterSpacing: ls(14) },
+  emojiWrap: {
+    width: rs(44), height: rs(44), borderRadius: rs(14),
+    backgroundColor: C.cardHigh,
+    alignItems: 'center', justifyContent: 'center',
+    marginRight: rs(12),
+  },
+  emojiWrapDone: { backgroundColor: 'rgba(107,153,112,0.15)' },
+
+  info:     { flex: 1, marginRight: rs(8) },
+  name:     { fontSize: ms(14), color: C.text, fontFamily: C.semi, fontWeight: '600', flexShrink: 1, letterSpacing: ls(14) },
   nameDone: { color: C.success, textDecorationLine: 'line-through' },
 
   bellIconBtn: {
@@ -265,23 +286,27 @@ function makeStyles(C) { return {
     alignItems: 'center', justifyContent: 'center',
     marginHorizontal: rs(2),
   },
-  bellRow: {
-    flexDirection: 'row', alignItems: 'center', gap: rs(3),
-    marginBottom: rs(4),
-  },
+  bellRow: { flexDirection: 'row', alignItems: 'center', gap: rs(3), marginBottom: rs(6) },
   bellLabel: { fontSize: ms(9), color: C.primary, fontFamily: C.med, fontWeight: '500', letterSpacing: ls(9) },
   reminderTimeText: { fontSize: ms(9), color: C.textMuted, marginTop: rs(2), fontFamily: C.reg, fontWeight: '400', letterSpacing: ls(9) },
 
-  checkContainer: { width: rs(28), height: rs(28) },
+  checkContainer: { width: rs(32), height: rs(32) },
   check: {
     position: 'absolute', top: 0, left: 0,
-    width: rs(28), height: rs(28), borderRadius: rs(14),
+    width: rs(32), height: rs(32), borderRadius: rs(16),
     backgroundColor: C.success,
     alignItems: 'center', justifyContent: 'center',
   },
+  checkDone: {
+    shadowColor: C.success,
+    shadowOpacity: 0.55,
+    shadowRadius: rs(8),
+    shadowOffset: { width: 0, height: 0 },
+    elevation: 4,
+  },
   checkEmpty: {
     position: 'absolute', top: 0, left: 0,
-    width: rs(28), height: rs(28), borderRadius: rs(14),
+    width: rs(32), height: rs(32), borderRadius: rs(16),
     borderWidth: 2, borderColor: C.border,
   },
   checkEmptyNegative: { borderColor: C.warning },
@@ -293,20 +318,22 @@ function makeStyles(C) { return {
   },
   typeBadgeText: { fontSize: ms(9), color: C.textMuted, fontFamily: C.semi, fontWeight: '600', letterSpacing: ls(9) },
 
-  progressTrack: {
-    height: rs(4), backgroundColor: C.border,
-    borderRadius: rs(2), overflow: 'hidden',
-  },
-  progressFill: { height: '100%', borderRadius: rs(2) },
+  progressTrack: { height: rs(5), backgroundColor: C.border, borderRadius: rs(3), overflow: 'hidden' },
+  progressFill:  { height: '100%', borderRadius: rs(3) },
 
   counter: { flexDirection: 'row', alignItems: 'center', gap: rs(8) },
   counterBtn: {
-    width: rs(30), height: rs(30), borderRadius: rs(15),
+    width: rs(32), height: rs(32), borderRadius: rs(16),
     borderWidth: 1.5, borderColor: C.border,
     alignItems: 'center', justifyContent: 'center',
     backgroundColor: C.cardHigh,
   },
-  counterBtnPlus: { backgroundColor: C.primary, borderColor: C.primary },
-  counterNum:   { fontSize: ms(15), fontFamily: C.bold, fontWeight: '700', color: C.text, minWidth: rs(36), textAlign: 'center', letterSpacing: ls(15) },
+  counterBtnPlus: {
+    backgroundColor: C.primary, borderColor: C.primary,
+    shadowColor: C.primary, shadowOpacity: 0.45,
+    shadowRadius: rs(6), shadowOffset: { width: 0, height: rs(2) },
+    elevation: 3,
+  },
+  counterNum:   { fontSize: ms(15), fontFamily: C.bold, fontWeight: '700', color: C.text, minWidth: rs(40), textAlign: 'center', letterSpacing: ls(15) },
   counterTotal: { fontSize: ms(11), fontFamily: C.reg, fontWeight: '400', color: C.textMuted, letterSpacing: ls(11) },
 }; }

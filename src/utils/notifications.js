@@ -29,7 +29,7 @@ export async function ensureAndroidChannel() {
     importance: Notifications.AndroidImportance.MAX,
     sound: 'default',
     vibrationPattern: [0, 250, 250, 250],
-    lightColor: '#93B1B5',
+    lightColor: '#F57B51',
     enableVibrate: true,
     showBadge: true,
   });
@@ -38,7 +38,7 @@ export async function ensureAndroidChannel() {
     importance: Notifications.AndroidImportance.DEFAULT,
     sound: null,
     vibrationPattern: [0, 250, 250, 250],
-    lightColor: '#93B1B5',
+    lightColor: '#F57B51',
     enableVibrate: true,
     showBadge: true,
   });
