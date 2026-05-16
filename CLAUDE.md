@@ -79,7 +79,7 @@ SafeAreaProvider
 if (loading || !storeReady) return null;          // wait for both auth AND store to initialise
 if (!session || recoveryMode) return <AuthScreen />;
 if (!state.onboardingDone)   return <OnboardingScreen />;
-return <Tab.Navigator ... />;                     // Today / Challenge / History / Stats
+return <Tab.Navigator ... />;                     // Today / Challenge / History / Stats / Settings
 ```
 
 Both `loading` (from `AuthProvider`) and `storeReady` (from `StoreProvider`) must be true before any routing decision is made — this prevents a race condition where a stale Supabase session resolves before the store has loaded `onboardingDone` from AsyncStorage.
@@ -115,6 +115,7 @@ Single global store via React `useReducer` + `AsyncStorage` (key: `@habitapp_sta
 {
   onboardingDone: boolean,
   themeMode: 'dark' | 'light',
+  hapticsEnabled: boolean,          // device-level, not synced to Supabase
   habits: [{ id, name, emoji, type, targetCount, reminderTime, createdAt }],
   completions: { 'YYYY-MM-DD': { [habitId]: number } },
   challenge: { id, title, durationDays, startDate, habitIds, completed, rewardClaimed } | null,
@@ -131,6 +132,8 @@ Single global store via React `useReducer` + `AsyncStorage` (key: `@habitapp_sta
 3. If a Supabase session exists, pull remote state and overwrite local; if local has pre-auth habits, migrate them up to Supabase
 
 **`syncedDispatch`** (what `useStore().dispatch` actually is): generates stable IDs for `ADD_HABIT` and `START_CHALLENGE` before dispatching, then calls `syncActionToSupabase` fire-and-forget after every action. All screens use `useStore().dispatch` — none bypass the sync.
+
+`SET_HAPTICS` is intentionally not handled in `syncActionToSupabase` — haptic preference is device-local only. A `useEffect` in `StoreProvider` watching `state.hapticsEnabled` calls `setHapticsEnabled()` from `src/utils/haptics.js` to keep the module flag in sync with the persisted value.
 
 ### Supabase sync (`src/lib/supabaseSync.js`)
 
@@ -215,7 +218,7 @@ Baseline: iPhone 14 (390×844).
 
 ### Screens (`src/screens/`)
 
-All four main screens share the same header pattern: a plain top row (title + action buttons) followed by a floating `LinearGradient` hero card with 3-column stats. Each screen uses `SafeAreaView` from `react-native-safe-area-context` (not from `react-native`).
+The four main tab screens share the same header pattern: a plain top row (title + action buttons) followed by a floating `LinearGradient` hero card with 3-column stats. Each screen uses `SafeAreaView` from `react-native-safe-area-context` (not from `react-native`).
 
 | Screen | Hero card gradient | Key data shown |
 |---|---|---|
@@ -224,7 +227,15 @@ All four main screens share the same header pattern: a plain top row (title + ac
 | `HistoryScreen` | `#000000 → #5C4E4E` | Days tracked / Perfect days / This week% |
 | `StatsScreen` | `#000000 → #988686` | Best streak / 7-day avg / Perfect days |
 
+`TodayScreen`'s top row has a single `?` icon button that triggers `RESET_ONBOARDING`. The theme toggle that was previously there has been moved to `SettingsScreen`.
+
 `StatsScreen` includes a GitHub-style contribution graph (`ContributionGraph` component, 16 weeks × 7 days grid, horizontally scrollable) and an **AI Coach** section at the bottom: a daily nudge card (auto-fetched on mount, cached per day) and Weekly/Monthly reflection report buttons (each generates on first tap, cached per period start date). Both use skeleton loading states and call the Edge Functions via `src/lib/aiCoaching.js`.
+
+`SettingsScreen` is the 5th tab (gear icon). It has four grouped card sections:
+- **Appearance** — dark/light mode toggle (`SET_THEME`), haptic feedback toggle (`SET_HAPTICS`)
+- **Notifications** — daily reminders toggle; reads live from `Notifications.getAllScheduledNotificationsAsync()` to determine initial state, then calls `scheduleDailyReminders()` or cancels the two fixed IDs on toggle
+- **Account** — read-only email, Change Password (calls `resetPassword(email)` and shows a timed banner), Sign Out
+- **App** — View Onboarding (dispatches `RESET_ONBOARDING`), Version (static `1.0.0`)
 
 `OnboardingScreen` uses `useSafeAreaInsets()` for padding and has an animated `AppLogo` (float, breathe, badge bounce — all via RN `Animated` with `useNativeDriver: true`).
 
@@ -243,3 +254,7 @@ Two layers:
 2. **Per-habit** — `scheduleHabitReminder(habitId, ...)` uses identifier `habit_${habitId}`. `cancelHabitReminder(habitId)` cancels only that one.
 
 Android requires `ensureAndroidChannel()` before any scheduling — called at app startup, in `requestPermissions`, and in `scheduleHabitReminder`. The trigger format uses `SchedulableTriggerInputTypes.DAILY`.
+
+### Haptics (`src/utils/haptics.js`)
+
+Exports `lightTap()`, `mediumTap()`, `successBurst()`, and `setHapticsEnabled(bool)`. A module-level `_enabled` flag gates all three feedback functions — when `false`, calls are no-ops. `StoreProvider` calls `setHapticsEnabled(state.hapticsEnabled)` via a `useEffect` whenever that state field changes, keeping the flag current without requiring the functions to read from the store directly.
