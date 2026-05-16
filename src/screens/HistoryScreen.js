@@ -146,8 +146,8 @@ function makeStyles(C) { return {
   heroWrap: { paddingHorizontal: rs(16), marginBottom: rs(8) },
   heroCard: {
     borderRadius: rs(24), padding: rs(24),
-    shadowColor: '#F57B51', shadowOpacity: 0.4, shadowRadius: rs(24),
-    shadowOffset: { width: 0, height: rs(8) }, elevation: 14,
+    shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: rs(12),
+    shadowOffset: { width: 0, height: rs(6) }, elevation: 8,
   },
   heroStatsRow: { flexDirection: 'row', marginBottom: rs(16) },
   heroStat: { flex: 1, alignItems: 'center' },

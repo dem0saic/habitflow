@@ -207,7 +207,7 @@ export default function TodayScreen() {
           position: 'absolute', bottom: rs(28), right: rs(20),
           width: rs(58), height: rs(58), borderRadius: rs(29),
           backgroundColor: C.primary, alignItems: 'center', justifyContent: 'center',
-          shadowColor: C.primary, shadowOpacity: 0.5, shadowRadius: rs(14),
+          shadowColor: '#000', shadowOpacity: 0.35, shadowRadius: rs(8),
           shadowOffset: { width: 0, height: rs(4) }, elevation: 8,
         }}
         onPress={() => { lightTap(); setAddVisible(true); }}
@@ -266,8 +266,8 @@ function makeStyles(C) { return {
   heroWrap: { paddingHorizontal: rs(16), marginBottom: rs(8) },
   heroCard: {
     borderRadius: rs(24), padding: rs(24),
-    shadowColor: '#F57B51', shadowOpacity: 0.4, shadowRadius: rs(24),
-    shadowOffset: { width: 0, height: rs(8) }, elevation: 14,
+    shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: rs(12),
+    shadowOffset: { width: 0, height: rs(6) }, elevation: 8,
   },
   heroStatsRow: { flexDirection: 'row', marginBottom: rs(20) },
   heroStat: { flex: 1, alignItems: 'center' },

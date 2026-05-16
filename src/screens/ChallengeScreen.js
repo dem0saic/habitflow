@@ -281,8 +281,8 @@ function makeStyles(C) { return {
   heroWrap: { paddingHorizontal: rs(16), marginBottom: rs(8) },
   heroCard: {
     borderRadius: rs(24), padding: rs(24),
-    shadowColor: '#FBBC58', shadowOpacity: 0.4, shadowRadius: rs(24),
-    shadowOffset: { width: 0, height: rs(8) }, elevation: 14,
+    shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: rs(12),
+    shadowOffset: { width: 0, height: rs(6) }, elevation: 8,
   },
   heroStatsRow: { flexDirection: 'row', marginBottom: rs(16) },
   heroStat: { flex: 1, alignItems: 'center' },
@@ -331,8 +331,8 @@ function makeStyles(C) { return {
   },
   dayCircleDone: {
     backgroundColor: '#FBBC58', borderColor: '#FBBC58',
-    shadowColor: '#FBBC58', shadowOpacity: 0.55, shadowRadius: rs(10), shadowOffset: { width: 0, height: 0 },
-    elevation: 5,
+    shadowColor: '#000', shadowOpacity: 0.2, shadowRadius: rs(6), shadowOffset: { width: 0, height: rs(2) },
+    elevation: 4,
   },
   dayNum:     { fontSize: ms(14), fontFamily: C.bold, fontWeight: '700', color: C.textMuted, letterSpacing: ls(14) },
   dayNumDone: { color: '#fff' },
@@ -388,8 +388,8 @@ function makeStyles(C) { return {
   claimBtn: {
     backgroundColor: C.gold, borderRadius: rs(16),
     padding: rs(18), alignItems: 'center', marginTop: rs(24),
-    shadowColor: C.gold, shadowOpacity: 0.55, shadowRadius: rs(14),
-    shadowOffset: { width: 0, height: rs(4) }, elevation: 6,
+    shadowColor: '#000', shadowOpacity: 0.25, shadowRadius: rs(8),
+    shadowOffset: { width: 0, height: rs(3) }, elevation: 5,
   },
   claimBtnText: { fontSize: ms(15), fontFamily: C.xbold, fontWeight: '800', color: '#fff', letterSpacing: ls(15) },
   dismissBtn:   { marginTop: rs(16), alignItems: 'center' },

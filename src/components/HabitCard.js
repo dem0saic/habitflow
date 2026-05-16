@@ -330,9 +330,9 @@ function makeStyles(C) { return {
   },
   counterBtnPlus: {
     backgroundColor: C.primary, borderColor: C.primary,
-    shadowColor: C.primary, shadowOpacity: 0.45,
-    shadowRadius: rs(6), shadowOffset: { width: 0, height: rs(2) },
-    elevation: 3,
+    shadowColor: '#000', shadowOpacity: 0.2,
+    shadowRadius: rs(4), shadowOffset: { width: 0, height: rs(2) },
+    elevation: 2,
   },
   counterNum:   { fontSize: ms(15), fontFamily: C.bold, fontWeight: '700', color: C.text, minWidth: rs(40), textAlign: 'center', letterSpacing: ls(15) },
   counterTotal: { fontSize: ms(11), fontFamily: C.reg, fontWeight: '400', color: C.textMuted, letterSpacing: ls(11) },
