@@ -97,7 +97,7 @@ Deno.serve(async (req: Request) => {
 
     const prompt = habits.length === 0
       ? "The user just started HabitFlow and has no habits yet. Write a warm, encouraging 2-sentence welcome message that inspires them to add their first habit and hints at the power of small daily actions."
-      : `You are a supportive AI coach for HabitFlow, a habit tracking app. Generate a personalized coaching nudge based on this habit data:\n\n${JSON.stringify(habitStats, null, 2)}\n\nRules:\n- 2-3 sentences max, warm and conversational\n- Celebrate the strongest habit (highest streak or consistency)\n- Identify the weakest habit and give one specific, practical micro-tip\n- Weave in 1 emoji naturally — don't force it\n- No bullet points or headers\n- Reference actual habit names from the data`;
+      : `You are a supportive AI coach for HabitFlow, a habit tracking app. Generate a personalized coaching nudge based on this habit data:\n\n${JSON.stringify(habitStats, null, 2)}\n\nRules:\n- 2-3 sentences max, warm and conversational\n- Celebrate the strongest habit (highest streak or consistency)\n- Identify the weakest habit and give one specific, practical micro-tip\n- Weave in 1 emoji naturally, don't force it\n- No bullet points or headers\n- Reference actual habit names from the data\n- Never use dashes of any kind (no hyphens, em dashes, or en dashes) anywhere in the response`;
 
     const anthropic = new Anthropic({ apiKey: Deno.env.get("ANTHROPIC_API_KEY")! });
     const message = await anthropic.messages.create({
