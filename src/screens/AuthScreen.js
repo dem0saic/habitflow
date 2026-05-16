@@ -120,7 +120,7 @@ export default function AuthScreen() {
     <>
       <StatusBar style="light" />
       <LinearGradient
-        colors={['#000000', '#2A1A1A', '#5C4E4E']}
+        colors={['#071C22', '#0B2E33', '#4F7C82']}
         style={{ flex: 1 }}
       >
         <KeyboardAvoidingView

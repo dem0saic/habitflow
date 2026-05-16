@@ -112,10 +112,10 @@ function AppLogo() {
       <Animated.View style={{
         position: 'absolute', top: rs(2), right: rs(10),
         width: rs(28), height: rs(28), borderRadius: rs(14),
-        backgroundColor: '#988686',
+        backgroundColor: '#93B1B5',
         alignItems: 'center', justifyContent: 'center',
         borderWidth: 2, borderColor: 'rgba(255,255,255,0.35)',
-        shadowColor: '#988686', shadowOpacity: 0.9, shadowRadius: rs(8), shadowOffset: { width: 0, height: 0 },
+        shadowColor: '#93B1B5', shadowOpacity: 0.9, shadowRadius: rs(8), shadowOffset: { width: 0, height: 0 },
         transform: [{ scale: flamePulse }],
       }}>
         <Ionicons name="flame" size={rs(14)} color="#fff" />
@@ -125,10 +125,10 @@ function AppLogo() {
       <Animated.View style={{
         position: 'absolute', bottom: rs(2), left: rs(10),
         width: rs(24), height: rs(24), borderRadius: rs(12),
-        backgroundColor: '#D1D0D0',
+        backgroundColor: '#B8E3E9',
         alignItems: 'center', justifyContent: 'center',
         borderWidth: 2, borderColor: 'rgba(255,255,255,0.35)',
-        shadowColor: '#D1D0D0', shadowOpacity: 0.8, shadowRadius: rs(6), shadowOffset: { width: 0, height: 0 },
+        shadowColor: '#B8E3E9', shadowOpacity: 0.8, shadowRadius: rs(6), shadowOffset: { width: 0, height: 0 },
         transform: [{ scale: trophyPulse }],
       }}>
         <Ionicons name="trophy" size={rs(12)} color="#fff" />
@@ -168,7 +168,7 @@ export default function OnboardingScreen() {
       {/* Always light so time/battery/Wi-Fi icons are white on the dark gradient */}
       <StatusBar style="light" />
       <LinearGradient
-        colors={['#000000', '#2A1A1A', '#5C4E4E']}
+        colors={['#071C22', '#0B2E33', '#4F7C82']}
         style={[styles.root, { paddingTop: insets.top + rs(28), paddingBottom: Math.max(insets.bottom, rs(12)) + rs(16) }]}
       >
         <AppLogo />

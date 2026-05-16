@@ -55,7 +55,7 @@ export default function ChallengeScreen() {
 
       {/* Floating hero card */}
       <View style={styles.heroWrap}>
-        <LinearGradient colors={['#000000', '#5C4E4E']} style={styles.heroCard}>
+        <LinearGradient colors={['#071C22', '#2A5560']} style={styles.heroCard}>
           {!challenge ? (
             <View style={styles.heroStatsRow}>
               <View style={styles.heroStat}>
@@ -281,7 +281,7 @@ function makeStyles(C) { return {
   heroWrap: { paddingHorizontal: rs(16), marginBottom: rs(8) },
   heroCard: {
     borderRadius: rs(24), padding: rs(20),
-    shadowColor: '#5C4E4E', shadowOpacity: 0.35, shadowRadius: rs(20),
+    shadowColor: '#4F7C82', shadowOpacity: 0.35, shadowRadius: rs(20),
     shadowOffset: { width: 0, height: rs(8) }, elevation: 12,
   },
   heroStatsRow: { flexDirection: 'row', marginBottom: rs(12) },

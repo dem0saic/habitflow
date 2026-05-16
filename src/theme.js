@@ -3,8 +3,8 @@
 //  30% → card    (secondary surfaces — cards, inputs, headers)
 //  10% → primary (accent — buttons, active states, progress)
 
-// Gothic Noir palette — Figma Combination 58
-// Source colors: #000000 · #D1D0D0 · #988686 · #5C4E4E
+// Winter Chill palette — Figma Combination 91
+// Source colors: #B8E3E9 · #93B1B5 · #4F7C82 · #0B2E33
 
 // Font families (loaded in App.js via expo-google-fonts)
 export const FONTS = {
@@ -17,38 +17,38 @@ export const FONTS = {
 };
 
 export const DARK = {
-  bg: '#0A0808',
-  card: '#161111',
-  cardHigh: '#221A1A',
-  primary: '#988686',
-  primaryLight: '#2A1F1F',
-  primaryDark: '#7A6868',
-  accent: '#D1D0D0',
-  gold: '#B09898',
+  bg: '#071C22',
+  card: '#0B2E33',
+  cardHigh: '#0F2A32',
+  primary: '#93B1B5',
+  primaryLight: '#0D2830',
+  primaryDark: '#4F7C82',
+  accent: '#B8E3E9',
+  gold: '#7AAAB4',
   success: '#6B9970',
   warning: '#A07860',
-  text: '#D1D0D0',
-  textSub: '#988686',
-  textMuted: '#5C4E4E',
-  border: '#2A2020',
+  text: '#B8E3E9',
+  textSub: '#93B1B5',
+  textMuted: '#4F7C82',
+  border: '#1A3840',
   ...FONTS,
 };
 
 export const LIGHT = {
-  bg: '#E8E7E7',
-  card: '#FFFFFF',
-  cardHigh: '#F0EEEE',
-  primary: '#5C4E4E',
-  primaryLight: '#EDE8E8',
-  primaryDark: '#3A2E2E',
-  accent: '#988686',
-  gold: '#7A6060',
+  bg: '#E4F4F7',
+  card: '#F2FBFC',
+  cardHigh: '#DCF0F4',
+  primary: '#4F7C82',
+  primaryLight: '#C8E8EC',
+  primaryDark: '#0B2E33',
+  accent: '#93B1B5',
+  gold: '#5A9498',
   success: '#4A7A5A',
   warning: '#8A6040',
-  text: '#000000',
-  textSub: '#5C4E4E',
-  textMuted: '#988686',
-  border: '#C8C4C4',
+  text: '#0B2E33',
+  textSub: '#4F7C82',
+  textMuted: '#93B1B5',
+  border: '#BCDDE2',
   ...FONTS,
 };
 

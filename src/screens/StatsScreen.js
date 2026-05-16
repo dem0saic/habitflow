@@ -170,7 +170,7 @@ export default function StatsScreen() {
 
       {/* Floating hero card */}
       <View style={styles.heroWrap}>
-        <LinearGradient colors={['#000000', '#988686']} style={styles.heroCard}>
+        <LinearGradient colors={['#071C22', '#4F7C82']} style={styles.heroCard}>
           <View style={styles.heroStatsRow}>
             <View style={styles.heroStat}>
               <Text style={styles.heroStatNum}>{bestStreak}</Text>
@@ -297,7 +297,7 @@ function makeStyles(C) { return {
   heroWrap: { paddingHorizontal: rs(16), marginBottom: rs(8) },
   heroCard: {
     borderRadius: rs(24), padding: rs(20),
-    shadowColor: '#988686', shadowOpacity: 0.35, shadowRadius: rs(20),
+    shadowColor: '#93B1B5', shadowOpacity: 0.35, shadowRadius: rs(20),
     shadowOffset: { width: 0, height: rs(8) }, elevation: 12,
   },
   heroStatsRow: { flexDirection: 'row', marginBottom: rs(12) },
