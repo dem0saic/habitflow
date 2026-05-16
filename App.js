@@ -33,6 +33,7 @@ import TodayScreen from './src/screens/TodayScreen';
 import ChallengeScreen from './src/screens/ChallengeScreen';
 import HistoryScreen from './src/screens/HistoryScreen';
 import StatsScreen from './src/screens/StatsScreen';
+import SettingsScreen from './src/screens/SettingsScreen';
 import OnboardingScreen from './src/screens/OnboardingScreen';
 import AuthScreen from './src/screens/AuthScreen';
 
@@ -43,6 +44,7 @@ const TAB_ICONS = {
   Challenge: { focused: 'trophy',    outline: 'trophy-outline' },
   History:   { focused: 'calendar',  outline: 'calendar-outline' },
   Stats:     { focused: 'bar-chart', outline: 'bar-chart-outline' },
+  Settings:  { focused: 'settings',  outline: 'settings-outline' },
 };
 
 function TabIcon({ name, focused, color }) {
@@ -103,6 +105,7 @@ function AppNavigator() {
         <Tab.Screen name="Challenge" component={ChallengeScreen} />
         <Tab.Screen name="History"   component={HistoryScreen} />
         <Tab.Screen name="Stats"     component={StatsScreen} />
+        <Tab.Screen name="Settings"  component={SettingsScreen} />
       </Tab.Navigator>
     </NavigationContainer>
   );
