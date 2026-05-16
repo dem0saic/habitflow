@@ -2,6 +2,7 @@ import React, { createContext, useContext, useReducer, useEffect, useRef, useSta
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { todayKey } from './utils/date';
 import { scheduleHabitReminder, scheduleDailyReminders, ensureAndroidChannel } from './utils/notifications';
+import { setHapticsEnabled } from './utils/haptics';
 import { supabase } from './lib/supabase';
 import { pullUserData, pushAllData, syncActionToSupabase } from './lib/supabaseSync';
 
@@ -10,6 +11,7 @@ const STORAGE_KEY = '@habitapp_state_v1';
 const defaultState = {
   onboardingDone: false,
   themeMode: 'dark',
+  hapticsEnabled: true,
   habits: [],
   completions: {},  // { 'YYYY-MM-DD': { [habitId]: number } }
   challenge: null,  // { id, title, durationDays, startDate, habitIds, completed, rewardClaimed }
@@ -27,6 +29,9 @@ function reducer(state, action) {
 
     case 'SET_THEME':
       return { ...state, themeMode: action.mode };
+
+    case 'SET_HAPTICS':
+      return { ...state, hapticsEnabled: action.enabled };
 
     case 'ADD_HABIT': {
       const habit = {
@@ -192,6 +197,11 @@ export function StoreProvider({ children }) {
   useEffect(() => {
     AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(state)).catch(() => {});
   }, [state]);
+
+  // Keep haptics module flag in sync with stored preference
+  useEffect(() => {
+    setHapticsEnabled(state.hapticsEnabled ?? true);
+  }, [state.hapticsEnabled]);
 
   // Wrapped dispatch: ensures generated IDs are stable, then syncs to Supabase
   function syncedDispatch(action) {

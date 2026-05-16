@@ -7,6 +7,9 @@ import { useAuth } from '../AuthContext';
 import { useTheme } from '../ThemeContext';
 import { rs, ms, ls } from '../utils/responsive';
 import { scheduleDailyReminders, requestPermissions } from '../utils/notifications';
+import { lightTap } from '../utils/haptics';
+
+const APP_VERSION = '1.0.0';
 
 export default function SettingsScreen() {
   const { state, dispatch } = useStore();
@@ -30,7 +33,12 @@ export default function SettingsScreen() {
   }
 
   function toggleTheme() {
+    lightTap();
     dispatch({ type: 'SET_THEME', mode: state.themeMode === 'dark' ? 'light' : 'dark' });
+  }
+
+  function toggleHaptics(value) {
+    dispatch({ type: 'SET_HAPTICS', enabled: value });
   }
 
   async function toggleReminders(value) {
@@ -61,9 +69,15 @@ export default function SettingsScreen() {
   }
 
   async function handleSignOut() {
+    lightTap();
     setSigningOut(true);
     try { await signOut(); } catch (_) {}
     setSigningOut(false);
+  }
+
+  function handleViewOnboarding() {
+    lightTap();
+    dispatch({ type: 'RESET_ONBOARDING' });
   }
 
   const email = session?.user?.email ?? '';
@@ -84,9 +98,10 @@ export default function SettingsScreen() {
           </View>
         )}
 
+        {/* ── Appearance ── */}
         <Text style={styles.sectionLabel}>Appearance</Text>
         <View style={styles.card}>
-          <View style={styles.row}>
+          <View style={[styles.row, styles.rowBorder]}>
             <Text style={styles.rowLabel}>Dark mode</Text>
             <Switch
               value={state.themeMode === 'dark'}
@@ -95,8 +110,18 @@ export default function SettingsScreen() {
               thumbColor="#fff"
             />
           </View>
+          <View style={styles.row}>
+            <Text style={styles.rowLabel}>Haptic feedback</Text>
+            <Switch
+              value={state.hapticsEnabled ?? true}
+              onValueChange={toggleHaptics}
+              trackColor={{ false: C.border, true: C.primary }}
+              thumbColor="#fff"
+            />
+          </View>
         </View>
 
+        {/* ── Notifications ── */}
         <Text style={styles.sectionLabel}>Notifications</Text>
         <View style={styles.card}>
           <View style={styles.row}>
@@ -114,6 +139,7 @@ export default function SettingsScreen() {
           </View>
         </View>
 
+        {/* ── Account ── */}
         <Text style={styles.sectionLabel}>Account</Text>
         <View style={styles.card}>
           <View style={[styles.row, styles.rowBorder]}>
@@ -138,6 +164,26 @@ export default function SettingsScreen() {
               {signingOut ? 'Signing out...' : 'Sign Out'}
             </Text>
           </TouchableOpacity>
+        </View>
+
+        {/* ── App ── */}
+        <Text style={styles.sectionLabel}>App</Text>
+        <View style={styles.card}>
+          <TouchableOpacity
+            style={[styles.row, styles.rowBorder]}
+            onPress={handleViewOnboarding}
+            activeOpacity={0.7}
+          >
+            <View style={styles.rowTextGroup}>
+              <Text style={styles.rowLabel}>View Onboarding</Text>
+              <Text style={styles.rowSub}>Replay the intro walkthrough</Text>
+            </View>
+            <Text style={styles.rowChevron}>›</Text>
+          </TouchableOpacity>
+          <View style={styles.row}>
+            <Text style={styles.rowLabel}>Version</Text>
+            <Text style={styles.rowValue}>{APP_VERSION}</Text>
+          </View>
         </View>
       </ScrollView>
     </SafeAreaView>

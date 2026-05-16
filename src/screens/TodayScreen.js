@@ -34,8 +34,6 @@ export default function TodayScreen() {
   const habitsWithReminder = habits.filter(h => h.reminderTime);
   const doneCount = habits.filter(h => (todayCompletions[h.id] || 0) >= (h.targetCount || 1)).length;
   const allDone = habits.length > 0 && doneCount === habits.length;
-  const isDark = state.themeMode !== 'light';
-
   useEffect(() => {
     if (allDone && !wasAllDoneRef.current) {
       wasAllDoneRef.current = true;
@@ -73,11 +71,6 @@ export default function TodayScreen() {
     } else if (old?.reminderTime) {
       cancelHabitReminder(id).catch(() => {});
     }
-  }
-
-  function toggleTheme() {
-    lightTap();
-    dispatch({ type: 'SET_THEME', mode: isDark ? 'light' : 'dark' });
   }
 
   function handleAdd({ name, emoji, type, targetCount, reminderTime }) {
@@ -139,9 +132,6 @@ export default function TodayScreen() {
             style={styles.iconBtn}
           >
             <Ionicons name="help-circle-outline" size={rs(18)} color={C.textSub} />
-          </TouchableOpacity>
-          <TouchableOpacity onPress={toggleTheme} style={styles.iconBtn}>
-            <Ionicons name={isDark ? 'sunny' : 'moon'} size={rs(18)} color={C.textSub} />
           </TouchableOpacity>
         </View>
       </View>
