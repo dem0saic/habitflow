@@ -64,7 +64,7 @@ Fonts are loaded at the top of `App` via `useFonts` (expo-font) before any provi
 
 ```
 SafeAreaProvider
-  └─ AuthProvider           ← Supabase session (session, loading, signIn, signUp, signOut)
+  └─ AuthProvider           ← Supabase session (session, loading, signIn, signUp, signOut, resetPassword, updatePassword, recoveryMode)
        └─ StoreProvider     ← global state + AsyncStorage cache + Supabase sync
             └─ GluestackWrapper  ← gluestack-style colorMode (reads state.themeMode directly)
                  └─ ThemeProvider ← resolves DARK/LIGHT palette → useTheme()
@@ -76,10 +76,10 @@ SafeAreaProvider
 ### Routing (`AppNavigator` in `App.js`)
 
 ```js
-if (loading || !storeReady) return null;   // wait for both auth AND store to initialise
-if (!session)               return <AuthScreen />;
-if (!state.onboardingDone)  return <OnboardingScreen />;
-return <Tab.Navigator ... />;              // Today / Challenge / History / Stats
+if (loading || !storeReady) return null;          // wait for both auth AND store to initialise
+if (!session || recoveryMode) return <AuthScreen />;
+if (!state.onboardingDone)   return <OnboardingScreen />;
+return <Tab.Navigator ... />;                     // Today / Challenge / History / Stats
 ```
 
 Both `loading` (from `AuthProvider`) and `storeReady` (from `StoreProvider`) must be true before any routing decision is made — this prevents a race condition where a stale Supabase session resolves before the store has loaded `onboardingDone` from AsyncStorage.
@@ -88,9 +88,23 @@ Both `loading` (from `AuthProvider`) and `storeReady` (from `StoreProvider`) mus
 
 ### Auth (`src/AuthContext.js`, `src/screens/AuthScreen.js`)
 
-`AuthProvider` wraps the Supabase session lifecycle. `useAuth()` returns `{ session, loading, signIn, signUp, signOut }`. The Supabase client (`src/lib/supabase.js`) persists sessions to AsyncStorage with `autoRefreshToken: true`.
+`AuthProvider` wraps the Supabase session lifecycle. `useAuth()` returns:
+```js
+{ session, loading, signIn, signUp, signOut, resetPassword, updatePassword, recoveryMode }
+```
 
-`AuthScreen` is a single screen with Sign In / Sign Up tabs, client-side validation, and email-confirmation flow (Supabase requires email confirmation by default — after sign-up the screen switches to Sign In mode and shows a banner).
+`recoveryMode` is a boolean that becomes `true` when Supabase fires the `PASSWORD_RECOVERY` auth event (triggered by the deep link after the user clicks a password-reset email). It resets to `false` on `USER_UPDATED` or `SIGNED_OUT`.
+
+**Forgot-password deep link flow:**
+1. User taps "Forgot password?" → `resetPasswordForEmail(email, { redirectTo: 'habitflow://localhost/reset-password' })` sends a Supabase magic link.
+2. Tapping the link opens the app via `expo-linking`. `InnerApp` listens with `Linking.addEventListener('url', ...)` and `Linking.getInitialURL()`.
+3. The URL contains `#access_token=...&refresh_token=...&type=recovery` in the fragment. The handler calls `supabase.auth.setSession()` with those tokens.
+4. Supabase fires `PASSWORD_RECOVERY` → `AuthProvider` sets `recoveryMode = true` → `AppNavigator` renders `<AuthScreen />`.
+5. `AuthScreen` detects `recoveryMode` (overrides the `mode` state) and shows the new-password + confirm form. On submit it calls `updatePassword(newPassword)` which calls `supabase.auth.updateUser({ password })` and sets `recoveryMode = false`.
+
+`AuthScreen` has three internal modes (`'signIn' | 'signUp' | 'forgotPassword'`) plus the `recoveryMode` override. The Supabase client (`src/lib/supabase.js`) persists sessions to AsyncStorage with `autoRefreshToken: true`.
+
+The `app.json` scheme is `"habitflow"` — the full redirect URL accepted by Supabase is `habitflow://localhost/reset-password`.
 
 ### State management (`src/store.js`)
 
@@ -122,7 +136,7 @@ Single global store via React `useReducer` + `AsyncStorage` (key: `@habitapp_sta
 
 All functions use `supabase.from(table)`:
 
-- `pullUserData(userId)` — fetches all 4 tables in parallel, maps snake_case → camelCase, returns the full state shape
+- `pullUserData(userId)` — fetches all 4 tables in parallel (user_settings, habits, completions, challenges), maps snake_case → camelCase, returns the full state shape
 - `pushAllData(userId, state)` — full upload (used for pre-auth migration)
 - `pushHabit / deleteHabit / pushCompletion / pushChallenge / deleteChallenge / pushSettings` — granular upserts
 - `syncActionToSupabase(action, stateRef)` — called after every dispatch; `stateRef.current` is the state **before** the action ran (needed to compute the new completion count for `LOG_HABIT`)
@@ -143,6 +157,8 @@ Five tables in the `public` schema, all with RLS enabled. Every table has a poli
 
 `habits.id` and `challenges.id` are text (timestamp strings from `Date.now().toString()`), not UUIDs. The composite PK on `completions` makes upserts idempotent without specifying `onConflict`.
 
+`ai_insights` is never touched by `supabaseSync.js` — it is read and written exclusively by the Edge Functions.
+
 ### AI Coaching (`src/lib/aiCoaching.js`, `supabase/functions/`)
 
 Two Supabase Edge Functions call Claude Sonnet and write results to `ai_insights`. The app calls them via `supabase.functions.invoke()` with the user's JWT — the functions use the service-role key internally and bypass RLS.
@@ -153,6 +169,10 @@ Two Supabase Edge Functions call Claude Sonnet and write results to `ai_insights
 `src/lib/aiCoaching.js` is a thin client: `fetchCoachingNudge()` and `fetchReflectionSummary(period)` both get the session, pass the JWT in the Authorization header, and return `data.content`. All error handling is fire-and-forget at the call site (StatsScreen catches silently and shows a retry prompt).
 
 The Edge Function source lives in `supabase/functions/<name>/index.ts` and is written in Deno TypeScript. It imports from `npm:@supabase/supabase-js@2` and `npm:@anthropic-ai/sdk`. Both functions use `claude-sonnet-4-6` with `verify_jwt: true` at the gateway level.
+
+**Prompt constraints (do not remove):** Both edge function prompts include the rule `"Never use dashes of any kind (no hyphens, em dashes, or en dashes) anywhere in the response"`. This is intentional — dashes make the output feel AI-generated. If you edit these prompts, preserve this constraint.
+
+**Clearing stale cache:** If prompt changes are deployed but cached rows still return old content, delete the relevant rows: `DELETE FROM ai_insights WHERE type IN ('nudge', 'weekly_summary');`. The next request will regenerate from the updated prompt.
 
 ### Theme system (`src/theme.js`, `src/ThemeContext.js`)
 
