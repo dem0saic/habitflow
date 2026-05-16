@@ -116,6 +116,7 @@ Single global store via React `useReducer` + `AsyncStorage` (key: `@habitapp_sta
   onboardingDone: boolean,
   themeMode: 'dark' | 'light',
   hapticsEnabled: boolean,          // device-level, not synced to Supabase
+  notificationSound: boolean,       // device-level, not synced to Supabase
   habits: [{ id, name, emoji, type, targetCount, reminderTime, createdAt }],
   completions: { 'YYYY-MM-DD': { [habitId]: number } },
   challenge: { id, title, durationDays, startDate, habitIds, completed, rewardClaimed } | null,
@@ -133,7 +134,7 @@ Single global store via React `useReducer` + `AsyncStorage` (key: `@habitapp_sta
 
 **`syncedDispatch`** (what `useStore().dispatch` actually is): generates stable IDs for `ADD_HABIT` and `START_CHALLENGE` before dispatching, then calls `syncActionToSupabase` fire-and-forget after every action. All screens use `useStore().dispatch` — none bypass the sync.
 
-`SET_HAPTICS` is intentionally not handled in `syncActionToSupabase` — haptic preference is device-local only. A `useEffect` in `StoreProvider` watching `state.hapticsEnabled` calls `setHapticsEnabled()` from `src/utils/haptics.js` to keep the module flag in sync with the persisted value.
+`SET_HAPTICS` and `SET_NOTIFICATION_SOUND` are intentionally not handled in `syncActionToSupabase` — both are device-local preferences. `StoreProvider` has `useEffect` hooks watching `state.hapticsEnabled` and `state.notificationSound` that call `setHapticsEnabled()` and `setNotificationSound()` respectively to keep module flags in sync with persisted values on every app start.
 
 ### Supabase sync (`src/lib/supabaseSync.js`)
 
@@ -233,7 +234,7 @@ The four main tab screens share the same header pattern: a plain top row (title 
 
 `SettingsScreen` is the 5th tab (gear icon). It has four grouped card sections:
 - **Appearance** — dark/light mode toggle (`SET_THEME`), haptic feedback toggle (`SET_HAPTICS`)
-- **Notifications** — daily reminders toggle; reads live from `Notifications.getAllScheduledNotificationsAsync()` to determine initial state, then calls `scheduleDailyReminders()` or cancels the two fixed IDs on toggle
+- **Notifications** — daily reminders toggle (reads live from `Notifications.getAllScheduledNotificationsAsync()`); notification sound toggle (`SET_NOTIFICATION_SOUND` — when changed, all active reminders are immediately rescheduled with the new sound/channel setting)
 - **Account** — read-only email, Change Password (calls `resetPassword(email)` and shows a timed banner), Sign Out
 - **App** — View Onboarding (dispatches `RESET_ONBOARDING`), Version (static `1.0.0`)
 
@@ -254,6 +255,8 @@ Two layers:
 2. **Per-habit** — `scheduleHabitReminder(habitId, ...)` uses identifier `habit_${habitId}`. `cancelHabitReminder(habitId)` cancels only that one.
 
 Android requires `ensureAndroidChannel()` before any scheduling — called at app startup, in `requestPermissions`, and in `scheduleHabitReminder`. The trigger format uses `SchedulableTriggerInputTypes.DAILY`.
+
+**Sound:** A module-level `_soundEnabled` flag (set via `setNotificationSound(bool)`) controls sound for all notifications. On iOS this sets `sound: true/false` per notification content. On Android, sound is channel-level and cannot be changed after channel creation, so two channels are registered: `habitflow-reminders` (with sound) and `habitflow-reminders-silent` (vibrate only). `dailyTrigger()` picks the correct channel ID based on `_soundEnabled`. When the user changes the sound setting in SettingsScreen, all active reminders (daily + per-habit) are cancelled and rescheduled so the new channel/sound takes effect immediately.
 
 ### Haptics (`src/utils/haptics.js`)
 
