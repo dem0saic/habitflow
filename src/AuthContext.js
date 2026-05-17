@@ -53,9 +53,19 @@ export function AuthProvider({ children }) {
   // Invokes the delete-account Edge Function. The function cascades all of the
   // user's rows server-side using the service role key, then deletes the auth.users
   // row. On success we sign out locally to clear the session.
+  //
+  // FunctionsHttpError wraps non-2xx responses with a generic message — we read
+  // the underlying Response body to surface the function's own { error } payload.
   async function deleteAccount() {
     const { data, error } = await supabase.functions.invoke('delete-account');
-    if (error) throw error;
+    if (error) {
+      let detail = error.message;
+      try {
+        const body = await error.context?.json?.();
+        if (body?.error) detail = body.error;
+      } catch (_) { /* fall through with generic message */ }
+      throw new Error(detail);
+    }
     if (data?.error) throw new Error(data.error);
     await supabase.auth.signOut();
   }
