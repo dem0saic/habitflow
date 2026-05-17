@@ -365,7 +365,7 @@ function makeStyles(C) {
     root:     { flex: 1, backgroundColor: C.bg },
     topRow:   { paddingHorizontal: rs(20), paddingTop: rs(8), paddingBottom: rs(16) },
     topLabel: { fontSize: ms(11), color: C.textMuted, fontFamily: C.semi, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.8 },
-    topTitle: { fontSize: ms(20), fontFamily: C.bold, fontWeight: '700', color: C.text, marginTop: rs(4), letterSpacing: ls(20) },
+    topTitle: { fontSize: ms(22), fontFamily: C.bold, fontWeight: '700', color: C.text, marginTop: rs(4), letterSpacing: ls(22) },
 
     body: { paddingHorizontal: rs(16), paddingBottom: rs(100) },
 

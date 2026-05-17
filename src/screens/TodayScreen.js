@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, FlatList, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { AlarmClock, Settings, Plus } from 'lucide-react-native';
+import { Settings, Plus, Flame, CheckCircle2 } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useStore, useTodayCompletions, calcStreak } from '../store';
 import { useTheme } from '../ThemeContext';
 import { rs, ms, ls } from '../utils/responsive';
-import HabitCard from '../components/HabitCard';
+import StatTile from '../components/StatTile';
+import HabitTileSmall from '../components/HabitTileSmall';
+import HabitTileWide from '../components/HabitTileWide';
 import AddHabitModal from '../components/AddHabitModal';
 import CelebrationModal from '../components/CelebrationModal';
 import HabitOptionsSheet from '../components/HabitOptionsSheet';
@@ -16,19 +18,13 @@ import { scheduleDailyReminders, scheduleHabitReminder, cancelHabitReminder } fr
 const MILESTONE_DAYS = [7, 14, 30, 60, 100, 200, 365];
 
 function milestoneCopy(streak) {
-  if (streak >= 365) return { title: `${streak}-day streak`,  subtitle: 'A full year of showing up. That is character.' };
-  if (streak >= 200) return { title: `${streak}-day streak`,  subtitle: 'Two hundred days in. This is who you are now.' };
-  if (streak >= 100) return { title: `${streak}-day streak`,  subtitle: 'Triple digits. You earned every single one of these.' };
-  if (streak >= 60)  return { title: `${streak}-day streak`,  subtitle: 'Sixty days deep. The habit is wired in.' };
-  if (streak >= 30)  return { title: `${streak}-day streak`,  subtitle: 'A full month. This is no longer a goal — it is a routine.' };
-  if (streak >= 14)  return { title: `${streak}-day streak`,  subtitle: 'Two weeks of consistency. Momentum is real now.' };
+  if (streak >= 365) return { title: `${streak}-day streak`, subtitle: 'A full year of showing up. That is character.' };
+  if (streak >= 200) return { title: `${streak}-day streak`, subtitle: 'Two hundred days in. This is who you are now.' };
+  if (streak >= 100) return { title: `${streak}-day streak`, subtitle: 'Triple digits. You earned every single one of these.' };
+  if (streak >= 60)  return { title: `${streak}-day streak`, subtitle: 'Sixty days deep. The habit is wired in.' };
+  if (streak >= 30)  return { title: `${streak}-day streak`, subtitle: 'A full month. This is no longer a goal — it is a routine.' };
+  if (streak >= 14)  return { title: `${streak}-day streak`, subtitle: 'Two weeks of consistency. Momentum is real now.' };
   return { title: `${streak}-day streak`, subtitle: 'A full week. Keep the chain alive.' };
-}
-
-function formatReminderTime(hour, minute) {
-  const h = hour % 12 || 12;
-  const m = String(minute).padStart(2, '0');
-  return `${h}:${m} ${hour < 12 ? 'AM' : 'PM'}`;
 }
 
 export default function TodayScreen() {
@@ -46,9 +42,13 @@ export default function TodayScreen() {
   const celebratedMilestonesRef = useRef({});
 
   const { habits } = state;
-  const habitsWithReminder = habits.filter(h => h.reminderTime);
   const doneCount = habits.filter(h => (todayCompletions[h.id] || 0) >= (h.targetCount || 1)).length;
   const allDone   = habits.length > 0 && doneCount === habits.length;
+  const pct = habits.length ? doneCount / habits.length : 0;
+
+  const bestStreak = habits.length
+    ? Math.max(...habits.map(h => calcStreak(h.id, state.completions)), 0)
+    : 0;
 
   useEffect(() => {
     if (allDone && !wasAllDoneRef.current) {
@@ -59,9 +59,7 @@ export default function TodayScreen() {
     if (!allDone) wasAllDoneRef.current = false;
   }, [allDone]);
 
-  // Streak milestones — fire once per (habit, milestone) per session.
-  // We rely on streak === milestone (the day it crosses) to avoid celebrating
-  // every render past the threshold.
+  // Streak milestones — once per (habit, milestone) per session.
   useEffect(() => {
     if (milestone) return;
     for (const habit of habits) {
@@ -76,9 +74,9 @@ export default function TodayScreen() {
     }
   }, [habits, state.completions, milestone]);
 
-  function handleToggle(id)              { lightTap(); dispatch({ type: 'LOG_HABIT', id }); }
-  function handleIncrement(id, delta=1)  { lightTap(); dispatch({ type: 'LOG_HABIT', id, delta }); }
-  function handleDecrement(id, delta=1)  { lightTap(); dispatch({ type: 'LOG_HABIT', id, delta: -delta }); }
+  function handleToggle(id)             { lightTap(); dispatch({ type: 'LOG_HABIT', id }); }
+  function handleIncrement(id, delta=1) { lightTap(); dispatch({ type: 'LOG_HABIT', id, delta }); }
+  function handleDecrement(id, delta=1) { lightTap(); dispatch({ type: 'LOG_HABIT', id, delta: -delta }); }
 
   function handleDelete(id) {
     cancelHabitReminder(id).catch(() => {});
@@ -115,133 +113,141 @@ export default function TodayScreen() {
     }
   }
 
-  const pct = habits.length ? doneCount / habits.length : 0;
-  const hour = new Date().getHours();
-  const greeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
+  // Group habits by tile type for grid layout
+  const wideHabits  = habits.filter(h => h.type === 'volume' || h.type === 'timer');
+  const smallHabits = habits.filter(h => h.type === 'daily'  || h.type === 'negative');
 
-  const statusText = habits.length === 0
-    ? 'Add your first habit to begin'
-    : allDone
-    ? `All done — great work today`
-    : `${habits.length - doneCount} habit${habits.length - doneCount !== 1 ? 's' : ''} left for today`;
+  // Pair small habits two-up
+  const smallRows = [];
+  for (let i = 0; i < smallHabits.length; i += 2) {
+    smallRows.push(smallHabits.slice(i, i + 2));
+  }
 
-  const reminderBanner = habitsWithReminder.length > 0 ? (
-    <View style={styles.reminderBanner}>
-      <View style={styles.reminderBannerHeader}>
-        <AlarmClock size={rs(12)} color={C.primary} strokeWidth={2.5} />
-        <Text style={styles.reminderBannerLabel}>
-          {habitsWithReminder.length} REMINDER{habitsWithReminder.length !== 1 ? 'S' : ''} ACTIVE
-        </Text>
-      </View>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-        {habitsWithReminder.map(h => (
-          <View key={h.id} style={styles.reminderChip}>
-            <Text style={{ fontSize: ms(12) }}>{h.emoji}</Text>
-            <Text style={styles.reminderChipText}>
-              {formatReminderTime(h.reminderTime.hour, h.reminderTime.minute)}
-            </Text>
-          </View>
-        ))}
-      </ScrollView>
-    </View>
-  ) : null;
+  const dateObj = new Date();
+  const weekday = dateObj.toLocaleDateString('en-US', { weekday: 'long' });
+  const monthDay = dateObj.toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: C.bg }}>
-      {/* Header */}
-      <View style={styles.topRow}>
-        <View style={{ flex: 1 }}>
-          <Text style={styles.topGreeting}>{greeting}</Text>
-          <Text style={styles.topDate}>
-            {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
-          </Text>
-        </View>
-        <TouchableOpacity
-          onPress={() => { lightTap(); navigation.navigate('Settings'); }}
-          style={styles.iconBtn}
-          activeOpacity={0.7}
-        >
-          <Settings size={rs(18)} color={C.textSub} strokeWidth={1.75} />
-        </TouchableOpacity>
-      </View>
-
-      {/* Hero card */}
-      <View style={styles.heroWrap}>
-        <View style={styles.heroCard}>
-          <View style={styles.heroTopLine} />
-          <View style={styles.heroStatsRow}>
-            <View style={styles.heroStat}>
-              <Text style={[styles.heroStatNum, allDone && { color: C.success }]}>{doneCount}</Text>
-              <Text style={styles.heroStatLabel}>Done</Text>
-            </View>
-            <View style={styles.heroStatDivider} />
-            <View style={styles.heroStat}>
-              <Text style={styles.heroStatNum}>{habits.length - doneCount}</Text>
-              <Text style={styles.heroStatLabel}>Remaining</Text>
-            </View>
-            <View style={styles.heroStatDivider} />
-            <View style={styles.heroStat}>
-              <Text style={styles.heroStatNum}>{Math.round(pct * 100)}<Text style={styles.heroStatUnit}>%</Text></Text>
-              <Text style={styles.heroStatLabel}>Complete</Text>
-            </View>
-          </View>
-          <View style={styles.heroProgressTrack}>
-            <View style={[styles.heroProgressFill, {
-              width: `${pct * 100}%`,
-              backgroundColor: allDone ? C.success : C.primary,
-            }]} />
-          </View>
-          <Text style={styles.heroStatus}>{statusText}</Text>
-        </View>
-      </View>
-
-      <FlatList
-        data={habits}
-        keyExtractor={item => item.id}
-        contentContainerStyle={{ padding: rs(16), paddingBottom: rs(110) }}
+      <ScrollView
+        contentContainerStyle={{ paddingBottom: rs(110) }}
         showsVerticalScrollIndicator={false}
-        ListHeaderComponent={reminderBanner}
-        ListEmptyComponent={
+      >
+        {/* Header */}
+        <View style={styles.topRow}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.weekday}>{weekday}</Text>
+            <Text style={styles.monthDay}>{monthDay}</Text>
+          </View>
+          <TouchableOpacity
+            onPress={() => { lightTap(); navigation.navigate('Settings'); }}
+            style={styles.iconBtn}
+            activeOpacity={0.7}
+          >
+            <Settings size={rs(18)} color={C.textSub} strokeWidth={1.75} />
+          </TouchableOpacity>
+        </View>
+
+        {/* Stat strip */}
+        {habits.length > 0 && (
+          <View style={styles.statStrip}>
+            <StatTile
+              value={`${doneCount}/${habits.length}`}
+              label="DONE"
+              accent={allDone ? C.success : C.text}
+              Icon={CheckCircle2}
+              compact
+            />
+            <StatTile
+              value={`${Math.round(pct * 100)}%`}
+              label="COMPLETE"
+              accent={allDone ? C.success : C.primary}
+              compact
+            />
+            <StatTile
+              value={`${bestStreak}`}
+              label="BEST STREAK"
+              accent={C.primary}
+              Icon={Flame}
+              compact
+            />
+          </View>
+        )}
+
+        {/* Add habit inline button */}
+        <TouchableOpacity
+          style={styles.addBtn}
+          onPress={() => { lightTap(); setAddVisible(true); }}
+          activeOpacity={0.85}
+        >
+          <Plus size={rs(16)} color={C.primary} strokeWidth={2.5} />
+          <Text style={styles.addBtnText}>Add habit</Text>
+        </TouchableOpacity>
+
+        {/* Empty state */}
+        {habits.length === 0 && (
           <View style={styles.emptyState}>
             <Text style={{ fontSize: rs(44), marginBottom: rs(12) }}>🌱</Text>
             <Text style={styles.emptyTitle}>No habits yet</Text>
-            <Text style={styles.emptySub}>Tap + to add your first habit</Text>
+            <Text style={styles.emptySub}>Tap "Add habit" above to begin</Text>
           </View>
-        }
-        renderItem={({ item }) => (
-          <HabitCard
-            habit={item}
-            count={todayCompletions[item.id] || 0}
-            onToggle={() => handleToggle(item.id)}
-            onIncrement={() => handleIncrement(item.id, item.type === 'timer' ? 5 : 1)}
-            onDecrement={() => handleDecrement(item.id, item.type === 'timer' ? 5 : 1)}
-            onLongPress={() => { lightTap(); setOptionsHabit(item); }}
-            onSetReminder={handleSetReminder}
-          />
         )}
-      />
 
-      <TouchableOpacity
-        style={styles.fab}
-        onPress={() => { lightTap(); setAddVisible(true); }}
-        activeOpacity={0.88}
-      >
-        <Plus size={rs(26)} color="#fff" strokeWidth={2.5} />
-      </TouchableOpacity>
+        {/* Wide habits (volume / timer) */}
+        {wideHabits.length > 0 && (
+          <View style={styles.section}>
+            {wideHabits.map(h => (
+              <HabitTileWide
+                key={h.id}
+                habit={h}
+                count={todayCompletions[h.id] || 0}
+                onIncrement={() => handleIncrement(h.id, h.type === 'timer' ? 5 : 1)}
+                onDecrement={() => handleDecrement(h.id, h.type === 'timer' ? 5 : 1)}
+                onLongPress={() => { lightTap(); setOptionsHabit(h); }}
+              />
+            ))}
+          </View>
+        )}
+
+        {/* Small habits (daily / negative) — paired in 2-column rows */}
+        {smallRows.length > 0 && (
+          <View style={styles.section}>
+            {smallRows.map((row, ri) => (
+              <View key={ri} style={styles.smallRow}>
+                <HabitTileSmall
+                  habit={row[0]}
+                  count={todayCompletions[row[0].id] || 0}
+                  onToggle={() => handleToggle(row[0].id)}
+                  onLongPress={() => { lightTap(); setOptionsHabit(row[0]); }}
+                />
+                {row[1] ? (
+                  <HabitTileSmall
+                    habit={row[1]}
+                    count={todayCompletions[row[1].id] || 0}
+                    onToggle={() => handleToggle(row[1].id)}
+                    onLongPress={() => { lightTap(); setOptionsHabit(row[1]); }}
+                  />
+                ) : (
+                  // Spacer so a lone tile doesn't go full-width
+                  <View style={{ flex: 1 }} />
+                )}
+              </View>
+            ))}
+          </View>
+        )}
+      </ScrollView>
 
       <AddHabitModal
         visible={addVisible}
         onClose={() => setAddVisible(false)}
         onAdd={handleAdd}
       />
-
       <AddHabitModal
         visible={editingHabit != null}
         onClose={() => setEditingHabit(null)}
         onAdd={handleEdit}
         editingHabit={editingHabit}
       />
-
       <HabitOptionsSheet
         visible={optionsHabit != null}
         habit={optionsHabit}
@@ -250,7 +256,6 @@ export default function TodayScreen() {
         onDelete={handleDelete}
         onSetReminder={handleSetReminder}
       />
-
       <CelebrationModal
         visible={celebrate}
         title="All habits done"
@@ -258,7 +263,6 @@ export default function TodayScreen() {
         onClose={() => setCelebrate(false)}
         type="daily"
       />
-
       <CelebrationModal
         visible={milestone != null}
         type="milestone"
@@ -275,72 +279,34 @@ export default function TodayScreen() {
 function makeStyles(C) { return {
   topRow: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end',
-    paddingHorizontal: rs(20), paddingTop: rs(8), paddingBottom: rs(12),
+    paddingHorizontal: rs(20), paddingTop: rs(8), paddingBottom: rs(16),
   },
-  topGreeting: {
-    fontSize: ms(11), color: C.textMuted, fontFamily: C.semi, fontWeight: '600',
-    textTransform: 'uppercase', letterSpacing: 0.8,
-  },
-  topDate: { fontSize: ms(20), fontFamily: C.bold, fontWeight: '700', color: C.text, marginTop: rs(4), letterSpacing: ls(20) },
+  weekday:  { fontSize: ms(13), color: C.textMuted, fontFamily: C.semi, fontWeight: '600', letterSpacing: 0.4 },
+  monthDay: { fontSize: ms(28), fontFamily: C.bold, fontWeight: '700', color: C.text, marginTop: rs(2), letterSpacing: ls(28) },
   iconBtn: {
     width: rs(38), height: rs(38), borderRadius: rs(12),
     backgroundColor: C.card, borderWidth: 1, borderColor: C.border,
     alignItems: 'center', justifyContent: 'center',
   },
 
-  // Hero
-  heroWrap: { paddingHorizontal: rs(16), marginBottom: rs(8) },
-  heroCard: {
-    backgroundColor: C.heroSurface,
-    borderRadius: rs(18),
-    padding: rs(20),
-    paddingTop: rs(22),
-    borderWidth: 1, borderColor: C.borderStrong,
-    overflow: 'hidden',
+  statStrip: {
+    flexDirection: 'row', gap: rs(8),
+    paddingHorizontal: rs(16), marginBottom: rs(16),
   },
-  heroTopLine: {
-    position: 'absolute', top: 0, left: 0, right: 0,
-    height: rs(3), backgroundColor: C.primary,
-  },
-  heroStatsRow:    { flexDirection: 'row', marginBottom: rs(18) },
-  heroStat:        { flex: 1, alignItems: 'center' },
-  heroStatNum:     { fontSize: ms(30), fontFamily: C.bold, fontWeight: '700', color: C.text, letterSpacing: ls(30) },
-  heroStatUnit:    { fontSize: ms(18), fontFamily: C.semi, fontWeight: '600', color: C.textMuted, letterSpacing: 0 },
-  heroStatLabel:   { fontSize: ms(11), color: C.textMuted, marginTop: rs(2), fontFamily: C.med, fontWeight: '500', letterSpacing: 0.4, textTransform: 'uppercase' },
-  heroStatDivider: { width: 1, backgroundColor: C.borderStrong, marginVertical: rs(8) },
-  heroProgressTrack: { height: rs(6), backgroundColor: C.border, borderRadius: rs(3), overflow: 'hidden', marginBottom: rs(12) },
-  heroProgressFill:  { height: '100%', borderRadius: rs(3) },
-  heroStatus: { fontSize: ms(12), color: C.textSub, textAlign: 'center', fontFamily: C.med, fontWeight: '500', letterSpacing: ls(12) },
 
-  // Reminder banner
-  reminderBanner: {
-    marginBottom: rs(12),
-    backgroundColor: C.card, borderRadius: rs(14),
-    borderWidth: 1, borderColor: C.border,
-    padding: rs(12),
+  addBtn: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: rs(6),
+    marginHorizontal: rs(16), marginBottom: rs(12),
+    paddingVertical: rs(11), borderRadius: rs(12),
+    borderWidth: 1, borderColor: C.primary,
+    backgroundColor: C.primarySoft,
   },
-  reminderBannerHeader: { flexDirection: 'row', alignItems: 'center', gap: rs(6), marginBottom: rs(8) },
-  reminderBannerLabel:  { fontSize: ms(10), fontFamily: C.bold, fontWeight: '700', color: C.primary, letterSpacing: 0.8 },
-  reminderChip: {
-    flexDirection: 'row', alignItems: 'center', gap: rs(6),
-    backgroundColor: C.cardHigh, borderRadius: rs(20),
-    paddingHorizontal: rs(10), paddingVertical: rs(5),
-    marginRight: rs(8), borderWidth: 1, borderColor: C.border,
-  },
-  reminderChipText: { fontSize: ms(11), color: C.textSub, fontFamily: C.med, fontWeight: '500' },
+  addBtnText: { fontSize: ms(13), color: C.primary, fontFamily: C.bold, fontWeight: '700', letterSpacing: ls(13) },
 
-  // Empty state
-  emptyState: { alignItems: 'center', paddingTop: rs(60) },
+  section: { paddingHorizontal: rs(16) },
+  smallRow: { flexDirection: 'row', gap: rs(10), marginBottom: rs(10) },
+
+  emptyState: { alignItems: 'center', paddingTop: rs(60), paddingHorizontal: rs(24) },
   emptyTitle: { fontSize: ms(17), fontFamily: C.bold, fontWeight: '700', color: C.text, marginBottom: rs(6), letterSpacing: ls(17) },
-  emptySub:   { fontSize: ms(13), color: C.textMuted, fontFamily: C.reg, fontWeight: '400', letterSpacing: ls(13) },
-
-  // FAB
-  fab: {
-    position: 'absolute', bottom: rs(28), right: rs(20),
-    width: rs(56), height: rs(56), borderRadius: rs(28),
-    backgroundColor: C.primary,
-    alignItems: 'center', justifyContent: 'center',
-    shadowColor: '#000', shadowOpacity: 0.25, shadowRadius: rs(10),
-    shadowOffset: { width: 0, height: rs(4) }, elevation: 6,
-  },
+  emptySub:   { fontSize: ms(13), color: C.textMuted, fontFamily: C.reg, fontWeight: '400', letterSpacing: ls(13), textAlign: 'center' },
 }; }

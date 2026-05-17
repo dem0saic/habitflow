@@ -197,12 +197,16 @@ The Edge Function source lives in `supabase/functions/<name>/index.ts` and is wr
 
 All six font variants are pre-loaded in `App.js`. If you add a new font, load it there and add a token to `FONTS`.
 
-**Active palette — Warm Editorial:** warm dark surfaces, refined amber accent, sage for streaks, rust for avoidance, brick for danger. `C.primary` is `#D89860` in dark, `#A86C2D` in light. Depth comes from layered surfaces (`bg` → `card` → `cardHigh` / `heroSurface`) and 1px borders — **never use shadows on cards** (the FAB is the only exception).
+**Active palette — Pulse (warm dark, bento direction):** vibrant amber-coral primary, brighter sage success, warm dark surfaces. `C.primary` is `#E89455` in dark, `#B66A28` in light. Depth comes from layered surfaces (`bg` → `tileEmpty` / `card` → `cardHigh` / `heroSurface`) and 1px borders — **never use shadows on cards**.
 
 Tokens beyond the basic surface/text/border set:
-- `primarySoft` / `successSoft` / `warningSoft` / `dangerSoft` — rgba tints for badges, soft buttons, banners
-- `primaryMuted` — mid-tone amber, used only in the StatsScreen heatmap ramp
+- `primaryStrong` — extra-punch amber for CTAs that need to pop (today dot on ChallengeTrack, etc.)
+- `primarySoft` / `successSoft` / `warningSoft` / `dangerSoft` — rgba tints for badges, soft buttons, banners, done-state tile fills
+- `primaryMuted` — mid-tone amber, used in the 5-step heatmap ramp (StatsScreen contribution graph)
+- `tileEmpty` — slightly darker than `cardHigh`, the background for "pending" habit tiles so they sit visibly under the soft elevations
 - `borderStrong` — 1px dividers between stat cells, outline buttons, bottom-sheet handles
+
+The heatmap ramp lives in `src/utils/heatmap.js` (`heatColor` for the 4-step calendar/cell ramp, `heatRamp` for the 5-step contribution graph ramp, `rampSwatches` for legends). MonthCalendar and ContributionGraph both import from here — never duplicate the color-step logic at call sites.
 
 When changing colors, edit `src/theme.js` — it is the single source of truth for the design tokens consumed via `useTheme()`.
 
@@ -224,22 +228,24 @@ Baseline: iPhone 14 (390×844).
 - `vs(n)` — scales to screen height (rarely needed).
 - `ls(n)` — letter spacing for a given font size: +0.3 for captions (≤12), 0 for body (13–16), −0.3 for sub-headings (17–22), −0.5 for headings (23–28), −0.8 for display (29+). Pass the same size value you pass to `ms()`.
 
-### Screens (`src/screens/`)
+### Screens (`src/screens/`) — bento direction ("Pulse")
 
-The four main tab screens share the same header pattern: a plain top row (title) followed by a `heroSurface` hero card with 3-column stats, a 3px `primary` top accent strip, and a 1px `borderStrong` border (no shadow, no gradient). Each screen uses `SafeAreaView` from `react-native-safe-area-context` (not from `react-native`).
+Each screen earns its own layout instead of templating a hero card. The shared header is a top-row with a small uppercase label + a larger title; no two screens look identical below that.
 
-| Screen | Key data shown |
+| Screen | Lead element |
 |---|---|
-| `TodayScreen` | Done / Remaining / Complete% + progress bar |
-| `ChallengeScreen` | Habit count or Day / Total / Left |
-| `HistoryScreen` | Days tracked / Perfect days / This week% |
-| `StatsScreen` | Best streak / 7-day avg / Perfect days |
+| `TodayScreen` | Date headline + 3-up `StatTile` strip + inline "Add habit" button + bento grid of habit tiles (`HabitTileWide` for volume/timer, paired `HabitTileSmall` for daily/negative) |
+| `ChallengeScreen` | `ChallengeTrack` (horizontal journey of dots with connecting line) + today's habits as a compact list |
+| `HistoryScreen` | `MonthCalendar` grid with prev/next nav + `StatTile` strip below for this-month stats |
+| `StatsScreen` | 2×2 `StatTile` bento (best streak / 7-day avg / days tracked / perfect days) + `ContributionGraph` card + per-habit streaks + AI Coach |
 
-`TodayScreen`'s top row has a single gear icon that calls `navigation.navigate('Settings')` via `useNavigation`. The Settings tab is registered in the Tab.Navigator but hidden from the tab bar (`tabBarButton: () => null`, `tabBarItemStyle: { display: 'none' }`) so it is only reachable via this header button.
+`TodayScreen`'s top row has a single gear icon that calls `navigation.navigate('Settings')` via `useNavigation`. The Settings tab is registered in the Tab.Navigator but hidden from the tab bar (`tabBarButton: () => null`, `tabBarItemStyle: { display: 'none' }`) so it is only reachable via this header button. There is no FAB on Today — the inline "Add habit" button above the grid is the only entry point.
+
+**Habit tiles**: small (square, daily/negative, paired two-up) and wide (full-width, volume/timer with inline progress + stepper). Tap a small tile to toggle. Long-press any tile to open `HabitOptionsSheet`. Done state: tile fills with `successSoft`, border switches to bright `success`.
 
 **Streak milestones (`TodayScreen`):** a `useEffect` on `state.completions` walks each habit, computes the current streak via `calcStreak`, and fires a `CelebrationModal` (with `type="milestone"`) when the streak equals one of `[7, 14, 30, 60, 100, 200, 365]`. A session ref `celebratedMilestonesRef` tracks which `(habitId, milestone)` pairs already fired this session so the celebration does not repeat after a toggle-off-and-on. The state is intentionally session-only — if you reinstall on a milestone day you will get the celebration again on first sync, which we accept as a feature.
 
-**Past-day logging (`HistoryScreen` + `PastDayLogSheet`):** the 7-day heat row and every row in "All logged days" are tappable. Tapping opens `PastDayLogSheet`, a bottom-sheet that renders each habit with the same control patterns as Today (toggle for daily/negative, +/− stepper for volume/timer) and dispatches `LOG_HABIT` with the explicit `date` field. Future dates are blocked by `openLogger`.
+**Past-day logging (`HistoryScreen` + `PastDayLogSheet`):** tap any past cell in `MonthCalendar` to open `PastDayLogSheet`, a bottom-sheet that renders each habit with the same control patterns as Today (toggle for daily/negative, +/− stepper for volume/timer) and dispatches `LOG_HABIT` with the explicit `date` field. Future dates and future months are blocked.
 
 `StatsScreen` includes a GitHub-style contribution graph (`ContributionGraph` component, 16 weeks × 7 days grid, horizontally scrollable) and an **AI Coach** section at the bottom: a daily nudge card (auto-fetched on mount, cached per day) and Weekly/Monthly reflection report buttons (each generates on first tap, cached per period start date). Both use skeleton loading states and call the Edge Functions via `src/lib/aiCoaching.js`.
 
@@ -254,7 +260,11 @@ The four main tab screens share the same header pattern: a plain top row (title)
 ### Components (`src/components/`)
 
 - **`AnimatedEmoji`** — renders an emoji with a looping semantic animation based on its meaning (🏃 runs, 🔥 flickers, ❤️ heartbeats, etc.). Props: `emoji`, `size` (optional, defaults to `ms(22)`), `style`. Exports `ANIM_TYPE` map. Used on all screens wherever habit emojis appear. Add new emoji→animation mappings to `ANIM_TYPE` in this file.
-- **`HabitCard`** — renders a single habit row for all 4 habit types. The daily/negative card uses `Animated.View` as the outer wrapper (not `TouchableOpacity`) so the bell button and toggle are sibling tap targets and don't interfere. Bell icon (`alarm`/`alarm-outline`) is a dedicated column outside the toggle area; tapping it when active clears the reminder immediately, tapping when inactive opens a time picker.
+- **`HabitTileSmall`** — square tile for daily/negative habits, designed to pair two-up. Tap to toggle (with press scale animation), long-press for options. Done state: tile fills `successSoft` + bright `success` border + animated check pip.
+- **`HabitTileWide`** — full-width tile for volume/timer habits. Inline progress bar (animated spring on update), +/− stepper at right. Long-press for options. No tap-to-toggle (use the stepper).
+- **`StatTile`** — generic bento stat cell. Props: `value`, `label`, `accent`, `Icon`, `compact`. Used in the Today stat strip (compact) and the StatsScreen 2×2 bento (full).
+- **`MonthCalendar`** — month grid for HistoryScreen. Props: `year`, `month`, `completions`, `habits`, `onSelectDay`, `onChangeMonth`, `todayStr`. Cell colors come from `heatColor()` in `src/utils/heatmap.js`. Next-month button is disabled when viewing the current or a future month.
+- **`ChallengeTrack`** — horizontal journey track. Props: `progress` (array of `{ key, allDone }` from `useChallengeProgress`), `currentDayIndex`. Filled green dots for completed days, pulsing primary dot for today, hollow dots for upcoming, hollow muted dots for missed past days. Connector line between dots colored by completion.
 - **`AddHabitModal`** — bottom-sheet modal for creating/editing habits; has a close (×) button in the fixed header row above the `ScrollView`. Emoji grid uses `ScrollView` with `nestedScrollEnabled` and `maxHeight: rs(258)` (5 rows visible). Default emoji for new habits is 🚀.
 - **`HabitOptionsSheet`** — long-press bottom sheet: edit / delete / set reminder (uses `@react-native-community/datetimepicker`).
 - **`PastDayLogSheet`** — bottom-sheet opened from `HistoryScreen`. Lists every habit with toggle/stepper controls for a given `date` prop and dispatches `LOG_HABIT` with that date.

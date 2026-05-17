@@ -1,6 +1,6 @@
-// HabitFlow design tokens — Warm Editorial
-// Warm dark surfaces, refined amber accent, sage for streaks.
-// Depth via layered surfaces and 1px borders, no card shadows.
+// HabitFlow design tokens — Pulse (warm dark · bento direction)
+// Warm dark surfaces, vibrant amber-coral accent, brighter sage for streaks.
+// Depth via layered surfaces and 1px borders, no card shadows (FAB only).
 // 60/30/10: 60 bg · 30 card · 10 primary.
 
 // Font families (loaded in App.js via expo-google-fonts)
@@ -19,7 +19,8 @@ export const DARK = {
   bg:           '#15110D',
   card:         '#1C1814',          // surface
   cardHigh:     '#241F1A',          // elevated (inputs, hero cards)
-  heroSurface:  '#1F1A14',          // hero/feature cards
+  tileEmpty:    '#1A1612',          // pending bento tile (slightly darker for elevation contrast)
+  heroSurface:  '#1F1A14',          // hero/feature cards (Stats chart card, etc.)
 
   // Borders
   border:       '#2E2823',
@@ -31,13 +32,14 @@ export const DARK = {
   textMuted:    '#9A8E80',
 
   // Brand
-  primary:      '#D89860',                       // amber
-  primarySoft:  'rgba(216,152,96,0.14)',         // tints / badges / soft buttons
+  primary:      '#E89455',                       // vibrant amber-coral
+  primaryStrong:'#F0A56C',                       // FAB / CTA punch
+  primarySoft:  'rgba(232,148,85,0.14)',         // tints / badges / soft buttons
   primaryMuted: '#7A5938',                       // mid-tone (heatmap step)
 
   // Semantics
-  success:      '#6B9970',                       // sage
-  successSoft:  'rgba(107,153,112,0.16)',
+  success:      '#7AB082',                       // brighter sage — the dopamine hit
+  successSoft:  'rgba(122,176,130,0.18)',
   warning:      '#C9784A',                       // rust (avoid-habit accent)
   warningSoft:  'rgba(201,120,74,0.16)',
   danger:       '#C25450',                       // brick (delete / errors)
@@ -51,6 +53,7 @@ export const LIGHT = {
   bg:           '#FAF6F0',
   card:         '#FFFFFF',
   cardHigh:     '#F4EDE2',
+  tileEmpty:    '#F7F1E6',
   heroSurface:  '#FFFAF2',
 
   border:       '#E6DCCC',
@@ -60,12 +63,13 @@ export const LIGHT = {
   textSub:      '#5A4D40',
   textMuted:    '#8A7F70',
 
-  primary:      '#A86C2D',
-  primarySoft:  'rgba(168,108,45,0.10)',
-  primaryMuted: '#C99A6C',
+  primary:      '#B66A28',
+  primaryStrong:'#A8601F',
+  primarySoft:  'rgba(182,106,40,0.10)',
+  primaryMuted: '#D6A370',
 
-  success:      '#4A7A5A',
-  successSoft:  'rgba(74,122,90,0.12)',
+  success:      '#3F8758',
+  successSoft:  'rgba(63,135,88,0.12)',
   warning:      '#A14F26',
   warningSoft:  'rgba(161,79,38,0.12)',
   danger:       '#9C3B36',

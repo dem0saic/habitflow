@@ -5,7 +5,7 @@ import * as Linking from 'expo-linking';
 import { supabase } from './src/lib/supabase';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Text } from 'react-native';
+import { Text, View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Home, Trophy, Calendar, BarChart2, Settings } from 'lucide-react-native';
@@ -45,9 +45,18 @@ const TAB_ICON_MAP = {
   Settings:  Settings,
 };
 
-function TabIcon({ name, focused, color }) {
+function TabIcon({ name, focused, color, themeC }) {
   const Icon = TAB_ICON_MAP[name];
-  return <Icon size={rs(20)} color={color} strokeWidth={focused ? 2.5 : 1.75} />;
+  // Active tab gets a soft pill background behind the icon to give the bar shape.
+  return (
+    <View style={{
+      width: rs(48), height: rs(28), borderRadius: rs(14),
+      backgroundColor: focused ? themeC.primarySoft : 'transparent',
+      alignItems: 'center', justifyContent: 'center',
+    }}>
+      <Icon size={rs(18)} color={color} strokeWidth={focused ? 2.5 : 1.75} />
+    </View>
+  );
 }
 
 function AppNavigator() {
@@ -64,7 +73,7 @@ function AppNavigator() {
       <Tab.Navigator
         screenOptions={({ route }) => ({
           headerShown: false,
-          tabBarIcon: ({ focused, color }) => <TabIcon name={route.name} focused={focused} color={color} />,
+          tabBarIcon: ({ focused, color }) => <TabIcon name={route.name} focused={focused} color={color} themeC={C} />,
           tabBarLabel: ({ focused }) => (
             <Text style={{
               fontSize: ms(10),

@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { RotateCw, Sparkles } from 'lucide-react-native';
+import { RotateCw, Sparkles, Flame } from 'lucide-react-native';
 import { useStore, calcStreak } from '../store';
 import { useTheme } from '../ThemeContext';
 import { rs, ms, ls } from '../utils/responsive';
 import { last7Days } from '../utils/date';
+import { heatRamp, rampSwatches } from '../utils/heatmap';
 import AnimatedEmoji from '../components/AnimatedEmoji';
+import StatTile from '../components/StatTile';
 import { fetchCoachingNudge, fetchReflectionSummary } from '../lib/aiCoaching';
 
 function ContributionGraph({ completions, habits, C }) {
@@ -37,19 +39,10 @@ function ContributionGraph({ completions, habits, C }) {
     grid.push({ week, monthLabel });
   }
 
-  function cellColor(pct) {
-    if (pct === null) return 'transparent';
-    if (pct === 0)    return C.border;
-    if (pct < 0.33)   return C.primarySoft;
-    if (pct < 0.67)   return C.primaryMuted;
-    if (pct < 1)      return C.primary;
-    return C.success;
-  }
-
   const CELL = rs(12);
   const GAP  = rs(3);
   const DAY_LABELS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
-  const RAMP = [C.border, C.primarySoft, C.primaryMuted, C.primary, C.success];
+  const RAMP = rampSwatches(C);
 
   return (
     <View>
@@ -74,7 +67,7 @@ function ContributionGraph({ completions, habits, C }) {
                   key={d}
                   style={{
                     width: CELL, height: CELL, borderRadius: rs(3),
-                    backgroundColor: cell.isFuture ? 'transparent' : cellColor(cell.pct),
+                    backgroundColor: cell.isFuture ? 'transparent' : heatRamp(cell.pct, C),
                     marginBottom: d < 6 ? GAP : 0,
                   }}
                 />
@@ -106,6 +99,10 @@ export default function StatsScreen() {
     const done = habits.filter(h => (dayMap[h.id] || 0) >= (h.targetCount || 1)).length;
     return habits.length ? done / habits.length : 0;
   });
+
+  const totalDaysTracked = Object.keys(completions).filter(d =>
+    Object.values(completions[d] || {}).some(v => v > 0)
+  ).length;
 
   const perfectDays = Object.keys(completions).filter(d => {
     if (!habits.length) return false;
@@ -151,144 +148,130 @@ export default function StatsScreen() {
     setReportLoading(false);
   }
 
-  const statusText = bestStreak === 0
-    ? 'Complete habits daily to build streaks'
-    : bestStreak >= 7
-    ? `${bestStreak}-day streak — incredible`
-    : `Best streak: ${bestStreak} day${bestStreak !== 1 ? 's' : ''}`;
-
   return (
     <SafeAreaView style={styles.root}>
-      <View style={styles.topRow}>
-        <Text style={styles.topLabel}>Stats</Text>
-        <Text style={styles.topTitle}>Your consistency</Text>
-      </View>
+      <ScrollView
+        contentContainerStyle={{ paddingBottom: rs(100) }}
+        showsVerticalScrollIndicator={false}
+      >
+        <View style={styles.topRow}>
+          <Text style={styles.topLabel}>Stats</Text>
+          <Text style={styles.topTitle}>Your consistency</Text>
+        </View>
 
-      {/* Hero */}
-      <View style={styles.heroWrap}>
-        <View style={styles.heroCard}>
-          <View style={styles.heroTopLine} />
-          <View style={styles.heroStatsRow}>
-            <View style={styles.heroStat}>
-              <Text style={styles.heroStatNum}>{bestStreak}</Text>
-              <Text style={styles.heroStatLabel}>Best streak</Text>
-            </View>
-            <View style={styles.heroStatDivider} />
-            <View style={styles.heroStat}>
-              <Text style={styles.heroStatNum}>{avgCompletion}<Text style={styles.heroStatUnit}>%</Text></Text>
-              <Text style={styles.heroStatLabel}>7-day avg</Text>
-            </View>
-            <View style={styles.heroStatDivider} />
-            <View style={styles.heroStat}>
-              <Text style={styles.heroStatNum}>{perfectDays}</Text>
-              <Text style={styles.heroStatLabel}>Perfect days</Text>
-            </View>
+        {/* 2×2 stat bento */}
+        <View style={styles.bento}>
+          <View style={styles.bentoRow}>
+            <StatTile value={bestStreak} label="BEST STREAK" Icon={Flame} accent={C.primary} />
+            <StatTile value={`${avgCompletion}%`} label="7-DAY AVG" accent={C.text} />
           </View>
-          <Text style={styles.heroStatus}>{statusText}</Text>
-        </View>
-      </View>
-
-      <ScrollView contentContainerStyle={styles.body} showsVerticalScrollIndicator={false}>
-
-        {/* Contribution graph */}
-        <View style={styles.chartCard}>
-          <Text style={styles.chartTitle}>Contribution history</Text>
-          <ContributionGraph completions={completions} habits={habits} C={C} />
-        </View>
-
-        {/* Habit streaks */}
-        <Text style={styles.sectionLabel}>Habit streaks</Text>
-        {habits.length === 0 && <Text style={styles.empty}>Add habits to see streaks</Text>}
-        {habits.map(h => {
-          const streak = calcStreak(h.id, completions);
-          return (
-            <View key={h.id} style={styles.streakRow}>
-              <View style={styles.streakEmojiTile}>
-                <AnimatedEmoji emoji={h.emoji} size={rs(20)} />
-              </View>
-              <View style={styles.streakInfo}>
-                <Text style={styles.streakName} numberOfLines={1}>{h.name}</Text>
-                <Text style={styles.streakType}>
-                  {h.type === 'volume' ? `Volume · ${h.targetCount}× daily`
-                 : h.type === 'timer'  ? `Timer · ${h.targetCount} min daily`
-                 : h.type === 'negative' ? 'Avoidance habit'
-                 : 'Daily habit'}
-                </Text>
-              </View>
-              <View style={styles.streakBadge}>
-                <Text style={styles.streakNum}>{streak}</Text>
-                <Text style={styles.streakUnit}>day{streak !== 1 ? 's' : ''}</Text>
-              </View>
-            </View>
-          );
-        })}
-
-        {/* AI Coach */}
-        <Text style={[styles.sectionLabel, { marginTop: rs(8) }]}>AI Coach</Text>
-        <View style={styles.aiNudgeCard}>
-          <View style={styles.aiNudgeHeader}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: rs(6) }}>
-              <Sparkles size={rs(13)} color={C.primary} strokeWidth={2.5} />
-              <Text style={styles.aiNudgeTitle}>TODAY'S NUDGE</Text>
-            </View>
-            <TouchableOpacity onPress={refreshNudge} disabled={nudgeLoading} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-              <RotateCw size={rs(15)} color={nudgeLoading ? C.textMuted : C.primary} strokeWidth={2} />
-            </TouchableOpacity>
+          <View style={styles.bentoRow}>
+            <StatTile value={totalDaysTracked} label="DAYS TRACKED" accent={C.text} />
+            <StatTile value={perfectDays} label="PERFECT DAYS" accent={C.success} />
           </View>
-          {nudgeLoading ? (
-            <View style={styles.aiSkeleton}>
-              <View style={[styles.aiSkeletonLine, { width: '95%' }]} />
-              <View style={[styles.aiSkeletonLine, { width: '80%' }]} />
-              <View style={[styles.aiSkeletonLine, { width: '62%' }]} />
-            </View>
-          ) : nudge ? (
-            <Text style={styles.aiNudgeText}>{nudge}</Text>
-          ) : (
-            <Text style={styles.aiNudgeError}>Could not load nudge — tap to retry</Text>
-          )}
         </View>
 
-        {/* Reflection reports */}
-        <Text style={[styles.sectionLabel, { marginTop: rs(4) }]}>Reflection</Text>
-        <View style={styles.reportButtons}>
-          <TouchableOpacity
-            style={[styles.reportBtn, reportPeriod === 'weekly' && styles.reportBtnActive]}
-            onPress={() => loadReport('weekly')}
-            disabled={reportLoading}
-            activeOpacity={0.85}
-          >
-            <Text style={[styles.reportBtnText, reportPeriod === 'weekly' && styles.reportBtnTextActive]}>
-              Weekly
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.reportBtn, reportPeriod === 'monthly' && styles.reportBtnActive]}
-            onPress={() => loadReport('monthly')}
-            disabled={reportLoading}
-            activeOpacity={0.85}
-          >
-            <Text style={[styles.reportBtnText, reportPeriod === 'monthly' && styles.reportBtnTextActive]}>
-              Monthly
-            </Text>
-          </TouchableOpacity>
-        </View>
-        {(reportLoading || report) && (
-          <View style={styles.reportCard}>
-            <Text style={styles.reportPeriodLabel}>
-              {reportPeriod === 'weekly' ? 'WEEKLY REFLECTION' : 'MONTHLY REFLECTION'}
-            </Text>
-            {reportLoading ? (
+        <View style={styles.body}>
+          {/* Contribution graph */}
+          <View style={styles.chartCard}>
+            <Text style={styles.chartTitle}>CONTRIBUTION HISTORY</Text>
+            <ContributionGraph completions={completions} habits={habits} C={C} />
+          </View>
+
+          {/* Per-habit streaks */}
+          <Text style={styles.sectionLabel}>Habit streaks</Text>
+          {habits.length === 0 && <Text style={styles.empty}>Add habits to see streaks</Text>}
+          {habits.map(h => {
+            const streak = calcStreak(h.id, completions);
+            return (
+              <View key={h.id} style={styles.streakRow}>
+                <View style={styles.streakEmojiTile}>
+                  <AnimatedEmoji emoji={h.emoji} size={rs(20)} />
+                </View>
+                <View style={styles.streakInfo}>
+                  <Text style={styles.streakName} numberOfLines={1}>{h.name}</Text>
+                  <Text style={styles.streakType}>
+                    {h.type === 'volume' ? `Volume · ${h.targetCount}× daily`
+                   : h.type === 'timer'  ? `Timer · ${h.targetCount} min daily`
+                   : h.type === 'negative' ? 'Avoidance habit'
+                   : 'Daily habit'}
+                  </Text>
+                </View>
+                <View style={styles.streakBadge}>
+                  <Text style={styles.streakNum}>{streak}</Text>
+                  <Text style={styles.streakUnit}>day{streak !== 1 ? 's' : ''}</Text>
+                </View>
+              </View>
+            );
+          })}
+
+          {/* AI Coach */}
+          <Text style={[styles.sectionLabel, { marginTop: rs(20) }]}>AI Coach</Text>
+          <View style={styles.aiNudgeCard}>
+            <View style={styles.aiNudgeHeader}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: rs(6) }}>
+                <Sparkles size={rs(13)} color={C.primary} strokeWidth={2.5} />
+                <Text style={styles.aiNudgeTitle}>TODAY'S NUDGE</Text>
+              </View>
+              <TouchableOpacity onPress={refreshNudge} disabled={nudgeLoading} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                <RotateCw size={rs(15)} color={nudgeLoading ? C.textMuted : C.primary} strokeWidth={2} />
+              </TouchableOpacity>
+            </View>
+            {nudgeLoading ? (
               <View style={styles.aiSkeleton}>
-                <View style={[styles.aiSkeletonLine, { width: '100%' }]} />
-                <View style={[styles.aiSkeletonLine, { width: '90%' }]} />
-                <View style={[styles.aiSkeletonLine, { width: '85%' }]} />
-                <View style={[styles.aiSkeletonLine, { width: '70%' }]} />
+                <View style={[styles.aiSkeletonLine, { width: '95%' }]} />
+                <View style={[styles.aiSkeletonLine, { width: '80%' }]} />
+                <View style={[styles.aiSkeletonLine, { width: '62%' }]} />
               </View>
+            ) : nudge ? (
+              <Text style={styles.aiNudgeText}>{nudge}</Text>
             ) : (
-              <Text style={styles.reportText}>{report}</Text>
+              <Text style={styles.aiNudgeError}>Could not load nudge — tap to retry</Text>
             )}
           </View>
-        )}
+
+          {/* Reflection reports */}
+          <Text style={styles.sectionLabel}>Reflection</Text>
+          <View style={styles.reportButtons}>
+            <TouchableOpacity
+              style={[styles.reportBtn, reportPeriod === 'weekly' && styles.reportBtnActive]}
+              onPress={() => loadReport('weekly')}
+              disabled={reportLoading}
+              activeOpacity={0.85}
+            >
+              <Text style={[styles.reportBtnText, reportPeriod === 'weekly' && styles.reportBtnTextActive]}>
+                Weekly
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.reportBtn, reportPeriod === 'monthly' && styles.reportBtnActive]}
+              onPress={() => loadReport('monthly')}
+              disabled={reportLoading}
+              activeOpacity={0.85}
+            >
+              <Text style={[styles.reportBtnText, reportPeriod === 'monthly' && styles.reportBtnTextActive]}>
+                Monthly
+              </Text>
+            </TouchableOpacity>
+          </View>
+          {(reportLoading || report) && (
+            <View style={styles.reportCard}>
+              <Text style={styles.reportPeriodLabel}>
+                {reportPeriod === 'weekly' ? 'WEEKLY REFLECTION' : 'MONTHLY REFLECTION'}
+              </Text>
+              {reportLoading ? (
+                <View style={styles.aiSkeleton}>
+                  <View style={[styles.aiSkeletonLine, { width: '100%' }]} />
+                  <View style={[styles.aiSkeletonLine, { width: '90%' }]} />
+                  <View style={[styles.aiSkeletonLine, { width: '85%' }]} />
+                  <View style={[styles.aiSkeletonLine, { width: '70%' }]} />
+                </View>
+              ) : (
+                <Text style={styles.reportText}>{report}</Text>
+              )}
+            </View>
+          )}
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -296,37 +279,23 @@ export default function StatsScreen() {
 
 function makeStyles(C) { return {
   root:     { flex: 1, backgroundColor: C.bg },
-  topRow:   { paddingHorizontal: rs(20), paddingTop: rs(8), paddingBottom: rs(12) },
+  topRow:   { paddingHorizontal: rs(20), paddingTop: rs(8), paddingBottom: rs(16) },
   topLabel: { fontSize: ms(11), color: C.textMuted, fontFamily: C.semi, fontWeight: '600', textTransform: 'uppercase', letterSpacing: 0.8 },
-  topTitle: { fontSize: ms(20), fontFamily: C.bold, fontWeight: '700', color: C.text, marginTop: rs(4), letterSpacing: ls(20) },
+  topTitle: { fontSize: ms(22), fontFamily: C.bold, fontWeight: '700', color: C.text, marginTop: rs(4), letterSpacing: ls(22) },
 
-  // Hero
-  heroWrap: { paddingHorizontal: rs(16), marginBottom: rs(8) },
-  heroCard: {
-    backgroundColor: C.heroSurface,
-    borderRadius: rs(18), padding: rs(20), paddingTop: rs(22),
-    borderWidth: 1, borderColor: C.borderStrong,
-    overflow: 'hidden',
-  },
-  heroTopLine: {
-    position: 'absolute', top: 0, left: 0, right: 0,
-    height: rs(3), backgroundColor: C.primary,
-  },
-  heroStatsRow:    { flexDirection: 'row', marginBottom: rs(14) },
-  heroStat:        { flex: 1, alignItems: 'center' },
-  heroStatNum:     { fontSize: ms(28), fontFamily: C.bold, fontWeight: '700', color: C.text, letterSpacing: ls(28) },
-  heroStatUnit:    { fontSize: ms(16), fontFamily: C.semi, fontWeight: '600', color: C.textMuted, letterSpacing: 0 },
-  heroStatLabel:   { fontSize: ms(11), color: C.textMuted, marginTop: rs(2), fontFamily: C.med, fontWeight: '500', letterSpacing: 0.4, textTransform: 'uppercase' },
-  heroStatDivider: { width: 1, backgroundColor: C.borderStrong, marginVertical: rs(8) },
-  heroStatus:      { fontSize: ms(12), color: C.textSub, textAlign: 'center', fontFamily: C.med, fontWeight: '500', letterSpacing: ls(12) },
+  // 2x2 bento
+  bento:    { paddingHorizontal: rs(16), gap: rs(8), marginBottom: rs(16) },
+  bentoRow: { flexDirection: 'row', gap: rs(8) },
 
-  body: { padding: rs(20), paddingBottom: rs(100) },
+  body: { paddingHorizontal: rs(16) },
+
   chartCard: {
     backgroundColor: C.card, borderRadius: rs(14), padding: rs(16), marginBottom: rs(20),
     borderWidth: 1, borderColor: C.border,
   },
-  chartTitle:   { fontSize: ms(12), fontFamily: C.bold, fontWeight: '700', color: C.textMuted, marginBottom: rs(14), textTransform: 'uppercase', letterSpacing: 0.8 },
-  sectionLabel: { fontSize: ms(11), fontFamily: C.bold, fontWeight: '700', color: C.textMuted, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: rs(12) },
+  chartTitle: { fontSize: ms(11), fontFamily: C.bold, fontWeight: '700', color: C.textMuted, marginBottom: rs(12), letterSpacing: 0.8 },
+
+  sectionLabel: { fontSize: ms(11), fontFamily: C.bold, fontWeight: '700', color: C.textMuted, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: rs(10), marginLeft: rs(4) },
   empty:        { color: C.textMuted, textAlign: 'center', fontSize: ms(13), fontFamily: C.reg, fontWeight: '400', letterSpacing: ls(13) },
 
   streakRow: {
@@ -336,7 +305,7 @@ function makeStyles(C) { return {
     borderWidth: 1, borderColor: C.border,
   },
   streakEmojiTile: {
-    width: rs(38), height: rs(38), borderRadius: rs(11),
+    width: rs(40), height: rs(40), borderRadius: rs(11),
     backgroundColor: C.cardHigh,
     alignItems: 'center', justifyContent: 'center',
   },
