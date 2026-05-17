@@ -250,9 +250,16 @@ Rules:
     });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : "Unknown error";
-    return new Response(JSON.stringify({ error: msg }), {
-      status: 400,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    // Log full detail server-side; return a generic message to the client so
+    // Postgres / Anthropic error strings don't leak schema or prompt internals.
+    console.error("ai-coaching-nudge:", msg);
+    const isAuthError = msg === "Unauthorized" || msg === "No auth header";
+    return new Response(
+      JSON.stringify({ error: isAuthError ? msg : "Could not generate nudge" }),
+      {
+        status: isAuthError ? 401 : 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      },
+    );
   }
 });

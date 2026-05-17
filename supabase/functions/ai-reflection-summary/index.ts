@@ -147,9 +147,14 @@ Deno.serve(async (req: Request) => {
     });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : "Unknown error";
-    return new Response(JSON.stringify({ error: msg }), {
-      status: 400,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    console.error("ai-reflection-summary:", msg);
+    const isAuthError = msg === "Unauthorized" || msg === "No auth header";
+    return new Response(
+      JSON.stringify({ error: isAuthError ? msg : "Could not generate summary" }),
+      {
+        status: isAuthError ? 401 : 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      },
+    );
   }
 });

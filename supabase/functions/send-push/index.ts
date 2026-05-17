@@ -3,8 +3,15 @@
 // and deletes tokens that come back with DeviceNotRegistered so the table self-cleans.
 //
 // Deploy: npx supabase functions deploy send-push --project-ref <ref>
-// Invoke from another Edge Function with the service-role key in Authorization
-// (verify_jwt: true accepts both user JWTs and the service role).
+// verify_jwt: true at the gateway accepts both user JWTs and the service role.
+//
+// Authorization model (Finding #6):
+//   - If the caller's bearer token === SUPABASE_SERVICE_ROLE_KEY, accept any
+//     user_id in the body. This is the server-to-server path used by
+//     ai-coaching-nudge to fan a generated nudge out as a push.
+//   - Otherwise, resolve the user from the JWT and require body.user_id to
+//     match the caller's own user.id. This prevents an authenticated end
+//     user from sending push notifications to other accounts.
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "npm:@supabase/supabase-js@2";
@@ -57,6 +64,14 @@ Deno.serve(async (req: Request) => {
     return jsonResponse(405, { error: "Method not allowed" });
   }
 
+  const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+
+  const authHeader = req.headers.get("Authorization");
+  if (!authHeader) {
+    return jsonResponse(401, { error: "Missing Authorization header" });
+  }
+  const token = authHeader.replace("Bearer ", "").trim();
+
   let payload: { user_id?: string; title?: string; body?: string; data?: Record<string, unknown> };
   try {
     payload = await req.json();
@@ -71,12 +86,31 @@ Deno.serve(async (req: Request) => {
   if (!body || typeof body !== "string") {
     return jsonResponse(400, { error: "body is required" });
   }
+  if (body.length > 500) {
+    return jsonResponse(400, { error: "body too long" });
+  }
+  if (title && (typeof title !== "string" || title.length > 200)) {
+    return jsonResponse(400, { error: "title invalid" });
+  }
 
   const supabase = createClient(
     Deno.env.get("SUPABASE_URL")!,
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+    serviceRoleKey,
     { auth: { persistSession: false } },
   );
+
+  // Authorization: service role bypasses, end users must own the target.
+  const isServiceRole = token === serviceRoleKey;
+  if (!isServiceRole) {
+    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
+    if (userError || !user) {
+      return jsonResponse(401, { error: "Invalid or expired session" });
+    }
+    if (user.id !== user_id) {
+      console.warn(`send-push: caller ${user.id} attempted to push to ${user_id}`);
+      return jsonResponse(403, { error: "Forbidden" });
+    }
+  }
 
   const { data: tokens, error: tokensErr } = await supabase
     .from("push_tokens")
@@ -85,7 +119,7 @@ Deno.serve(async (req: Request) => {
 
   if (tokensErr) {
     console.error("send-push: token lookup failed:", tokensErr.message);
-    return jsonResponse(500, { error: tokensErr.message });
+    return jsonResponse(500, { error: "Internal error" });
   }
 
   const tokenList = (tokens ?? []).map((r) => r.token as string).filter(Boolean);

@@ -63,16 +63,16 @@ Deno.serve(async (req: Request) => {
   }
 
   // 4. Remove the auth.users row last. If this fails the user still has
-  // their account but their rows are gone — better to surface this loudly
-  // so the client can show a useful message.
+  // their account but their rows are gone — log the detail server-side and
+  // return a generic-but-actionable message to the client so we don't leak
+  // internal admin-API error strings.
   const { error: deleteUserError } = await supabase.auth.admin.deleteUser(userId);
   if (deleteUserError) {
     console.error("delete-account: admin.deleteUser failed:", deleteUserError.message);
     return jsonResponse(500, {
-      error: `Account data was removed but the auth record could not be deleted: ${deleteUserError.message}`,
-      tableErrors,
+      error: "Account data was removed but the auth record could not be deleted. Please contact support.",
     });
   }
 
-  return jsonResponse(200, { ok: true, tableErrors });
+  return jsonResponse(200, { ok: true });
 });

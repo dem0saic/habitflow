@@ -141,6 +141,7 @@ export default function AddHabitModal({ visible, onClose, onAdd, editingHabit })
               autoFocus={!isEditing}
               returnKeyType="done"
               onSubmitEditing={handleSubmit}
+              maxLength={80}
             />
 
             {/* Emoji */}

@@ -56,7 +56,7 @@ EXPO_PUBLIC_SUPABASE_URL=https://<ref>.supabase.co
 EXPO_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_...
 ```
 
-Both vars are read by `src/lib/supabase.js` at runtime via `process.env`.
+Both vars are read by `src/lib/supabase.js` at runtime via `process.env`. The module throws at load time if either is missing — a misconfigured machine fails at startup instead of at the first network call.
 
 The Edge Functions need an additional secret set **in Supabase** (not in `.env` — it never touches the client):
 ```bash
@@ -69,6 +69,8 @@ npx supabase functions deploy <name> --project-ref <ref>
 ```
 
 The first deploy on any machine will fail with `401 Unauthorized` until you authenticate the CLI. The login flow is interactive (opens a browser), so you cannot run it from a non-interactive shell — run `npx supabase login` yourself first.
+
+**MCP shortcut:** if the Supabase MCP server is available, `mcp__plugin_supabase_supabase__deploy_edge_function` and `mcp__plugin_supabase_supabase__apply_migration` bypass the CLI auth flow entirely — useful in non-interactive Claude Code sessions. Both write to the same project as the CLI; deployed function source is retrievable via `get_edge_function`, and migrations land in the same `supabase_migrations.schema_migrations` table.
 
 ## Architecture
 
@@ -115,9 +117,10 @@ Both `loading` (from `AuthProvider`) and `storeReady` (from `StoreProvider`) mus
 **Forgot-password deep link flow:**
 1. User taps "Forgot password?" → `resetPasswordForEmail(email, { redirectTo: 'habitflow://localhost/reset-password' })` sends a Supabase magic link.
 2. Tapping the link opens the app via `expo-linking`. `InnerApp` listens with `Linking.addEventListener('url', ...)` and `Linking.getInitialURL()`.
-3. The URL contains `#access_token=...&refresh_token=...&type=recovery` in the fragment. The handler calls `supabase.auth.setSession()` with those tokens.
-4. Supabase fires `PASSWORD_RECOVERY` → `AuthProvider` sets `recoveryMode = true` → `AppNavigator` renders `<AuthScreen />`.
-5. `AuthScreen` detects `recoveryMode` (overrides the `mode` state) and shows the new-password + confirm form. On submit it calls `updatePassword(newPassword)` which calls `supabase.auth.updateUser({ password })` and sets `recoveryMode = false`.
+3. The URL contains `#access_token=...&refresh_token=...&type=recovery` in the fragment. The handler decodes the `email` claim from the access token (no signature check — just for display) and stages the tokens in `pendingRecovery` state. It does NOT call `setSession` yet.
+4. A `RecoveryConfirmModal` opens showing "Continue password reset for {email}?" Cancel discards the staged tokens. This blocks the session-injection vector where any installed app or crafted link could open `habitflow://...#access_token=ATTACKER_TOKEN&type=recovery` to silently switch the victim into another account.
+5. On Continue, `supabase.auth.setSession()` runs. Supabase fires `PASSWORD_RECOVERY` → `AuthProvider` sets `recoveryMode = true` → `AppNavigator` renders `<AuthScreen />`.
+6. `AuthScreen` detects `recoveryMode` (overrides the `mode` state) and shows the new-password + confirm form. On submit it calls `updatePassword(newPassword)` which calls `supabase.auth.updateUser({ password })` and sets `recoveryMode = false`.
 
 `AuthScreen` has three internal modes (`'signIn' | 'signUp' | 'forgotPassword'`) plus the `recoveryMode` override. The Supabase client (`src/lib/supabase.js`) persists sessions to AsyncStorage with `autoRefreshToken: true`.
 
@@ -190,7 +193,9 @@ All functions use `supabase.from(table)`:
 
 ### Supabase database schema
 
-Seven tables in the `public` schema, all with RLS enabled. Every table has a policy `auth.uid() = user_id` for ALL operations.
+Seven tables in the `public` schema, all with RLS enabled. Six of them have a policy `auth.uid() = user_id` for ALL operations. **`ai_insights` is read-only for end users** (SELECT only) — all writes must come from the service role inside Edge Functions. This prevents a user from deleting their cached coaching nudge to bypass the once-per-day rate limit on the Claude call.
+
+DB-level CHECK constraints cap user-supplied text so a malicious REST POST can't smuggle multi-MB strings into Claude prompts: `habits.name` (1–80), `habits.emoji` (1–8), `day_notes.note` (≤500), `challenges.title` (1–120). Match these with `maxLength` on any new `TextInput` that targets these columns.
 
 | Table | Primary key | Notable columns |
 |---|---|---|
@@ -212,7 +217,7 @@ Four Supabase Edge Functions invoked via `supabase.functions.invoke()` with the 
 
 - **`ai-coaching-nudge`** — invoked on `StatsScreen` mount. Checks for a cached row in `ai_insights` where `type='nudge'` and `created_at >= today`. If found, returns it immediately; otherwise reads habits + completions + `user_settings.global_pause`, calls Claude, stores and returns the result. One Claude call per user per day maximum. Computes a `weakestWeekday` pattern per habit (≥14 days old, ≥3 occurrences on that weekday, ≥30% worse than the habit's overall rate); if any habit has a pattern, the strongest one is fed to Claude with instructions to lead the nudge with a curious question ("what's different about Wednesdays?") rather than streak praise. The streak passed to Claude uses the same shield+pause-aware algorithm as the client so the AI doesn't contradict what the UI shows. **After inserting the new nudge into `ai_insights`, fire-and-forget invokes `send-push`** (truncated to 140 chars, title "Your coach has a note for you") so the user gets the nudge on their lock screen even if they don't open StatsScreen.
 - **`ai-reflection-summary`** — invoked when the user taps Weekly or Monthly in StatsScreen. Caches by `(user_id, type, period_start)` so the same period never re-generates. Computes per-habit consistency and weakest day-of-week, AND pulls `day_notes` for the period so the AI can reference the user's own context ("the travel days clearly slowed momentum, but you bounced back"). The prompt instructs Claude to weave notes in naturally, never quote them verbatim.
-- **`send-push`** — server-side push sender. Takes `{ user_id, title?, body, data? }`, looks up `push_tokens` rows for that user, POSTs them in batches of 100 to `https://exp.host/--/api/v2/push/send` (the unauthenticated Expo push API — no API key needed). Tickets with `details.error === "DeviceNotRegistered"` cause the corresponding token row to be deleted, so the table self-cleans when users uninstall. Currently invoked by `ai-coaching-nudge`; future triggers (streak-break warnings, weekly summary ready, etc.) should also call this function rather than duplicating the Expo HTTP plumbing. Deploy with `npx supabase functions deploy send-push --project-ref <ref>`.
+- **`send-push`** — server-side push sender. Takes `{ user_id, title?, body, data? }`, looks up `push_tokens` rows for that user, POSTs them in batches of 100 to `https://exp.host/--/api/v2/push/send` (the unauthenticated Expo push API — no API key needed). Tickets with `details.error === "DeviceNotRegistered"` cause the corresponding token row to be deleted, so the table self-cleans when users uninstall. **Authorization**: if the bearer token equals `SUPABASE_SERVICE_ROLE_KEY`, the function is permissive about `user_id` in the body (used by `ai-coaching-nudge` server-to-server). Otherwise the function resolves the caller via `getUser(token)` and requires `user.id === body.user_id` — without this check an authenticated user could spam push notifications to any other account. Currently invoked by `ai-coaching-nudge`; future triggers (streak-break warnings, weekly summary ready, etc.) should also call this function rather than duplicating the Expo HTTP plumbing. Deploy with `npx supabase functions deploy send-push --project-ref <ref>`.
 - **`delete-account`** — invoked from `AuthContext.deleteAccount()` (wired into Settings → Account → Delete account). Resolves the caller's `user.id` from the JWT, deletes their rows from all seven public tables (`completions`, `challenges`, `habits`, `day_notes`, `ai_insights`, `push_tokens`, `user_settings`), then calls `auth.admin.deleteUser(userId)`. The `push_tokens` cascade is redundant with the FK `on delete cascade` but kept in the explicit list to prevent drift if the FK is ever changed. Required by App Store guideline 5.1.1(v). Deploy with `npx supabase functions deploy delete-account --project-ref <ref>`.
 
 `src/lib/aiCoaching.js` is a thin client: `fetchCoachingNudge()` and `fetchReflectionSummary(period)` both get the session, pass the JWT in the Authorization header, and return `data.content`. All error handling is fire-and-forget at the call site (StatsScreen catches silently and shows a retry prompt).
@@ -221,7 +226,9 @@ The Edge Function source lives in `supabase/functions/<name>/index.ts` and is wr
 
 **Prompt constraints (do not remove):** Both edge function prompts include the rule `"Never use dashes of any kind (no hyphens, em dashes, or en dashes) anywhere in the response"`. This is intentional — dashes make the output feel AI-generated. If you edit these prompts, preserve this constraint.
 
-**Clearing stale cache:** If prompt changes are deployed but cached rows still return old content, delete the relevant rows: `DELETE FROM ai_insights WHERE type IN ('nudge', 'weekly_summary');`. The next request will regenerate from the updated prompt.
+**Error response pattern:** the three Anthropic-backed functions and `delete-account` wrap unexpected errors in a generic client-facing message (`"Could not generate nudge"`, `"Could not generate summary"`, "Account data was removed but the auth record could not be deleted…") and log the underlying detail via `console.error("<fn-name>:", msg)` for Supabase function logs. Auth errors (`"Unauthorized"`, `"No auth header"`, `"Invalid or expired session"`) are still surfaced verbatim with a 401. Do not return raw Postgres or Anthropic error strings to the client — they leak schema and prompt internals.
+
+**Clearing stale cache:** If prompt changes are deployed but cached rows still return old content, delete the relevant rows: `DELETE FROM ai_insights WHERE type IN ('nudge', 'weekly_summary');`. The next request will regenerate from the updated prompt. (End users cannot do this anymore — `ai_insights` is SELECT-only under RLS; run it via the Supabase SQL editor or service role.)
 
 ### Theme system (`src/theme.js`, `src/ThemeContext.js`)
 
@@ -342,6 +349,7 @@ Each screen earns its own layout instead of templating a hero card. The shared h
 - **`HabitOptionsSheet`** — long-press bottom sheet: edit / set reminder / pause / delete (uses `@react-native-community/datetimepicker`). Header shows a coloured shield-status row driven by `shieldUsage(habit, state.completions, state.globalPause)` (green when full, amber as shields are used, red when exhausted). The pause row reads `habit.pauses[0]` to flip between "Pause habit" (opens a date picker to set the resume date, starts today) and "Resume habit" (clears the pause). Both go through the `onSetPause(id, pause)` prop which TodayScreen wires to `dispatch({ type: 'SET_HABIT_PAUSE', id, pause })`.
 - **`PastDayLogSheet`** — bottom-sheet opened from `HistoryScreen` (and from `TodayScreen` via the today's-note shortcut). Lists every habit with toggle/stepper controls for a given `date` prop and dispatches `LOG_HABIT` with that date. Also exposes a multi-line **NOTE** TextInput at the top (max 500 chars) — text is held in local state and persisted via `SET_DAY_NOTE` on a 700ms debounce, with a force-flush on close so a fast dismiss doesn't drop the note. Do NOT wrap in `KeyboardAvoidingView` — Metro chokes on that wrapper here (tag balance is correct but the parser still errors); the iOS keyboard does overlay the sheet temporarily but the note text is preserved.
 - **`CelebrationModal`** — full-screen celebration overlay. `type` (`'daily' | 'challenge' | 'milestone'`) picks the default emoji and button label; optional `emoji` and `actionLabel` props override either. Fired from TodayScreen for all-habits-done and streak milestones, and from ChallengeScreen for reward claims.
+- **`RecoveryConfirmModal`** — **not a standalone file**; declared inline at the bottom of `App.js`. Opens when `InnerApp` stages a recovery deep link and decodes an email from the JWT. The user must tap Continue before `supabase.auth.setSession()` runs. This is the choke point that blocks the deep-link session-injection vector (see the password-reset flow section above). If you split it out into its own file later, keep the staging state in `InnerApp` — the modal must NOT call `setSession` on its own.
 
 ### Notifications (`src/utils/notifications.js`)
 
