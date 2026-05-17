@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { RotateCw, Sparkles, Flame } from 'lucide-react-native';
+import { RotateCw, Sparkles, Flame, Shield } from 'lucide-react-native';
 import { useStore, calcStreak, consistency30 } from '../store';
 import { useTheme } from '../ThemeContext';
 import { rs, ms, ls } from '../utils/responsive';
 import { last7Days, formatDisplay } from '../utils/date';
-import { isPaused } from '../utils/streak';
+import { isPaused, shieldUsage } from '../utils/streak';
 import { heatRamp, rampSwatches } from '../utils/heatmap';
 import AnimatedEmoji from '../components/AnimatedEmoji';
 import StatTile from '../components/StatTile';
@@ -185,6 +185,7 @@ export default function StatsScreen() {
           {habits.map(h => {
             const streak = calcStreak(h, completions, state.globalPause);
             const trajectory = consistency30(h, completions, state.globalPause);
+            const shields = shieldUsage(h, completions, state.globalPause);
             const todayStr = new Date().toISOString().slice(0, 10);
             const paused = isPaused(h, todayStr, state.globalPause);
             const activePause = paused
@@ -213,9 +214,31 @@ export default function StatsScreen() {
                   </Text>
                 </View>
                 <View style={styles.streakBadgeCol}>
-                  <View style={styles.streakBadge}>
-                    <Text style={styles.streakNum}>{streak}</Text>
-                    <Text style={styles.streakUnit}>day{streak !== 1 ? 's' : ''}</Text>
+                  <View style={styles.streakRowRight}>
+                    {shields.used > 0 && !activePause && (
+                      <View style={[
+                        styles.shieldPill,
+                        shields.remaining === 0
+                          ? { backgroundColor: C.dangerSoft }
+                          : { backgroundColor: C.warningSoft },
+                      ]}>
+                        <Shield
+                          size={rs(10)}
+                          color={shields.remaining === 0 ? C.danger : C.warning}
+                          strokeWidth={2.5}
+                        />
+                        <Text style={[
+                          styles.shieldPillText,
+                          { color: shields.remaining === 0 ? C.danger : C.warning },
+                        ]}>
+                          {shields.used}/{shields.total}
+                        </Text>
+                      </View>
+                    )}
+                    <View style={styles.streakBadge}>
+                      <Text style={styles.streakNum}>{streak}</Text>
+                      <Text style={styles.streakUnit}>day{streak !== 1 ? 's' : ''}</Text>
+                    </View>
                   </View>
                   {trajectory.eligible > 0 && !activePause && (
                     <Text style={styles.trajectoryPct}>{trajectory.percent}% consistency</Text>
@@ -333,6 +356,7 @@ function makeStyles(C) { return {
   streakName: { fontSize: ms(14), fontFamily: C.semi, fontWeight: '600', color: C.text, letterSpacing: ls(14) },
   streakType: { fontSize: ms(11), color: C.textMuted, marginTop: rs(2), fontFamily: C.reg, fontWeight: '400', letterSpacing: ls(11) },
   streakBadgeCol: { alignItems: 'flex-end', gap: rs(4) },
+  streakRowRight: { flexDirection: 'row', alignItems: 'center', gap: rs(6) },
   streakBadge: {
     flexDirection: 'row', alignItems: 'baseline', gap: rs(4),
     backgroundColor: C.primarySoft, borderRadius: rs(10),
@@ -341,6 +365,11 @@ function makeStyles(C) { return {
   streakNum:  { fontSize: ms(18), fontFamily: C.bold, fontWeight: '700', color: C.primary, letterSpacing: ls(18) },
   streakUnit: { fontSize: ms(10), fontFamily: C.med, fontWeight: '500', color: C.primary, letterSpacing: 0.2 },
   trajectoryPct: { fontSize: ms(10), fontFamily: C.med, fontWeight: '500', color: C.textMuted, letterSpacing: ls(10) },
+  shieldPill: {
+    flexDirection: 'row', alignItems: 'center', gap: rs(3),
+    borderRadius: rs(8), paddingHorizontal: rs(6), paddingVertical: rs(3),
+  },
+  shieldPillText: { fontSize: ms(10), fontFamily: C.bold, fontWeight: '700', letterSpacing: 0.4 },
 
   aiNudgeCard: {
     backgroundColor: C.card, borderRadius: rs(14), padding: rs(16), marginBottom: rs(20),

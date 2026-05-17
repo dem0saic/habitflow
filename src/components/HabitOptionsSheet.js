@@ -3,10 +3,12 @@ import {
   View, Text, TouchableOpacity, Modal, Pressable, Platform,
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { Pencil, ChevronRight, AlarmClock, XCircle, Trash2, PauseCircle, PlayCircle } from 'lucide-react-native';
+import { Pencil, ChevronRight, AlarmClock, XCircle, Trash2, PauseCircle, PlayCircle, Shield } from 'lucide-react-native';
 import { useTheme } from '../ThemeContext';
+import { useStore } from '../store';
 import { rs, ms, ls } from '../utils/responsive';
 import { todayKey, formatDisplay } from '../utils/date';
+import { shieldUsage } from '../utils/streak';
 
 function formatTime(hour, minute) {
   const h = hour % 12 || 12;
@@ -25,6 +27,7 @@ export default function HabitOptionsSheet({
   visible, habit, onClose, onEdit, onDelete, onSetReminder, onSetPause,
 }) {
   const C = useTheme();
+  const { state } = useStore();
   const styles = makeStyles(C);
   const [showPicker, setShowPicker] = useState(false);
   const [showPausePicker, setShowPausePicker] = useState(false);
@@ -33,6 +36,9 @@ export default function HabitOptionsSheet({
   if (!habit) return null;
 
   const activePause = (habit.pauses || [])[0] || null;
+  const shields = shieldUsage(habit, state.completions, state.globalPause);
+  const shieldTone = shields.remaining === 0 ? C.danger : shields.used > 0 ? C.warning : C.success;
+  const shieldBg   = shields.remaining === 0 ? C.dangerSoft : shields.used > 0 ? C.warningSoft : C.successSoft;
 
   const hasReminder = habit.reminderTime != null;
   const reminderDate = hasReminder
@@ -103,6 +109,18 @@ export default function HabitOptionsSheet({
             <Text style={styles.habitName} numberOfLines={1}>{habit.name}</Text>
             <Text style={styles.habitType}>{typeLabel}</Text>
           </View>
+        </View>
+
+        {/* Streak shields status — discoverability for an otherwise silent feature */}
+        <View style={[styles.shieldRow, { backgroundColor: shieldBg }]}>
+          <Shield size={rs(13)} color={shieldTone} strokeWidth={2.5} />
+          <Text style={[styles.shieldText, { color: shieldTone }]}>
+            {shields.remaining === 0
+              ? `All ${shields.total} shields used this month`
+              : shields.used === 0
+                ? `${shields.total} streak shields ready this month`
+                : `${shields.remaining} of ${shields.total} shields left this month`}
+          </Text>
         </View>
 
         <View style={styles.divider} />
@@ -293,6 +311,12 @@ function makeStyles(C) { return {
   habitEmoji: { fontSize: ms(28) },
   habitName:  { fontSize: ms(16), fontFamily: C.bold, fontWeight: '700', color: C.text, letterSpacing: ls(16) },
   habitType:  { fontSize: ms(11), color: C.textMuted, marginTop: rs(2), fontFamily: C.reg, fontWeight: '400', letterSpacing: ls(11) },
+  shieldRow: {
+    flexDirection: 'row', alignItems: 'center', gap: rs(8),
+    paddingHorizontal: rs(12), paddingVertical: rs(9),
+    borderRadius: rs(10), marginTop: rs(8), marginBottom: rs(4),
+  },
+  shieldText: { fontSize: ms(11), fontFamily: C.semi, fontWeight: '600', letterSpacing: ls(11), flex: 1 },
   divider:    { height: 1, backgroundColor: C.border, marginVertical: rs(8) },
   actionBtn: {
     flexDirection: 'row', alignItems: 'center', gap: rs(12),

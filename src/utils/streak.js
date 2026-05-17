@@ -63,6 +63,57 @@ export function calcStreak(habit, completions, globalPause) {
   return streak;
 }
 
+// How many of the current month's shields are spent / remaining.
+// Walks calcStreak's logic so a shield only counts if the streak actually used it
+// (a habit whose streak broke last week is at {used: 0} for this month, even if
+// there are real misses, because the streak isn't passing through them anymore).
+export function shieldUsage(habit, completions, globalPause) {
+  if (!habit) return { used: 0, remaining: 0, total: 0 };
+  const target = habit.targetCount || 1;
+  const shieldsPerMonth = habit.shieldsPerMonth ?? 2;
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const currentMonth = todayStr.slice(0, 7);
+  const createdAtKey = habit.createdAt
+    ? new Date(habit.createdAt).toISOString().slice(0, 10)
+    : null;
+
+  const shieldsUsed = {};
+  const d = new Date();
+  for (let i = 0; i < 730; i++) {
+    const key = d.toISOString().slice(0, 10);
+    if (createdAtKey && key < createdAtKey) break;
+
+    if (isPaused(habit, key, globalPause)) {
+      d.setDate(d.getDate() - 1);
+      continue;
+    }
+
+    const count = completions?.[key]?.[habit.id] || 0;
+    if (count >= target) {
+      // done, streak continues
+    } else if (key === todayStr) {
+      // today not done yet — grace
+    } else {
+      const monthKey = key.slice(0, 7);
+      const used = shieldsUsed[monthKey] || 0;
+      if (used < shieldsPerMonth) {
+        shieldsUsed[monthKey] = used + 1;
+      } else {
+        // streak breaks here — stop attributing shield use to earlier months
+        break;
+      }
+    }
+    d.setDate(d.getDate() - 1);
+  }
+
+  const used = shieldsUsed[currentMonth] || 0;
+  return {
+    used,
+    remaining: Math.max(0, shieldsPerMonth - used),
+    total: shieldsPerMonth,
+  };
+}
+
 // Trajectory metric: % of eligible days in the last 30 that were completed.
 // "Eligible" = not paused, and not before habit was created.
 // Use this as the headline alongside the raw streak — it survives a missed day.
