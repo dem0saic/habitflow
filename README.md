@@ -11,6 +11,7 @@ A cross-platform habit tracker built with Expo (React Native) and Supabase. Trac
 - **Streak milestones** — celebrations at 7, 14, 30, 60, 100, 200, and 365 days
 - **Streak shields** — 2 forgiven misses per calendar month per habit, applied automatically so one off day doesn't reset months of work
 - **Vacation mode** — pause one habit (long-press → Pause) or all habits at once (Settings → Vacation mode) for a date range; streaks survive the gap
+- **"Take it slow" pushback** — a one-time soft warning when adding a 4th habit, citing the behavioral finding that starting with 1-3 sticks ~3× more often (users who confirm "Add anyway" are trusted forever after)
 - **Trajectory metric** — every habit shows "X/Y last 30d · Z% consistency" alongside the raw streak so a single miss doesn't feel like failure
 - **Pattern-aware AI Coach** — daily nudge detects per-habit weekday patterns ("you tend to miss meditation on Wednesdays — what's different?") instead of just praising streaks; plus weekly/monthly reflection summaries. All powered by Claude via Supabase Edge Functions.
 - **Cloud sync** — every action syncs to Supabase in real time; data loads from the cloud on sign-in
@@ -134,7 +135,7 @@ All tables are in the `public` schema with RLS enabled. Every row is scoped to t
 
 | Table | PK | Notes |
 |---|---|---|
-| `user_settings` | `user_id` | `theme_mode`, `onboarding_done`, `global_pause` (jsonb — vacation mode) |
+| `user_settings` | `user_id` | `theme_mode`, `onboarding_done`, `global_pause` (jsonb — vacation mode), `add_habit_nudge_dismissed` (boolean — pushback acknowledged) |
 | `habits` | `id` (text) | Soft-deleted via `deleted_at`; `reminder_time` jsonb; `shields_per_month` int (default 2); `pauses` jsonb array of `{start, end}` |
 | `completions` | `(user_id, habit_id, date)` | Composite PK makes upserts idempotent |
 | `challenges` | `id` (text) | `habit_ids` text array |

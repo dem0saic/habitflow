@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, Modal, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Settings, Plus, Flame, CheckCircle2, Palmtree } from 'lucide-react-native';
+import { Settings, Plus, Flame, CheckCircle2, Palmtree, Sprout } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useStore, useTodayCompletions, calcStreak } from '../store';
 import { useTheme } from '../ThemeContext';
@@ -40,6 +40,7 @@ export default function TodayScreen() {
   const [celebrate, setCelebrate] = useState(false);
   const [milestone, setMilestone] = useState(null);
   const [optionsHabit, setOptionsHabit] = useState(null);
+  const [pushbackVisible, setPushbackVisible] = useState(false);
   const wasAllDoneRef = useRef(false);
   const celebratedMilestonesRef = useRef({});
 
@@ -130,6 +131,23 @@ export default function TodayScreen() {
     }
   }
 
+  // Intercept the "Add habit" button: research shows starting with 1-3 habits
+  // sticks far better than 10+. Show a one-time soft pushback at habit #4.
+  function attemptOpenAdd() {
+    lightTap();
+    if (habits.length >= 3 && !state.addHabitNudgeDismissed) {
+      setPushbackVisible(true);
+    } else {
+      setAddVisible(true);
+    }
+  }
+
+  function acceptPushback() {
+    dispatch({ type: 'DISMISS_ADD_HABIT_NUDGE' });
+    setPushbackVisible(false);
+    setAddVisible(true);
+  }
+
   // Group habits by tile type for grid layout
   const wideHabits  = habits.filter(h => h.type === 'volume' || h.type === 'timer');
   const smallHabits = habits.filter(h => h.type === 'daily'  || h.type === 'negative');
@@ -217,7 +235,7 @@ export default function TodayScreen() {
         {/* Add habit inline button */}
         <TouchableOpacity
           style={styles.addBtn}
-          onPress={() => { lightTap(); setAddVisible(true); }}
+          onPress={attemptOpenAdd}
           activeOpacity={0.85}
         >
           <Plus size={rs(16)} color={C.primary} strokeWidth={2.5} />
@@ -291,6 +309,41 @@ export default function TodayScreen() {
         onAdd={handleEdit}
         editingHabit={editingHabit}
       />
+
+      {/* One-time pushback modal: research-backed nudge at habit #4 */}
+      <Modal
+        visible={pushbackVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setPushbackVisible(false)}
+      >
+        <Pressable style={styles.pushbackOverlay} onPress={() => setPushbackVisible(false)}>
+          <Pressable style={styles.pushbackCard}>
+            <View style={styles.pushbackIconWrap}>
+              <Sprout size={rs(22)} color={C.primary} strokeWidth={2} />
+            </View>
+            <Text style={styles.pushbackTitle}>Take it slow?</Text>
+            <Text style={styles.pushbackBody}>
+              Behavioral research shows starting with 1 to 3 habits sticks roughly 3× more often than starting with many. You already have {habits.length}. Let these feel automatic first, then add more.
+            </Text>
+            <TouchableOpacity
+              style={styles.pushbackPrimaryBtn}
+              onPress={() => setPushbackVisible(false)}
+              activeOpacity={0.85}
+            >
+              <Text style={styles.pushbackPrimaryText}>Hold off for now</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.pushbackSecondaryBtn}
+              onPress={acceptPushback}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.pushbackSecondaryText}>Add anyway</Text>
+            </TouchableOpacity>
+          </Pressable>
+        </Pressable>
+      </Modal>
+
       <HabitOptionsSheet
         visible={optionsHabit != null}
         habit={optionsHabit}
@@ -369,4 +422,33 @@ function makeStyles(C) { return {
   emptyState: { alignItems: 'center', paddingTop: rs(60), paddingHorizontal: rs(24) },
   emptyTitle: { fontSize: ms(17), fontFamily: C.bold, fontWeight: '700', color: C.text, marginBottom: rs(6), letterSpacing: ls(17) },
   emptySub:   { fontSize: ms(13), color: C.textMuted, fontFamily: C.reg, fontWeight: '400', letterSpacing: ls(13), textAlign: 'center' },
+
+  pushbackOverlay: {
+    flex: 1, backgroundColor: 'rgba(0,0,0,0.65)',
+    alignItems: 'center', justifyContent: 'center',
+    paddingHorizontal: rs(24),
+  },
+  pushbackCard: {
+    backgroundColor: C.card, borderRadius: rs(18),
+    borderWidth: 1, borderColor: C.borderStrong,
+    padding: rs(22), width: '100%',
+  },
+  pushbackIconWrap: {
+    width: rs(48), height: rs(48), borderRadius: rs(14),
+    backgroundColor: C.primarySoft,
+    alignItems: 'center', justifyContent: 'center',
+    marginBottom: rs(14),
+  },
+  pushbackTitle: { fontSize: ms(18), fontFamily: C.bold, fontWeight: '700', color: C.text, marginBottom: rs(8), letterSpacing: ls(18) },
+  pushbackBody:  { fontSize: ms(13), color: C.textSub, lineHeight: ms(20), fontFamily: C.reg, fontWeight: '400', marginBottom: rs(20), letterSpacing: ls(13) },
+
+  pushbackPrimaryBtn: {
+    paddingVertical: rs(13), borderRadius: rs(10),
+    backgroundColor: C.primary, alignItems: 'center', marginBottom: rs(10),
+  },
+  pushbackPrimaryText: { fontSize: ms(14), fontFamily: C.bold, fontWeight: '700', color: '#fff', letterSpacing: ls(14) },
+  pushbackSecondaryBtn: {
+    paddingVertical: rs(11), alignItems: 'center',
+  },
+  pushbackSecondaryText: { fontSize: ms(13), fontFamily: C.med, fontWeight: '500', color: C.textMuted, letterSpacing: ls(13) },
 }; }

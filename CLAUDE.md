@@ -128,6 +128,7 @@ Single global store via React `useReducer` + `AsyncStorage` (key: `@habitapp_sta
   completions: { 'YYYY-MM-DD': { [habitId]: number } },
   challenge: { id, title, durationDays, startDate, habitIds, completed, rewardClaimed } | null,
   globalPause: { start: 'YYYY-MM-DD', end: 'YYYY-MM-DD' } | null,  // vacation mode for all habits
+  addHabitNudgeDismissed: boolean,  // user has dismissed the "start with 1-3 habits" pushback at least once
 }
 ```
 
@@ -144,7 +145,7 @@ Single global store via React `useReducer` + `AsyncStorage` (key: `@habitapp_sta
 
 `SET_HAPTICS` and `SET_NOTIFICATION_SOUND` are intentionally not handled in `syncActionToSupabase` — both are device-local preferences. `StoreProvider` has `useEffect` hooks watching `state.hapticsEnabled` and `state.notificationSound` that call `setHapticsEnabled()` and `setNotificationSound()` respectively to keep module flags in sync with persisted values on every app start.
 
-`SET_HABIT_PAUSE` and `SET_GLOBAL_PAUSE` ARE synced — they're load-bearing for streak math on every device.
+`SET_HABIT_PAUSE`, `SET_GLOBAL_PAUSE`, and `DISMISS_ADD_HABIT_NUDGE` ARE synced — the first two are load-bearing for streak math on every device, and the third prevents the same nudge from re-firing across reinstalls.
 
 ### Streak preservation (`src/utils/streak.js`)
 
@@ -179,7 +180,7 @@ Five tables in the `public` schema, all with RLS enabled. Every table has a poli
 
 | Table | Primary key | Notable columns |
 |---|---|---|
-| `user_settings` | `user_id` | `theme_mode`, `onboarding_done`, `global_pause` (jsonb, vacation mode) |
+| `user_settings` | `user_id` | `theme_mode`, `onboarding_done`, `global_pause` (jsonb, vacation mode), `add_habit_nudge_dismissed` (boolean, pushback acknowledged) |
 | `habits` | `id` (text) | `deleted_at` (soft delete), `reminder_time` (jsonb), `shields_per_month` (int, default 2), `pauses` (jsonb array of `{start,end}`) |
 | `completions` | composite `(user_id, habit_id, date)` | `count` integer |
 | `challenges` | `id` (text) | `habit_ids` text[], `completed`, `reward_claimed` |
@@ -290,6 +291,8 @@ Each screen earns its own layout instead of templating a hero card. The shared h
 | `StatsScreen` | 2×2 `StatTile` bento (best streak / 7-day avg / days tracked / perfect days) + `ContributionGraph` card + per-habit streak rows (subtitle shows `X/Y last 30d` or `Paused through {date}`; secondary `% consistency` line under the streak pill) + AI Coach |
 
 `TodayScreen`'s top row has a single gear icon that calls `navigation.navigate('Settings')` via `useNavigation`. The Settings tab is registered in the Tab.Navigator but hidden from the tab bar (`tabBarButton: () => null`, `tabBarItemStyle: { display: 'none' }`) so it is only reachable via this header button. There is no FAB on Today — the inline "Add habit" button above the grid is the only entry point.
+
+**"Take it slow?" pushback (`TodayScreen`):** the Add habit button is routed through `attemptOpenAdd`, which intercepts when `habits.length >= 3 && !state.addHabitNudgeDismissed` and shows a one-time soft-warning modal citing the behavioral-science finding that starting with 1-3 habits sticks ~3× more often than starting with many. "Hold off for now" dismisses the modal but does not flip the flag (user gets the nudge again on a future attempt); "Add anyway" dispatches `DISMISS_ADD_HABIT_NUDGE` (persisted to `user_settings.add_habit_nudge_dismissed`) and opens AddHabitModal. The flag is one-way — once set, the user is trusted forever. Returning users who already have 4+ habits will see the pushback exactly once on their next Add tap, which we accept as low-cost noise.
 
 **Habit tiles**: small (square, daily/negative, paired two-up) and wide (full-width, volume/timer with inline progress + stepper). Tap a small tile to toggle. Long-press any tile to open `HabitOptionsSheet`. Done state: tile fills with `successSoft`, border switches to bright `success`.
 

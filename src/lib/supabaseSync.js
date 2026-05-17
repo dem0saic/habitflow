@@ -44,6 +44,7 @@ export async function pullUserData(userId) {
     onboardingDone: settingsRes.data?.onboarding_done ?? false,
     themeMode: settingsRes.data?.theme_mode ?? 'dark',
     globalPause: settingsRes.data?.global_pause ?? null,
+    addHabitNudgeDismissed: settingsRes.data?.add_habit_nudge_dismissed ?? false,
     habits,
     completions,
     challenge,
@@ -100,6 +101,7 @@ export async function pushSettings(userId, state) {
     theme_mode: state.themeMode,
     onboarding_done: state.onboardingDone,
     global_pause: state.globalPause ?? null,
+    add_habit_nudge_dismissed: state.addHabitNudgeDismissed ?? false,
     updated_at: new Date().toISOString(),
   });
 }
@@ -219,6 +221,10 @@ export async function syncActionToSupabase(action, stateRef) {
 
     case 'SET_GLOBAL_PAUSE':
       await pushSettings(userId, { ...s, globalPause: action.pause || null });
+      break;
+
+    case 'DISMISS_ADD_HABIT_NUDGE':
+      await pushSettings(userId, { ...s, addHabitNudgeDismissed: true });
       break;
   }
 }

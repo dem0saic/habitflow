@@ -18,6 +18,7 @@ const defaultState = {
   completions: {},  // { 'YYYY-MM-DD': { [habitId]: number } }
   challenge: null,  // { id, title, durationDays, startDate, habitIds, completed, rewardClaimed }
   globalPause: null, // { start: 'YYYY-MM-DD', end: 'YYYY-MM-DD' } | null — vacation mode for all habits
+  addHabitNudgeDismissed: false, // user has acknowledged "research says 1-3 sticks better" at least once
 };
 
 function reducer(state, action) {
@@ -68,6 +69,9 @@ function reducer(state, action) {
 
     case 'SET_GLOBAL_PAUSE':
       return { ...state, globalPause: action.pause || null };
+
+    case 'DISMISS_ADD_HABIT_NUDGE':
+      return { ...state, addHabitNudgeDismissed: true };
 
     case 'EDIT_HABIT': {
       return {
