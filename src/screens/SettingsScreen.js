@@ -42,6 +42,11 @@ export default function SettingsScreen() {
   const [deleteConfirm, setDeleteConfirm] = useState('');
   const [deleting, setDeleting] = useState(false);
   const [showVacationPicker, setShowVacationPicker] = useState(false);
+  const [vacationDraft, setVacationDraft] = useState(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 7);
+    return d;
+  });
 
   const globalPause = state.globalPause;
 
@@ -123,20 +128,39 @@ export default function SettingsScreen() {
     setDeleteOpen(true);
   }
 
+  function openVacationPicker() {
+    const d = new Date();
+    d.setDate(d.getDate() + 7);
+    setVacationDraft(d);
+    setShowVacationPicker(true);
+  }
+
   function handleVacationChange(event, selected) {
-    if (Platform.OS === 'android') setShowVacationPicker(false);
-    if (event.type === 'dismissed') return;
-    if (selected) {
+    if (Platform.OS === 'android') {
+      setShowVacationPicker(false);
+      if (event.type === 'dismissed' || !selected) return;
       const end = selected.toISOString().slice(0, 10);
-      const start = todayKey();
-      if (end < start) return;
-      dispatch({ type: 'SET_GLOBAL_PAUSE', pause: { start, end } });
+      if (end < todayKey()) return;
+      dispatch({ type: 'SET_GLOBAL_PAUSE', pause: { start: todayKey(), end } });
+      showBanner(`Vacation set through ${formatDisplay(end)}`);
+      return;
     }
+    if (selected) setVacationDraft(selected);
+  }
+
+  function confirmVacation() {
+    setShowVacationPicker(false);
+    if (!vacationDraft) return;
+    const end = vacationDraft.toISOString().slice(0, 10);
+    if (end < todayKey()) return;
+    dispatch({ type: 'SET_GLOBAL_PAUSE', pause: { start: todayKey(), end } });
+    showBanner(`Vacation set through ${formatDisplay(end)}`);
   }
 
   function endVacation() {
     lightTap();
     dispatch({ type: 'SET_GLOBAL_PAUSE', pause: null });
+    showBanner('Vacation ended. Welcome back.');
   }
 
   async function handleDeleteAccount() {
@@ -210,7 +234,7 @@ export default function SettingsScreen() {
         <View style={styles.card}>
           <TouchableOpacity
             style={styles.row}
-            onPress={() => globalPause ? endVacation() : setShowVacationPicker(true)}
+            onPress={() => globalPause ? endVacation() : openVacationPicker()}
             activeOpacity={0.7}
           >
             <View style={styles.rowLeft}>
@@ -234,12 +258,11 @@ export default function SettingsScreen() {
           </TouchableOpacity>
           {showVacationPicker && Platform.OS === 'ios' && (
             <View style={styles.vacationPickerWrap}>
+              <Text style={styles.vacationPickerHeading}>
+                Back on {formatDisplay(vacationDraft.toISOString().slice(0, 10))}
+              </Text>
               <DateTimePicker
-                value={(() => {
-                  const d = new Date();
-                  d.setDate(d.getDate() + 7);
-                  return d;
-                })()}
+                value={vacationDraft}
                 mode="date"
                 display="spinner"
                 minimumDate={new Date()}
@@ -247,21 +270,25 @@ export default function SettingsScreen() {
                 textColor={C.text}
                 style={{ height: rs(120) }}
               />
-              <TouchableOpacity
-                style={styles.vacationPickerDone}
-                onPress={() => setShowVacationPicker(false)}
-              >
-                <Text style={styles.vacationPickerDoneText}>Done</Text>
-              </TouchableOpacity>
+              <View style={styles.vacationPickerActions}>
+                <TouchableOpacity
+                  style={styles.vacationPickerCancel}
+                  onPress={() => setShowVacationPicker(false)}
+                >
+                  <Text style={styles.vacationPickerCancelText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.vacationPickerConfirm}
+                  onPress={confirmVacation}
+                >
+                  <Text style={styles.vacationPickerConfirmText}>Start vacation</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           )}
           {showVacationPicker && Platform.OS === 'android' && (
             <DateTimePicker
-              value={(() => {
-                const d = new Date();
-                d.setDate(d.getDate() + 7);
-                return d;
-              })()}
+              value={vacationDraft}
               mode="date"
               display="calendar"
               minimumDate={new Date()}
@@ -489,11 +516,26 @@ function makeStyles(C) {
       marginHorizontal: rs(14), marginBottom: rs(14), overflow: 'hidden',
       borderWidth: 1, borderColor: C.border,
     },
-    vacationPickerDone: {
-      alignItems: 'flex-end', paddingHorizontal: rs(16), paddingVertical: rs(10),
+    vacationPickerHeading: {
+      fontSize: ms(12), fontFamily: C.bold, fontWeight: '700', color: C.primary,
+      textAlign: 'center', paddingTop: rs(10), paddingBottom: rs(4),
+      textTransform: 'uppercase', letterSpacing: 0.6,
+    },
+    vacationPickerActions: {
+      flexDirection: 'row', gap: rs(8),
+      paddingHorizontal: rs(10), paddingVertical: rs(10),
       borderTopWidth: 1, borderTopColor: C.border,
     },
-    vacationPickerDoneText: { fontSize: ms(14), fontFamily: C.bold, fontWeight: '700', color: C.primary, letterSpacing: ls(14) },
+    vacationPickerCancel: {
+      flex: 1, paddingVertical: rs(10), borderRadius: rs(8),
+      borderWidth: 1, borderColor: C.borderStrong, alignItems: 'center',
+    },
+    vacationPickerCancelText: { fontSize: ms(13), fontFamily: C.semi, fontWeight: '600', color: C.textSub, letterSpacing: ls(13) },
+    vacationPickerConfirm: {
+      flex: 2, paddingVertical: rs(10), borderRadius: rs(8),
+      backgroundColor: C.primary, alignItems: 'center',
+    },
+    vacationPickerConfirmText: { fontSize: ms(13), fontFamily: C.bold, fontWeight: '700', color: '#fff', letterSpacing: ls(13) },
 
     // Delete account modal
     deleteOverlay: {

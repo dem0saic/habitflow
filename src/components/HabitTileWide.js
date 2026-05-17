@@ -1,6 +1,6 @@
 import React, { useRef, useEffect } from 'react';
 import { View, Text, TouchableOpacity, Animated } from 'react-native';
-import { AlarmClock, Timer, Minus, Plus } from 'lucide-react-native';
+import { AlarmClock, Timer, Minus, Plus, PauseCircle } from 'lucide-react-native';
 import { useTheme } from '../ThemeContext';
 import { rs, ms, ls } from '../utils/responsive';
 import AnimatedEmoji from './AnimatedEmoji';
@@ -12,7 +12,7 @@ function fmtTime({ hour, minute }) {
 }
 
 // Full-width tile for volume / timer habits. Inline progress + stepper.
-export default function HabitTileWide({ habit, count, onIncrement, onDecrement, onLongPress }) {
+export default function HabitTileWide({ habit, count, onIncrement, onDecrement, onLongPress, paused }) {
   const C = useTheme();
   const styles = makeStyles(C);
 
@@ -24,6 +24,7 @@ export default function HabitTileWide({ habit, count, onIncrement, onDecrement, 
 
   const scale = useRef(new Animated.Value(1)).current;
   const progressAnim = useRef(new Animated.Value(pct)).current;
+  const flash = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     Animated.spring(progressAnim, {
@@ -35,19 +36,35 @@ export default function HabitTileWide({ habit, count, onIncrement, onDecrement, 
 
   function bump(delta) {
     Animated.sequence([
-      Animated.timing(scale, { toValue: 0.98, duration: 60, useNativeDriver: true }),
-      Animated.spring(scale,  { toValue: 1, useNativeDriver: true, tension: 300, friction: 10 }),
+      Animated.timing(scale, { toValue: 0.95, duration: 90, useNativeDriver: true }),
+      Animated.spring(scale,  { toValue: 1, useNativeDriver: true, tension: 280, friction: 9 }),
     ]).start();
+    flash.setValue(1);
+    Animated.timing(flash, { toValue: 0, duration: 320, useNativeDriver: true }).start();
     if (delta > 0) onIncrement?.();
     else onDecrement?.();
   }
+
+  const flashOpacity = flash.interpolate({ inputRange: [0, 1], outputRange: [0, 0.3] });
 
   const progressWidth = progressAnim.interpolate({
     inputRange: [0, 1], outputRange: ['0%', '100%'],
   });
 
   return (
-    <Animated.View style={[styles.tile, isDone && styles.tileDone, { transform: [{ scale }] }]}>
+    <Animated.View
+      style={[
+        styles.tile,
+        isDone && styles.tileDone,
+        paused && styles.tilePaused,
+        { transform: [{ scale }] },
+        paused && { opacity: 0.6 },
+      ]}
+    >
+      <Animated.View
+        pointerEvents="none"
+        style={[styles.flashOverlay, { opacity: flashOpacity, backgroundColor: isDone ? C.success : C.primary }]}
+      />
       <TouchableOpacity onLongPress={onLongPress} activeOpacity={0.95} style={{ flex: 1 }}>
         <View style={styles.row}>
           <View style={[styles.emojiWrap, isDone && { backgroundColor: C.successSoft }]}>
@@ -59,13 +76,19 @@ export default function HabitTileWide({ habit, count, onIncrement, onDecrement, 
               <Text style={[styles.name, isDone && styles.nameDone]} numberOfLines={1}>
                 {habit.name}
               </Text>
-              {isTimer && (
+              {paused && (
+                <View style={styles.pausedPill}>
+                  <PauseCircle size={rs(10)} color={C.warning} strokeWidth={2.5} />
+                  <Text style={styles.pausedPillText}>PAUSED</Text>
+                </View>
+              )}
+              {isTimer && !paused && (
                 <View style={styles.typeBadge}>
                   <Timer size={rs(9)} color={C.textMuted} strokeWidth={2} />
                   <Text style={styles.typeBadgeText}>TIMER</Text>
                 </View>
               )}
-              {habit.reminderTime && (
+              {habit.reminderTime && !paused && (
                 <View style={styles.bellInline}>
                   <AlarmClock size={rs(10)} color={C.primary} strokeWidth={2.5} />
                   <Text style={styles.bellText}>{fmtTime(habit.reminderTime)}</Text>
@@ -119,8 +142,20 @@ function makeStyles(C) { return {
     borderWidth: 1, borderColor: C.border,
     padding: rs(14),
     marginBottom: rs(10),
+    overflow: 'hidden',
   },
-  tileDone: { borderColor: C.success, borderWidth: 1.5, backgroundColor: C.successSoft },
+  tileDone:   { borderColor: C.success, borderWidth: 1.5, backgroundColor: C.successSoft },
+  tilePaused: { borderColor: C.warning, borderStyle: 'dashed' },
+  flashOverlay: {
+    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+    borderRadius: rs(16),
+  },
+  pausedPill: {
+    flexDirection: 'row', alignItems: 'center', gap: rs(3),
+    backgroundColor: C.warningSoft, borderRadius: rs(6),
+    paddingHorizontal: rs(6), paddingVertical: rs(2),
+  },
+  pausedPillText: { fontSize: ms(8), color: C.warning, fontFamily: C.bold, fontWeight: '700', letterSpacing: 0.6 },
 
   row: { flexDirection: 'row', alignItems: 'center' },
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: rs(6), marginBottom: rs(4), flexWrap: 'wrap' },

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Settings, Plus, Flame, CheckCircle2 } from 'lucide-react-native';
+import { Settings, Plus, Flame, CheckCircle2, Palmtree } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useStore, useTodayCompletions, calcStreak } from '../store';
 import { useTheme } from '../ThemeContext';
@@ -12,8 +12,10 @@ import HabitTileWide from '../components/HabitTileWide';
 import AddHabitModal from '../components/AddHabitModal';
 import CelebrationModal from '../components/CelebrationModal';
 import HabitOptionsSheet from '../components/HabitOptionsSheet';
-import { lightTap, successBurst } from '../utils/haptics';
+import { lightTap, mediumTap, successBurst } from '../utils/haptics';
 import { scheduleDailyReminders, scheduleHabitReminder, cancelHabitReminder } from '../utils/notifications';
+import { isPaused } from '../utils/streak';
+import { todayKey, formatDisplay } from '../utils/date';
 
 const MILESTONE_DAYS = [7, 14, 30, 60, 100, 200, 365];
 
@@ -74,8 +76,23 @@ export default function TodayScreen() {
     }
   }, [habits, state.completions, milestone]);
 
-  function handleToggle(id)             { lightTap(); dispatch({ type: 'LOG_HABIT', id }); }
-  function handleIncrement(id, delta=1) { lightTap(); dispatch({ type: 'LOG_HABIT', id, delta }); }
+  function handleToggle(id) {
+    const habit = habits.find(h => h.id === id);
+    const current = todayCompletions[id] || 0;
+    const target = habit?.targetCount || 1;
+    // If this tap will complete the habit, give a stronger haptic so the user feels the win
+    if (current < target) mediumTap();
+    else lightTap();
+    dispatch({ type: 'LOG_HABIT', id });
+  }
+  function handleIncrement(id, delta=1) {
+    const habit = habits.find(h => h.id === id);
+    const current = todayCompletions[id] || 0;
+    const target = habit?.targetCount || 1;
+    if (current < target && current + delta >= target) mediumTap();
+    else lightTap();
+    dispatch({ type: 'LOG_HABIT', id, delta });
+  }
   function handleDecrement(id, delta=1) { lightTap(); dispatch({ type: 'LOG_HABIT', id, delta: -delta }); }
 
   function handleDelete(id) {
@@ -117,6 +134,14 @@ export default function TodayScreen() {
   const wideHabits  = habits.filter(h => h.type === 'volume' || h.type === 'timer');
   const smallHabits = habits.filter(h => h.type === 'daily'  || h.type === 'negative');
 
+  const todayStr = todayKey();
+  const onVacation = !!state.globalPause
+    && state.globalPause.start <= todayStr
+    && todayStr <= state.globalPause.end;
+  function pausedFor(habit) {
+    return isPaused(habit, todayStr, state.globalPause);
+  }
+
   // Pair small habits two-up
   const smallRows = [];
   for (let i = 0; i < smallHabits.length; i += 2) {
@@ -147,6 +172,21 @@ export default function TodayScreen() {
             <Settings size={rs(18)} color={C.textSub} strokeWidth={1.75} />
           </TouchableOpacity>
         </View>
+
+        {/* Vacation banner — visible when global pause is active */}
+        {onVacation && (
+          <View style={styles.vacationBanner}>
+            <View style={styles.vacationIconWrap}>
+              <Palmtree size={rs(16)} color={C.warning} strokeWidth={2.5} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.vacationTitle}>On vacation</Text>
+              <Text style={styles.vacationSub}>
+                Streaks safe through {formatDisplay(state.globalPause.end)} · end anytime in Settings
+              </Text>
+            </View>
+          </View>
+        )}
 
         {/* Stat strip */}
         {habits.length > 0 && (
@@ -201,6 +241,7 @@ export default function TodayScreen() {
                 key={h.id}
                 habit={h}
                 count={todayCompletions[h.id] || 0}
+                paused={pausedFor(h)}
                 onIncrement={() => handleIncrement(h.id, h.type === 'timer' ? 5 : 1)}
                 onDecrement={() => handleDecrement(h.id, h.type === 'timer' ? 5 : 1)}
                 onLongPress={() => { lightTap(); setOptionsHabit(h); }}
@@ -217,6 +258,7 @@ export default function TodayScreen() {
                 <HabitTileSmall
                   habit={row[0]}
                   count={todayCompletions[row[0].id] || 0}
+                  paused={pausedFor(row[0])}
                   onToggle={() => handleToggle(row[0].id)}
                   onLongPress={() => { lightTap(); setOptionsHabit(row[0]); }}
                 />
@@ -224,6 +266,7 @@ export default function TodayScreen() {
                   <HabitTileSmall
                     habit={row[1]}
                     count={todayCompletions[row[1].id] || 0}
+                    paused={pausedFor(row[1])}
                     onToggle={() => handleToggle(row[1].id)}
                     onLongPress={() => { lightTap(); setOptionsHabit(row[1]); }}
                   />
@@ -294,6 +337,22 @@ function makeStyles(C) { return {
     flexDirection: 'row', gap: rs(8),
     paddingHorizontal: rs(16), marginBottom: rs(16),
   },
+
+  vacationBanner: {
+    flexDirection: 'row', alignItems: 'center', gap: rs(10),
+    marginHorizontal: rs(16), marginBottom: rs(12),
+    paddingHorizontal: rs(14), paddingVertical: rs(12),
+    backgroundColor: C.warningSoft,
+    borderRadius: rs(12),
+    borderWidth: 1, borderColor: C.warning,
+  },
+  vacationIconWrap: {
+    width: rs(32), height: rs(32), borderRadius: rs(10),
+    backgroundColor: C.bg,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  vacationTitle: { fontSize: ms(13), fontFamily: C.bold, fontWeight: '700', color: C.warning, letterSpacing: ls(13) },
+  vacationSub:   { fontSize: ms(11), fontFamily: C.reg, fontWeight: '400', color: C.textSub, marginTop: rs(2), letterSpacing: ls(11) },
 
   addBtn: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: rs(6),

@@ -15,6 +15,12 @@ function formatTime(hour, minute) {
   return `${h}:${m} ${ampm}`;
 }
 
+function defaultPauseDate() {
+  const d = new Date();
+  d.setDate(d.getDate() + 7);
+  return d;
+}
+
 export default function HabitOptionsSheet({
   visible, habit, onClose, onEdit, onDelete, onSetReminder, onSetPause,
 }) {
@@ -22,6 +28,7 @@ export default function HabitOptionsSheet({
   const styles = makeStyles(C);
   const [showPicker, setShowPicker] = useState(false);
   const [showPausePicker, setShowPausePicker] = useState(false);
+  const [pauseDraft, setPauseDraft] = useState(defaultPauseDate);
 
   if (!habit) return null;
 
@@ -46,15 +53,31 @@ export default function HabitOptionsSheet({
     onClose();
   }
 
+  function openPausePicker() {
+    setPauseDraft(defaultPauseDate());
+    setShowPausePicker(true);
+  }
+
   function handlePauseChange(event, selected) {
-    if (Platform.OS === 'android') setShowPausePicker(false);
-    if (event.type === 'dismissed') return;
-    if (selected) {
+    // Android calendar dismisses on its own and only fires when the user picks
+    if (Platform.OS === 'android') {
+      setShowPausePicker(false);
+      if (event.type === 'dismissed' || !selected) return;
       const end = selected.toISOString().slice(0, 10);
-      const start = todayKey();
-      if (end < start) return;
-      onSetPause?.(habit.id, { start, end });
+      if (end < todayKey()) return;
+      onSetPause?.(habit.id, { start: todayKey(), end });
+      return;
     }
+    // iOS spinner: just update the draft; don't dispatch on every scroll
+    if (selected) setPauseDraft(selected);
+  }
+
+  function confirmPause() {
+    setShowPausePicker(false);
+    if (!pauseDraft) return;
+    const end = pauseDraft.toISOString().slice(0, 10);
+    if (end < todayKey()) return;
+    onSetPause?.(habit.id, { start: todayKey(), end });
   }
 
   function handleResume() {
@@ -163,7 +186,7 @@ export default function HabitOptionsSheet({
         {/* Pause / Resume */}
         <TouchableOpacity
           style={styles.actionBtn}
-          onPress={() => activePause ? handleResume() : setShowPausePicker(true)}
+          onPress={() => activePause ? handleResume() : openPausePicker()}
           activeOpacity={0.7}
         >
           <View style={[styles.actionIcon, { backgroundColor: activePause ? C.warningSoft : C.cardHigh }]}>
@@ -187,12 +210,11 @@ export default function HabitOptionsSheet({
 
         {showPausePicker && Platform.OS === 'ios' && (
           <View style={styles.pickerWrap}>
+            <Text style={styles.pickerHeading}>
+              Resume on {formatDisplay(pauseDraft.toISOString().slice(0, 10))}
+            </Text>
             <DateTimePicker
-              value={(() => {
-                const d = new Date();
-                d.setDate(d.getDate() + 7);
-                return d;
-              })()}
+              value={pauseDraft}
               mode="date"
               display="spinner"
               minimumDate={new Date()}
@@ -200,18 +222,25 @@ export default function HabitOptionsSheet({
               textColor={C.text}
               style={{ height: rs(120) }}
             />
-            <TouchableOpacity style={styles.pickerDone} onPress={() => setShowPausePicker(false)}>
-              <Text style={styles.pickerDoneText}>Done</Text>
-            </TouchableOpacity>
+            <View style={styles.pickerActions}>
+              <TouchableOpacity
+                style={styles.pickerCancel}
+                onPress={() => setShowPausePicker(false)}
+              >
+                <Text style={styles.pickerCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.pickerConfirm}
+                onPress={confirmPause}
+              >
+                <Text style={styles.pickerConfirmText}>Confirm pause</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         )}
         {showPausePicker && Platform.OS === 'android' && (
           <DateTimePicker
-            value={(() => {
-              const d = new Date();
-              d.setDate(d.getDate() + 7);
-              return d;
-            })()}
+            value={pauseDraft}
             mode="date"
             display="calendar"
             minimumDate={new Date()}
@@ -280,11 +309,31 @@ function makeStyles(C) { return {
     marginVertical: rs(8), overflow: 'hidden',
     borderWidth: 1, borderColor: C.border,
   },
+  pickerHeading: {
+    fontSize: ms(12), fontFamily: C.bold, fontWeight: '700', color: C.primary,
+    textAlign: 'center', paddingTop: rs(10), paddingBottom: rs(4),
+    textTransform: 'uppercase', letterSpacing: 0.6,
+  },
   pickerDone: {
     alignItems: 'flex-end', paddingHorizontal: rs(16), paddingVertical: rs(10),
     borderTopWidth: 1, borderTopColor: C.border,
   },
   pickerDoneText: { fontSize: ms(14), fontFamily: C.bold, fontWeight: '700', color: C.primary, letterSpacing: ls(14) },
+  pickerActions: {
+    flexDirection: 'row', gap: rs(8),
+    paddingHorizontal: rs(10), paddingVertical: rs(10),
+    borderTopWidth: 1, borderTopColor: C.border,
+  },
+  pickerCancel: {
+    flex: 1, paddingVertical: rs(10), borderRadius: rs(8),
+    borderWidth: 1, borderColor: C.borderStrong, alignItems: 'center',
+  },
+  pickerCancelText: { fontSize: ms(13), fontFamily: C.semi, fontWeight: '600', color: C.textSub, letterSpacing: ls(13) },
+  pickerConfirm: {
+    flex: 2, paddingVertical: rs(10), borderRadius: rs(8),
+    backgroundColor: C.primary, alignItems: 'center',
+  },
+  pickerConfirmText: { fontSize: ms(13), fontFamily: C.bold, fontWeight: '700', color: '#fff', letterSpacing: ls(13) },
   cancelBtn:      { alignItems: 'center', paddingVertical: rs(14), marginTop: rs(4) },
   cancelBtnText:  { fontSize: ms(14), color: C.textMuted, fontFamily: C.med, fontWeight: '500', letterSpacing: ls(14) },
 }; }
