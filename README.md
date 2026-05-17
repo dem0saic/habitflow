@@ -13,7 +13,7 @@ A cross-platform habit tracker built with Expo (React Native) and Supabase. Trac
 - **AI Coach** — daily nudge and weekly/monthly reflection summaries powered by Claude via Supabase Edge Functions
 - **Per-habit reminders** — time-picker per habit plus general morning/evening nudges
 - **Account deletion** — required by App Store guidelines; cascades all user rows server-side
-- **Dark / light theme** — Deep Aqua palette (cool dark, vibrant teal), persisted per account
+- **Dark / light theme** — Dusk palette (cool neutral dark with an indigo-violet accent, WCAG AA contrast), persisted per account
 
 ## Getting started
 
@@ -66,7 +66,7 @@ npx supabase functions deploy <name> --project-ref <your-ref>
 | State | React `useReducer` + AsyncStorage + Supabase sync |
 | Navigation | React Navigation v7 (bottom tabs) |
 | UI | Custom components, `lucide-react-native` icons |
-| Fonts | Russo One, Work Sans (via `expo-google-fonts`) |
+| Fonts | Work Sans (single typeface, five semantic weights, via `expo-google-fonts`) |
 | Notifications | `expo-notifications` (daily + per-habit, dual Android channels for silent/sound) |
 | AI | Anthropic Claude (server-side via Supabase Edge Functions) |
 

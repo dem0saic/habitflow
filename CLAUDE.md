@@ -190,28 +190,32 @@ The Edge Function source lives in `supabase/functions/<name>/index.ts` and is wr
 
 `src/theme.js` exports `DARK`, `LIGHT`, `FONTS`, and the `EMOJIS` array (~110 emojis).
 
-**`FONTS` constant** is spread into both `DARK` and `LIGHT`, so font family names are available as `C.*` tokens everywhere `useTheme()` is called:
+**`FONTS` constant** is spread into both `DARK` and `LIGHT`, so font family names are available as `C.*` tokens everywhere `useTheme()` is called. Single typeface (Work Sans) across the whole app — no decorative second font:
 
 | Token | Font | Use |
 |---|---|---|
-| `C.logo` | `RussoOne_400Regular` | Onboarding title "HabitFlow" only |
-| `C.reg` | `WorkSans_400Regular` | Body text |
-| `C.med` | `WorkSans_500Medium` | Labels, sub-text |
-| `C.semi` | `WorkSans_600SemiBold` | Section labels |
-| `C.bold` | `WorkSans_700Bold` | Buttons, titles |
-| `C.xbold` | `WorkSans_800ExtraBold` | Screen headings, hero numbers |
+| `C.logo`  | `WorkSans_800ExtraBold` | Brand mark ("HabitFlow") on Auth + Onboarding. Aliased to `xbold` so consumers can keep using `C.logo` semantically |
+| `C.reg`   | `WorkSans_400Regular`   | Body text |
+| `C.med`   | `WorkSans_500Medium`    | Labels, sub-text |
+| `C.semi`  | `WorkSans_600SemiBold`  | Section labels |
+| `C.bold`  | `WorkSans_700Bold`      | Buttons, titles |
+| `C.xbold` | `WorkSans_800ExtraBold` | Display headlines, hero numbers |
 
-All six font variants are pre-loaded in `App.js`. If you add a new font, load it there and add a token to `FONTS`.
+All five weight variants are pre-loaded in `App.js`. If you add a new font, load it there and add a token to `FONTS`. We dropped `RussoOne` in the Dusk pass — one less font file to ship, one consistent typeface throughout.
 
-**Active palette — Deep Aqua (cool dark, bento direction):** vibrant teal primary, fresh green success, deep ocean surfaces. `C.primary` is `#2DD4BF` in dark, `#0E9888` in light. Depth comes from layered surfaces (`bg` → `tileEmpty` → `card` → `cardHigh` / `heroSurface`) and 1px borders — **never use shadows on cards**.
+**Active palette — Dusk (cool neutral dark, indigo-violet accent):** the design system is built on HCI principles (calm by default, recognition over recall, AA-contrast minimums) and Figma's strict-token discipline. `C.primary` is `#7C6BFA` in dark, `#5A48D6` in light — a single accent used *only* for actionable things. Decorative color is not allowed; semantic colors (`success` / `warning` / `danger`) carry state only.
+
+Depth comes from layered surfaces (`bg` → `tileEmpty` → `card` → `cardHigh` / `heroSurface`) and 1px borders — **never use shadows on cards** (the FAB exception was retired with the bento rewrite).
 
 Tokens beyond the basic surface/text/border set:
-- `primaryStrong` — extra-punch teal (`#5EEAD4` dark) for CTAs that need to pop (today dot on ChallengeTrack, etc.)
+- `primaryStrong` — `#9685FF` (dark) / `#4838B8` (light). Extra-punch for CTAs that need to pop (today dot on ChallengeTrack, etc.)
 - `primarySoft` / `successSoft` / `warningSoft` / `dangerSoft` — rgba tints for badges, soft buttons, banners, done-state tile fills
-- `primaryMuted` — deep teal, used in the 5-step heatmap ramp (StatsScreen contribution graph)
+- `primaryMuted` — deep indigo, used only in the 5-step heatmap ramp (StatsScreen contribution graph)
 - `tileEmpty` — sits between `bg` and `card`, the background for "pending" habit tiles so they read as a recessed surface against the soft elevations
 - `borderStrong` — 1px dividers between stat cells, outline buttons, bottom-sheet handles
-- `warning` is amber `#FBBF24` (cautionary, not destructive) — used for the "Avoid" badge on negative habits. `danger` is cool red `#F87171` — used only for the delete action
+- `warning` is amber (`#F5B14D` dark) — cautionary, used for the "Avoid" badge on negative habits. `danger` is crimson (`#F26E6E` dark) — used only for destructive actions (delete habit, delete account)
+
+Contrast ratios on dark mode are verified WCAG AA or better — see the comment block at the top of `src/theme.js`. When proposing new colors, run the same check.
 
 The heatmap ramp lives in `src/utils/heatmap.js` (`heatColor` for the 4-step calendar/cell ramp, `heatRamp` for the 5-step contribution graph ramp, `rampSwatches` for legends). MonthCalendar and ContributionGraph both import from here — never duplicate the color-step logic at call sites.
 

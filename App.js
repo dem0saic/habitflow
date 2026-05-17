@@ -10,7 +10,6 @@ import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Home, Trophy, Calendar, BarChart2, Settings } from 'lucide-react-native';
 import { useFonts } from 'expo-font';
-import { RussoOne_400Regular } from '@expo-google-fonts/russo-one';
 import {
   WorkSans_400Regular,
   WorkSans_500Medium,
@@ -116,7 +115,6 @@ function AppNavigator() {
 
 export default function App() {
   const [fontsLoaded] = useFonts({
-    RussoOne_400Regular,
     WorkSans_400Regular,
     WorkSans_500Medium,
     WorkSans_600SemiBold,
