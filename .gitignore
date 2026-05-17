@@ -44,3 +44,8 @@ yarn-error.*
 # Supabase CLI internals
 supabase/.temp/
 .claude/
+
+# Store submission service account keys — NEVER commit
+play-service-account.json
+*.p8
+AuthKey_*.p8

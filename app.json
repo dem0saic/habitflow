@@ -4,9 +4,11 @@
     "slug": "habitflow",
     "scheme": "habitflow",
     "version": "1.0.0",
+    "description": "Build habits that stick. A calm, research-backed habit tracker with streak shields, vacation mode, and an AI coach that spots your patterns.",
+    "primaryColor": "#7C6BFA",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
       "image": "./assets/splash-icon.png",
@@ -14,9 +16,16 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.dem0saic.habitflow",
+      "buildNumber": "1",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
+      "package": "com.dem0saic.habitflow",
+      "versionCode": 1,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
@@ -32,7 +41,7 @@
         "expo-notifications",
         {
           "icon": "./assets/icon.png",
-          "color": "#7C3AED",
+          "color": "#7C6BFA",
           "defaultChannel": "habitflow-reminders",
           "sounds": []
         }
