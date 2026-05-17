@@ -179,9 +179,9 @@ function makeStyles(C) { return {
   header:   { alignItems: 'center', paddingBottom: rs(4) },
   brandRow: { flexDirection: 'row', alignItems: 'center', marginTop: rs(16) },
   logoText: {
-    color: C.text, fontSize: ms(34),
-    fontFamily: C.logo,        // Outfit ExtraBold
-    letterSpacing: -0.6,        // Outfit is wider than WorkSans — tighten
+    color: C.text, fontSize: ms(40),
+    fontFamily: C.logo,        // Chopera (display face)
+    letterSpacing: 0.8,         // Chopera is decorative — slight breathing room reads cleaner
   },
   tagline: {
     color: C.textMuted, fontSize: ms(11), letterSpacing: 1.6,

@@ -20,12 +20,15 @@
 //  · white on primary      ≈ 5.0 : 1  AA
 
 // Type system — Work Sans for everything except the brand mark, which uses
-// Outfit. Outfit is a rounded geometric sans: the geometry reads as "habit"
-// (structure, discipline) while the rounded terminals read as "flow" (warmth,
-// motion). Reserved exclusively for the HabitFlow wordmark — body and headings
-// stay on Work Sans so the brand mark always stands apart visually.
+// Chopera (custom font, shipped in /assets/Chopera.otf, loaded by name in
+// App.js). Chopera is a decorative display face — reserved exclusively for the
+// HabitFlow wordmark so it always stands apart from body and UI text.
+//
+// License note: Chopera is licensed under the FSLA (Free Style License
+// Agreement, non-commercial). A commercial license is required before any
+// App Store / Play Store submission. See assets/FSLA_NonCommercial_License.html.
 export const FONTS = {
-  logo:  'Outfit_800ExtraBold',     // brand mark (HabitFlow) only
+  logo:  'Chopera',                 // brand mark (HabitFlow wordmark) only
   reg:   'WorkSans_400Regular',
   med:   'WorkSans_500Medium',
   semi:  'WorkSans_600SemiBold',

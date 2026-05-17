@@ -385,9 +385,9 @@ function makeStyles(C) {
     scroll:    { alignItems: 'center', paddingHorizontal: rs(24) },
     brandStack: { alignItems: 'center', marginBottom: rs(28) },
     logoText: {
-      color: C.text, fontSize: ms(30),
-      fontFamily: C.logo,        // Outfit ExtraBold
-      letterSpacing: -0.5,        // Outfit is wider than WorkSans — tighten
+      color: C.text, fontSize: ms(36),
+      fontFamily: C.logo,        // Chopera (display face)
+      letterSpacing: 0.5,         // Chopera is decorative — a touch of breathing room reads cleaner
       marginTop: rs(14),
     },
     tagline: {

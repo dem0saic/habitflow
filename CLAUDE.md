@@ -194,25 +194,31 @@ The Edge Function source lives in `supabase/functions/<name>/index.ts` and is wr
 
 | Token | Font | Use |
 |---|---|---|
-| `C.logo`  | `Outfit_800ExtraBold`   | **Brand mark only** — "HabitFlow" wordmark on AuthScreen + OnboardingScreen. Do not use elsewhere |
-| `C.reg`   | `WorkSans_400Regular`   | Body text |
-| `C.med`   | `WorkSans_500Medium`    | Labels, sub-text |
-| `C.semi`  | `WorkSans_600SemiBold`  | Section labels |
-| `C.bold`  | `WorkSans_700Bold`      | Buttons, titles |
-| `C.xbold` | `WorkSans_800ExtraBold` | Display headlines, hero numbers |
+| `C.logo`  | `Chopera`                | **Brand mark only** — "HabitFlow" wordmark on AuthScreen + OnboardingScreen. Do not use elsewhere |
+| `C.reg`   | `WorkSans_400Regular`    | Body text |
+| `C.med`   | `WorkSans_500Medium`     | Labels, sub-text |
+| `C.semi`  | `WorkSans_600SemiBold`   | Section labels |
+| `C.bold`  | `WorkSans_700Bold`       | Buttons, titles |
+| `C.xbold` | `WorkSans_800ExtraBold`  | Display headlines, hero numbers |
 
-Outfit is reserved exclusively for the brand mark — the geometry reads as "habit" (structure, discipline), the rounded terminals read as "flow" (warmth, motion). Keeping it isolated to the wordmark means it always stands apart visually; mixing it into body or UI labels would dilute that. Outfit is wider than Work Sans at display sizes, so use a tightened `letterSpacing` (`-0.5` to `-0.6`) on the wordmark — call sites in AuthScreen and OnboardingScreen show the calibrated values.
+Chopera is a decorative display face shipped as a custom asset (`assets/Chopera.otf`) and loaded by family name in `App.js`'s `useFonts` call. Reserved exclusively for the HabitFlow wordmark — keeping it isolated means the brand always stands apart from body and UI labels. Chopera renders cleaner with a touch of positive letter-spacing (`+0.5` to `+0.8` at display sizes) — calibrated values live at the call sites in AuthScreen and OnboardingScreen.
 
-All seven font variants are pre-loaded in `App.js`. If you add a new font, load it there and add a token to `FONTS`.
+**License caveat**: Chopera ships under the FSLA (Free Style License Agreement) which is non-commercial only. See `assets/FSLA_NonCommercial_License.html`. A commercial license is required before App Store / Play Store submission — link to purchase is in `assets/Get Commercial License.url`.
+
+All five Work Sans weights are loaded from `@expo-google-fonts/work-sans`; Chopera is loaded via `require('./assets/Chopera.otf')` in the same `useFonts` call. If you add another asset font, follow the same pattern.
 
 ### Brand mark
 
-`src/components/AppLogo.js` is the canonical mark — a "ripple" rendered in `react-native-svg`:
+`src/components/AppLogo.js` is the canonical mark — an animated "ripple":
 
-- Center filled dot (radius 6) = the single daily choice
-- Three concentric stroke rings (radii 18 / 30 / 42, fading outward) = the compounding effect of that choice over time
+- Three static concentric rings (radii 18 / 30 / 42, fading outward) form the body — these are the **discipline**, the structure of returning every day
+- A center filled dot is the **daily choice**
+- The center pulses (scale 1 → 1.14 → 1, 2.8s cycle) at the moment each ripple is born — that pulse IS the choice being made today
+- A ring emanates outward from the inner static ring, growing through the outer rings as it fades — that is the **consequence** of the daily choice rippling through your life
 
-Universal symbol (every culture reads a ripple), pure SVG so it's crisp at every size, and pulls `C.primary` / `C.primaryStrong` from the theme so it follows light/dark automatically. Props: `size` (default 96) and `tone` (`'default'` or `'mono'` for ghost contexts). Used in vertical lockup with the wordmark on AuthScreen and OnboardingScreen. Do not introduce a competing icon to represent the brand — any "HabitFlow logo" surface should use this component.
+The animation IS the meaning. Watching it for a few seconds you read: small act at the center → wave outward touching everything. Universal symbol, rendered with static `react-native-svg` rings + `Animated.View` for the emanating ring and pulsing dot. Native-driver animations — runs at 60fps without touching the JS thread per frame.
+
+Props: `size` (default 96), `animate` (default true — set false for static icon contexts), `tone` (`'default'` uses primary; `'mono'` uses text color for ghost states). Used in a vertical lockup with the wordmark on AuthScreen (`size=rs(64)`) and OnboardingScreen (`size=rs(108)`). Do not introduce a competing icon to represent the brand — any "HabitFlow logo" surface should use this component.
 
 **Active palette — Dusk (cool neutral dark, indigo-violet accent):** the design system is built on HCI principles (calm by default, recognition over recall, AA-contrast minimums) and Figma's strict-token discipline. `C.primary` is `#7C6BFA` in dark, `#5A48D6` in light — a single accent used *only* for actionable things. Decorative color is not allowed; semantic colors (`success` / `warning` / `danger`) carry state only.
 
