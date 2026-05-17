@@ -3,9 +3,10 @@ import {
   View, Text, TouchableOpacity, Modal, Pressable, Platform,
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { Pencil, ChevronRight, AlarmClock, XCircle, Trash2 } from 'lucide-react-native';
+import { Pencil, ChevronRight, AlarmClock, XCircle, Trash2, PauseCircle, PlayCircle } from 'lucide-react-native';
 import { useTheme } from '../ThemeContext';
 import { rs, ms, ls } from '../utils/responsive';
+import { todayKey, formatDisplay } from '../utils/date';
 
 function formatTime(hour, minute) {
   const h = hour % 12 || 12;
@@ -15,13 +16,16 @@ function formatTime(hour, minute) {
 }
 
 export default function HabitOptionsSheet({
-  visible, habit, onClose, onEdit, onDelete, onSetReminder,
+  visible, habit, onClose, onEdit, onDelete, onSetReminder, onSetPause,
 }) {
   const C = useTheme();
   const styles = makeStyles(C);
   const [showPicker, setShowPicker] = useState(false);
+  const [showPausePicker, setShowPausePicker] = useState(false);
 
   if (!habit) return null;
+
+  const activePause = (habit.pauses || [])[0] || null;
 
   const hasReminder = habit.reminderTime != null;
   const reminderDate = hasReminder
@@ -38,7 +42,23 @@ export default function HabitOptionsSheet({
 
   function handleClose() {
     setShowPicker(false);
+    setShowPausePicker(false);
     onClose();
+  }
+
+  function handlePauseChange(event, selected) {
+    if (Platform.OS === 'android') setShowPausePicker(false);
+    if (event.type === 'dismissed') return;
+    if (selected) {
+      const end = selected.toISOString().slice(0, 10);
+      const start = todayKey();
+      if (end < start) return;
+      onSetPause?.(habit.id, { start, end });
+    }
+  }
+
+  function handleResume() {
+    onSetPause?.(habit.id, null);
   }
 
   const typeLabel =
@@ -137,6 +157,65 @@ export default function HabitOptionsSheet({
             mode="time"
             display="clock"
             onChange={handleTimeChange}
+          />
+        )}
+
+        {/* Pause / Resume */}
+        <TouchableOpacity
+          style={styles.actionBtn}
+          onPress={() => activePause ? handleResume() : setShowPausePicker(true)}
+          activeOpacity={0.7}
+        >
+          <View style={[styles.actionIcon, { backgroundColor: activePause ? C.warningSoft : C.cardHigh }]}>
+            {activePause
+              ? <PlayCircle size={rs(15)} color={C.warning} strokeWidth={2.5} />
+              : <PauseCircle size={rs(15)} color={C.textSub} strokeWidth={1.75} />
+            }
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.actionTitle}>
+              {activePause ? 'Resume habit' : 'Pause habit'}
+            </Text>
+            <Text style={styles.actionSub}>
+              {activePause
+                ? `Paused through ${formatDisplay(activePause.end)}`
+                : 'Skip without breaking your streak'}
+            </Text>
+          </View>
+          <ChevronRight size={rs(16)} color={C.textMuted} strokeWidth={1.75} />
+        </TouchableOpacity>
+
+        {showPausePicker && Platform.OS === 'ios' && (
+          <View style={styles.pickerWrap}>
+            <DateTimePicker
+              value={(() => {
+                const d = new Date();
+                d.setDate(d.getDate() + 7);
+                return d;
+              })()}
+              mode="date"
+              display="spinner"
+              minimumDate={new Date()}
+              onChange={handlePauseChange}
+              textColor={C.text}
+              style={{ height: rs(120) }}
+            />
+            <TouchableOpacity style={styles.pickerDone} onPress={() => setShowPausePicker(false)}>
+              <Text style={styles.pickerDoneText}>Done</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+        {showPausePicker && Platform.OS === 'android' && (
+          <DateTimePicker
+            value={(() => {
+              const d = new Date();
+              d.setDate(d.getDate() + 7);
+              return d;
+            })()}
+            mode="date"
+            display="calendar"
+            minimumDate={new Date()}
+            onChange={handlePauseChange}
           />
         )}
 

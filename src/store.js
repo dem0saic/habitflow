@@ -5,6 +5,7 @@ import { scheduleHabitReminder, scheduleDailyReminders, ensureAndroidChannel, se
 import { setHapticsEnabled } from './utils/haptics';
 import { supabase } from './lib/supabase';
 import { pullUserData, pushAllData, syncActionToSupabase } from './lib/supabaseSync';
+import { calcStreak as calcStreakImpl, consistency30 as consistency30Impl } from './utils/streak';
 
 const STORAGE_KEY = '@habitapp_state_v1';
 
@@ -16,6 +17,7 @@ const defaultState = {
   habits: [],
   completions: {},  // { 'YYYY-MM-DD': { [habitId]: number } }
   challenge: null,  // { id, title, durationDays, startDate, habitIds, completed, rewardClaimed }
+  globalPause: null, // { start: 'YYYY-MM-DD', end: 'YYYY-MM-DD' } | null — vacation mode for all habits
 };
 
 function reducer(state, action) {
@@ -45,10 +47,27 @@ function reducer(state, action) {
         type: action.habitType || 'daily',
         targetCount: action.targetCount || 1,
         reminderTime: action.reminderTime || null,
+        shieldsPerMonth: 2,
+        pauses: [],
         createdAt: new Date().toISOString(),
       };
       return { ...state, habits: [...state.habits, habit] };
     }
+
+    case 'SET_HABIT_PAUSE': {
+      // action.pause: { start, end } to add, or null to clear all pauses for this habit
+      return {
+        ...state,
+        habits: state.habits.map(h => {
+          if (h.id !== action.id) return h;
+          if (action.pause == null) return { ...h, pauses: [] };
+          return { ...h, pauses: [action.pause] };
+        }),
+      };
+    }
+
+    case 'SET_GLOBAL_PAUSE':
+      return { ...state, globalPause: action.pause || null };
 
     case 'EDIT_HABIT': {
       return {
@@ -238,19 +257,18 @@ export function useTodayCompletions() {
   return state.completions[todayKey()] || {};
 }
 
-export function calcStreak(habitId, completions) {
-  let streak = 0;
-  let d = new Date();
-  while (true) {
-    const key = d.toISOString().slice(0, 10);
-    if (completions[key]?.[habitId]) {
-      streak++;
-      d.setDate(d.getDate() - 1);
-    } else {
-      break;
-    }
+// Back-compat wrapper. Old call sites pass (habitId, completions); newer ones
+// pass the full habit object and the global pause so shields + pauses apply.
+export function calcStreak(habitOrId, completions, globalPause) {
+  if (typeof habitOrId === 'string') {
+    // Legacy signature — we don't have the habit object here, so use minimal defaults
+    return calcStreakImpl({ id: habitOrId, targetCount: 1, shieldsPerMonth: 0, pauses: [] }, completions, null);
   }
-  return streak;
+  return calcStreakImpl(habitOrId, completions, globalPause);
+}
+
+export function consistency30(habit, completions, globalPause) {
+  return consistency30Impl(habit, completions, globalPause);
 }
 
 export function useChallengeProgress(state) {

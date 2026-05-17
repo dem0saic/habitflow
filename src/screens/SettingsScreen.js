@@ -1,17 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, Switch, ScrollView, Modal, TextInput, Pressable, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, Switch, ScrollView, Modal, TextInput, Pressable, ActivityIndicator, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   Moon, Smartphone, Bell, Volume2, Mail, KeyRound, LogOut,
-  Play, Info, AlertCircle, CheckCircle, ChevronRight, Trash2,
+  Play, Info, AlertCircle, CheckCircle, ChevronRight, Trash2, Palmtree,
 } from 'lucide-react-native';
 import * as Notifications from 'expo-notifications';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { useStore } from '../store';
 import { useAuth } from '../AuthContext';
 import { useTheme } from '../ThemeContext';
 import { rs, ms, ls } from '../utils/responsive';
 import { scheduleDailyReminders, scheduleHabitReminder, requestPermissions, setNotificationSound } from '../utils/notifications';
 import { lightTap } from '../utils/haptics';
+import { todayKey, formatDisplay } from '../utils/date';
 
 const APP_VERSION = '1.0.0';
 
@@ -39,6 +41,9 @@ export default function SettingsScreen() {
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState('');
   const [deleting, setDeleting] = useState(false);
+  const [showVacationPicker, setShowVacationPicker] = useState(false);
+
+  const globalPause = state.globalPause;
 
   useEffect(() => {
     Notifications.getAllScheduledNotificationsAsync().then(all => {
@@ -118,6 +123,22 @@ export default function SettingsScreen() {
     setDeleteOpen(true);
   }
 
+  function handleVacationChange(event, selected) {
+    if (Platform.OS === 'android') setShowVacationPicker(false);
+    if (event.type === 'dismissed') return;
+    if (selected) {
+      const end = selected.toISOString().slice(0, 10);
+      const start = todayKey();
+      if (end < start) return;
+      dispatch({ type: 'SET_GLOBAL_PAUSE', pause: { start, end } });
+    }
+  }
+
+  function endVacation() {
+    lightTap();
+    dispatch({ type: 'SET_GLOBAL_PAUSE', pause: null });
+  }
+
   async function handleDeleteAccount() {
     if (deleteConfirm.trim().toLowerCase() !== 'delete') return;
     setDeleting(true);
@@ -182,6 +203,71 @@ export default function SettingsScreen() {
               ios_backgroundColor={C.border}
             />
           </View>
+        </View>
+
+        {/* Vacation mode */}
+        <Text style={styles.sectionLabel}>Vacation mode</Text>
+        <View style={styles.card}>
+          <TouchableOpacity
+            style={styles.row}
+            onPress={() => globalPause ? endVacation() : setShowVacationPicker(true)}
+            activeOpacity={0.7}
+          >
+            <View style={styles.rowLeft}>
+              <IconTile
+                Icon={Palmtree}
+                color={globalPause ? C.warning : C.textSub}
+                bg={globalPause ? C.warningSoft : C.cardHigh}
+              />
+              <View style={styles.rowTextGroup}>
+                <Text style={styles.rowLabel}>
+                  {globalPause ? 'On vacation' : 'Start vacation'}
+                </Text>
+                <Text style={styles.rowSub}>
+                  {globalPause
+                    ? `Streaks safe through ${formatDisplay(globalPause.end)} · tap to end`
+                    : 'Pause every habit. Streaks stay safe.'}
+                </Text>
+              </View>
+            </View>
+            <ChevronRight size={rs(17)} color={C.textMuted} strokeWidth={1.75} />
+          </TouchableOpacity>
+          {showVacationPicker && Platform.OS === 'ios' && (
+            <View style={styles.vacationPickerWrap}>
+              <DateTimePicker
+                value={(() => {
+                  const d = new Date();
+                  d.setDate(d.getDate() + 7);
+                  return d;
+                })()}
+                mode="date"
+                display="spinner"
+                minimumDate={new Date()}
+                onChange={handleVacationChange}
+                textColor={C.text}
+                style={{ height: rs(120) }}
+              />
+              <TouchableOpacity
+                style={styles.vacationPickerDone}
+                onPress={() => setShowVacationPicker(false)}
+              >
+                <Text style={styles.vacationPickerDoneText}>Done</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+          {showVacationPicker && Platform.OS === 'android' && (
+            <DateTimePicker
+              value={(() => {
+                const d = new Date();
+                d.setDate(d.getDate() + 7);
+                return d;
+              })()}
+              mode="date"
+              display="calendar"
+              minimumDate={new Date()}
+              onChange={handleVacationChange}
+            />
+          )}
         </View>
 
         {/* Notifications */}
@@ -397,6 +483,17 @@ function makeStyles(C) {
     rowLabel:    { fontSize: ms(14), fontFamily: C.semi, fontWeight: '600', color: C.text, letterSpacing: ls(14) },
     rowSub:      { fontSize: ms(11), color: C.textMuted, fontFamily: C.reg, fontWeight: '400', marginTop: rs(2), letterSpacing: ls(11) },
     rowValue:    { fontSize: ms(13), color: C.textMuted, fontFamily: C.reg, fontWeight: '400', maxWidth: '50%', textAlign: 'right', letterSpacing: ls(13) },
+
+    vacationPickerWrap: {
+      backgroundColor: C.cardHigh, borderRadius: rs(12),
+      marginHorizontal: rs(14), marginBottom: rs(14), overflow: 'hidden',
+      borderWidth: 1, borderColor: C.border,
+    },
+    vacationPickerDone: {
+      alignItems: 'flex-end', paddingHorizontal: rs(16), paddingVertical: rs(10),
+      borderTopWidth: 1, borderTopColor: C.border,
+    },
+    vacationPickerDoneText: { fontSize: ms(14), fontFamily: C.bold, fontWeight: '700', color: C.primary, letterSpacing: ls(14) },
 
     // Delete account modal
     deleteOverlay: {

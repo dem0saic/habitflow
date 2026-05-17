@@ -18,6 +18,8 @@ export async function pullUserData(userId) {
     type: h.type,
     targetCount: h.target_count,
     reminderTime: h.reminder_time,
+    shieldsPerMonth: h.shields_per_month ?? 2,
+    pauses: Array.isArray(h.pauses) ? h.pauses : [],
     createdAt: h.created_at,
   }));
 
@@ -41,6 +43,7 @@ export async function pullUserData(userId) {
   return {
     onboardingDone: settingsRes.data?.onboarding_done ?? false,
     themeMode: settingsRes.data?.theme_mode ?? 'dark',
+    globalPause: settingsRes.data?.global_pause ?? null,
     habits,
     completions,
     challenge,
@@ -57,6 +60,8 @@ export async function pushHabit(userId, habit) {
     type: habit.type,
     target_count: habit.targetCount,
     reminder_time: habit.reminderTime,
+    shields_per_month: habit.shieldsPerMonth ?? 2,
+    pauses: habit.pauses ?? [],
     created_at: habit.createdAt,
     updated_at: new Date().toISOString(),
   });
@@ -94,6 +99,7 @@ export async function pushSettings(userId, state) {
     user_id: userId,
     theme_mode: state.themeMode,
     onboarding_done: state.onboardingDone,
+    global_pause: state.globalPause ?? null,
     updated_at: new Date().toISOString(),
   });
 }
@@ -131,6 +137,8 @@ export async function syncActionToSupabase(action, stateRef) {
         type: action.habitType || 'daily',
         targetCount: action.targetCount || 1,
         reminderTime: action.reminderTime || null,
+        shieldsPerMonth: 2,
+        pauses: [],
         createdAt: new Date().toISOString(),
       });
       break;
@@ -198,6 +206,19 @@ export async function syncActionToSupabase(action, stateRef) {
 
     case 'SET_THEME':
       await pushSettings(userId, { ...s, themeMode: action.mode });
+      break;
+
+    case 'SET_HABIT_PAUSE': {
+      const h = s.habits.find(x => x.id === action.id);
+      if (h) {
+        const nextPauses = action.pause == null ? [] : [action.pause];
+        await pushHabit(userId, { ...h, pauses: nextPauses });
+      }
+      break;
+    }
+
+    case 'SET_GLOBAL_PAUSE':
+      await pushSettings(userId, { ...s, globalPause: action.pause || null });
       break;
   }
 }

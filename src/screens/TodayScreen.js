@@ -47,7 +47,7 @@ export default function TodayScreen() {
   const pct = habits.length ? doneCount / habits.length : 0;
 
   const bestStreak = habits.length
-    ? Math.max(...habits.map(h => calcStreak(h.id, state.completions)), 0)
+    ? Math.max(...habits.map(h => calcStreak(h, state.completions, state.globalPause)), 0)
     : 0;
 
   useEffect(() => {
@@ -63,7 +63,7 @@ export default function TodayScreen() {
   useEffect(() => {
     if (milestone) return;
     for (const habit of habits) {
-      const streak = calcStreak(habit.id, state.completions);
+      const streak = calcStreak(habit, state.completions, state.globalPause);
       if (!MILESTONE_DAYS.includes(streak)) continue;
       const already = celebratedMilestonesRef.current[habit.id] || [];
       if (already.includes(streak)) continue;
@@ -255,6 +255,7 @@ export default function TodayScreen() {
         onEdit={(habit) => { setOptionsHabit(null); setEditingHabit(habit); }}
         onDelete={handleDelete}
         onSetReminder={handleSetReminder}
+        onSetPause={(id, pause) => dispatch({ type: 'SET_HABIT_PAUSE', id, pause })}
       />
       <CelebrationModal
         visible={celebrate}

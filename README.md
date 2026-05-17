@@ -9,8 +9,11 @@ A cross-platform habit tracker built with Expo (React Native) and Supabase. Trac
 - **Past-day logging** — tap any past day in the month calendar to back-fill a missed log
 - **Challenges** — 3-day, 7-day, and 21-day journeys with a reward on completion and a visual progress track
 - **Streak milestones** — celebrations at 7, 14, 30, 60, 100, 200, and 365 days
+- **Streak shields** — 2 forgiven misses per calendar month per habit, applied automatically so one off day doesn't reset months of work
+- **Vacation mode** — pause one habit (long-press → Pause) or all habits at once (Settings → Vacation mode) for a date range; streaks survive the gap
+- **Trajectory metric** — every habit shows "X/Y last 30d · Z% consistency" alongside the raw streak so a single miss doesn't feel like failure
+- **Pattern-aware AI Coach** — daily nudge detects per-habit weekday patterns ("you tend to miss meditation on Wednesdays — what's different?") instead of just praising streaks; plus weekly/monthly reflection summaries. All powered by Claude via Supabase Edge Functions.
 - **Cloud sync** — every action syncs to Supabase in real time; data loads from the cloud on sign-in
-- **AI Coach** — daily nudge and weekly/monthly reflection summaries powered by Claude via Supabase Edge Functions
 - **Per-habit reminders** — time-picker per habit plus general morning/evening nudges
 - **Account deletion** — required by App Store guidelines; cascades all user rows server-side
 - **Dark / light theme** — Dusk palette (cool neutral dark with an indigo-violet accent, WCAG AA contrast), persisted per account
@@ -106,7 +109,7 @@ src/
     MonthCalendar.js         # Month grid for HistoryScreen
     ChallengeTrack.js        # Horizontal journey of dots for ChallengeScreen
     AddHabitModal.js         # Create / edit habit bottom-sheet
-    HabitOptionsSheet.js     # Long-press: edit / delete / reminder
+    HabitOptionsSheet.js     # Long-press: edit / reminder / pause / delete
     PastDayLogSheet.js       # Log habits retroactively for a past date
     CelebrationModal.js      # All-done / reward / milestone overlay
     AnimatedEmoji.js         # Semantic emoji animations
@@ -117,6 +120,7 @@ src/
     haptics.js               # lightTap / mediumTap / successBurst with kill switch
     date.js                  # todayKey(), dateKey(), addDays(), diffDays()
     heatmap.js               # Shared completion-pct → color ramp
+    streak.js                # calcStreak + consistency30 with shields & pauses
 supabase/
   functions/
     ai-coaching-nudge/       # Daily Claude nudge, cached per (user, day)
@@ -130,8 +134,8 @@ All tables are in the `public` schema with RLS enabled. Every row is scoped to t
 
 | Table | PK | Notes |
 |---|---|---|
-| `user_settings` | `user_id` | `theme_mode`, `onboarding_done` |
-| `habits` | `id` (text) | Soft-deleted via `deleted_at`; `reminder_time` stored as jsonb |
+| `user_settings` | `user_id` | `theme_mode`, `onboarding_done`, `global_pause` (jsonb — vacation mode) |
+| `habits` | `id` (text) | Soft-deleted via `deleted_at`; `reminder_time` jsonb; `shields_per_month` int (default 2); `pauses` jsonb array of `{start, end}` |
 | `completions` | `(user_id, habit_id, date)` | Composite PK makes upserts idempotent |
 | `challenges` | `id` (text) | `habit_ids` text array |
 | `ai_insights` | `id` (uuid) | `type` ∈ {`nudge`, `weekly_summary`, `monthly_summary`}; written only by Edge Functions |

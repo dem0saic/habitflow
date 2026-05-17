@@ -2,10 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { RotateCw, Sparkles, Flame } from 'lucide-react-native';
-import { useStore, calcStreak } from '../store';
+import { useStore, calcStreak, consistency30 } from '../store';
 import { useTheme } from '../ThemeContext';
 import { rs, ms, ls } from '../utils/responsive';
-import { last7Days } from '../utils/date';
+import { last7Days, formatDisplay } from '../utils/date';
+import { isPaused } from '../utils/streak';
 import { heatRamp, rampSwatches } from '../utils/heatmap';
 import AnimatedEmoji from '../components/AnimatedEmoji';
 import StatTile from '../components/StatTile';
@@ -115,7 +116,7 @@ export default function StatsScreen() {
     : 0;
 
   const bestStreak = habits.length
-    ? Math.max(...habits.map(h => calcStreak(h.id, completions)), 0)
+    ? Math.max(...habits.map(h => calcStreak(h, completions, state.globalPause)), 0)
     : 0;
 
   const [nudge, setNudge] = useState(null);
@@ -182,7 +183,20 @@ export default function StatsScreen() {
           <Text style={styles.sectionLabel}>Habit streaks</Text>
           {habits.length === 0 && <Text style={styles.empty}>Add habits to see streaks</Text>}
           {habits.map(h => {
-            const streak = calcStreak(h.id, completions);
+            const streak = calcStreak(h, completions, state.globalPause);
+            const trajectory = consistency30(h, completions, state.globalPause);
+            const todayStr = new Date().toISOString().slice(0, 10);
+            const paused = isPaused(h, todayStr, state.globalPause);
+            const activePause = paused
+              ? (state.globalPause && state.globalPause.start <= todayStr && todayStr <= state.globalPause.end
+                  ? state.globalPause
+                  : (h.pauses || []).find(p => p.start <= todayStr && todayStr <= p.end))
+              : null;
+            const typeLabel =
+              h.type === 'volume' ? `Volume · ${h.targetCount}× daily`
+            : h.type === 'timer'  ? `Timer · ${h.targetCount} min daily`
+            : h.type === 'negative' ? 'Avoidance habit'
+            : 'Daily habit';
             return (
               <View key={h.id} style={styles.streakRow}>
                 <View style={styles.streakEmojiTile}>
@@ -190,16 +204,22 @@ export default function StatsScreen() {
                 </View>
                 <View style={styles.streakInfo}>
                   <Text style={styles.streakName} numberOfLines={1}>{h.name}</Text>
-                  <Text style={styles.streakType}>
-                    {h.type === 'volume' ? `Volume · ${h.targetCount}× daily`
-                   : h.type === 'timer'  ? `Timer · ${h.targetCount} min daily`
-                   : h.type === 'negative' ? 'Avoidance habit'
-                   : 'Daily habit'}
+                  <Text style={styles.streakType} numberOfLines={1}>
+                    {activePause
+                      ? `Paused through ${formatDisplay(activePause.end)}`
+                      : trajectory.eligible > 0
+                        ? `${typeLabel} · ${trajectory.done}/${trajectory.eligible} last 30d`
+                        : typeLabel}
                   </Text>
                 </View>
-                <View style={styles.streakBadge}>
-                  <Text style={styles.streakNum}>{streak}</Text>
-                  <Text style={styles.streakUnit}>day{streak !== 1 ? 's' : ''}</Text>
+                <View style={styles.streakBadgeCol}>
+                  <View style={styles.streakBadge}>
+                    <Text style={styles.streakNum}>{streak}</Text>
+                    <Text style={styles.streakUnit}>day{streak !== 1 ? 's' : ''}</Text>
+                  </View>
+                  {trajectory.eligible > 0 && !activePause && (
+                    <Text style={styles.trajectoryPct}>{trajectory.percent}% consistency</Text>
+                  )}
                 </View>
               </View>
             );
@@ -312,6 +332,7 @@ function makeStyles(C) { return {
   streakInfo: { flex: 1 },
   streakName: { fontSize: ms(14), fontFamily: C.semi, fontWeight: '600', color: C.text, letterSpacing: ls(14) },
   streakType: { fontSize: ms(11), color: C.textMuted, marginTop: rs(2), fontFamily: C.reg, fontWeight: '400', letterSpacing: ls(11) },
+  streakBadgeCol: { alignItems: 'flex-end', gap: rs(4) },
   streakBadge: {
     flexDirection: 'row', alignItems: 'baseline', gap: rs(4),
     backgroundColor: C.primarySoft, borderRadius: rs(10),
@@ -319,6 +340,7 @@ function makeStyles(C) { return {
   },
   streakNum:  { fontSize: ms(18), fontFamily: C.bold, fontWeight: '700', color: C.primary, letterSpacing: ls(18) },
   streakUnit: { fontSize: ms(10), fontFamily: C.med, fontWeight: '500', color: C.primary, letterSpacing: 0.2 },
+  trajectoryPct: { fontSize: ms(10), fontFamily: C.med, fontWeight: '500', color: C.textMuted, letterSpacing: ls(10) },
 
   aiNudgeCard: {
     backgroundColor: C.card, borderRadius: rs(14), padding: rs(16), marginBottom: rs(20),
