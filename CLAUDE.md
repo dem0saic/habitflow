@@ -203,14 +203,15 @@ The Edge Function source lives in `supabase/functions/<name>/index.ts` and is wr
 
 All six font variants are pre-loaded in `App.js`. If you add a new font, load it there and add a token to `FONTS`.
 
-**Active palette — Pulse (warm dark, bento direction):** vibrant amber-coral primary, brighter sage success, warm dark surfaces. `C.primary` is `#E89455` in dark, `#B66A28` in light. Depth comes from layered surfaces (`bg` → `tileEmpty` / `card` → `cardHigh` / `heroSurface`) and 1px borders — **never use shadows on cards**.
+**Active palette — Deep Aqua (cool dark, bento direction):** vibrant teal primary, fresh green success, deep ocean surfaces. `C.primary` is `#2DD4BF` in dark, `#0E9888` in light. Depth comes from layered surfaces (`bg` → `tileEmpty` → `card` → `cardHigh` / `heroSurface`) and 1px borders — **never use shadows on cards**.
 
 Tokens beyond the basic surface/text/border set:
-- `primaryStrong` — extra-punch amber for CTAs that need to pop (today dot on ChallengeTrack, etc.)
+- `primaryStrong` — extra-punch teal (`#5EEAD4` dark) for CTAs that need to pop (today dot on ChallengeTrack, etc.)
 - `primarySoft` / `successSoft` / `warningSoft` / `dangerSoft` — rgba tints for badges, soft buttons, banners, done-state tile fills
-- `primaryMuted` — mid-tone amber, used in the 5-step heatmap ramp (StatsScreen contribution graph)
-- `tileEmpty` — slightly darker than `cardHigh`, the background for "pending" habit tiles so they sit visibly under the soft elevations
+- `primaryMuted` — deep teal, used in the 5-step heatmap ramp (StatsScreen contribution graph)
+- `tileEmpty` — sits between `bg` and `card`, the background for "pending" habit tiles so they read as a recessed surface against the soft elevations
 - `borderStrong` — 1px dividers between stat cells, outline buttons, bottom-sheet handles
+- `warning` is amber `#FBBF24` (cautionary, not destructive) — used for the "Avoid" badge on negative habits. `danger` is cool red `#F87171` — used only for the delete action
 
 The heatmap ramp lives in `src/utils/heatmap.js` (`heatColor` for the 4-step calendar/cell ramp, `heatRamp` for the 5-step contribution graph ramp, `rampSwatches` for legends). MonthCalendar and ContributionGraph both import from here — never duplicate the color-step logic at call sites.
 

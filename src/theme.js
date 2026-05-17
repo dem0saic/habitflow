@@ -1,5 +1,5 @@
-// HabitFlow design tokens — Pulse (warm dark · bento direction)
-// Warm dark surfaces, vibrant amber-coral accent, brighter sage for streaks.
+// HabitFlow design tokens — Deep Aqua (cool dark · bento direction)
+// Deep ocean surfaces, vibrant teal accent, fresh green for streaks.
 // Depth via layered surfaces and 1px borders, no card shadows (FAB only).
 // 60/30/10: 60 bg · 30 card · 10 primary.
 
@@ -16,64 +16,64 @@ export const FONTS = {
 // ── Dark (primary) ────────────────────────────────────────────────────
 export const DARK = {
   // Surfaces
-  bg:           '#15110D',
-  card:         '#1C1814',          // surface
-  cardHigh:     '#241F1A',          // elevated (inputs, hero cards)
-  tileEmpty:    '#1A1612',          // pending bento tile (slightly darker for elevation contrast)
-  heroSurface:  '#1F1A14',          // hero/feature cards (Stats chart card, etc.)
+  bg:           '#07111A',
+  tileEmpty:    '#0B1721',          // pending bento tile — between bg and card
+  card:         '#0E1A25',          // surface
+  cardHigh:     '#142632',          // elevated (inputs, hero cards)
+  heroSurface:  '#0F2230',          // hero/feature cards
 
   // Borders
-  border:       '#2E2823',
-  borderStrong: '#3D352C',
+  border:       '#1E3441',
+  borderStrong: '#2A4555',
 
   // Text
-  text:         '#F5EFE6',
-  textSub:      '#C6B8A6',
-  textMuted:    '#9A8E80',
+  text:         '#EAF4F8',
+  textSub:      '#A8C0CC',
+  textMuted:    '#6B8294',
 
   // Brand
-  primary:      '#E89455',                       // vibrant amber-coral
-  primaryStrong:'#F0A56C',                       // FAB / CTA punch
-  primarySoft:  'rgba(232,148,85,0.14)',         // tints / badges / soft buttons
-  primaryMuted: '#7A5938',                       // mid-tone (heatmap step)
+  primary:      '#2DD4BF',                       // vibrant teal
+  primaryStrong:'#5EEAD4',                       // brighter teal for CTA punch
+  primarySoft:  'rgba(45,212,191,0.16)',         // tints / badges / soft buttons
+  primaryMuted: '#1A7468',                       // deep teal (heatmap mid step)
 
   // Semantics
-  success:      '#7AB082',                       // brighter sage — the dopamine hit
-  successSoft:  'rgba(122,176,130,0.18)',
-  warning:      '#C9784A',                       // rust (avoid-habit accent)
-  warningSoft:  'rgba(201,120,74,0.16)',
-  danger:       '#C25450',                       // brick (delete / errors)
-  dangerSoft:   'rgba(194,84,80,0.14)',
+  success:      '#4ADE80',                       // fresh green — the dopamine hit
+  successSoft:  'rgba(74,222,128,0.18)',
+  warning:      '#FBBF24',                       // amber (avoid-habit accent)
+  warningSoft:  'rgba(251,191,36,0.16)',
+  danger:       '#F87171',                       // cool red (delete / errors)
+  dangerSoft:   'rgba(248,113,113,0.14)',
 
   ...FONTS,
 };
 
 // ── Light (paired) ────────────────────────────────────────────────────
 export const LIGHT = {
-  bg:           '#FAF6F0',
+  bg:           '#F0F7FA',
+  tileEmpty:    '#E9F2F6',
   card:         '#FFFFFF',
-  cardHigh:     '#F4EDE2',
-  tileEmpty:    '#F7F1E6',
-  heroSurface:  '#FFFAF2',
+  cardHigh:     '#E4F0F5',
+  heroSurface:  '#FBFEFF',
 
-  border:       '#E6DCCC',
-  borderStrong: '#D4C7B3',
+  border:       '#D0DEE6',
+  borderStrong: '#B5C9D4',
 
-  text:         '#2A201A',
-  textSub:      '#5A4D40',
-  textMuted:    '#8A7F70',
+  text:         '#07111A',
+  textSub:      '#2A4555',
+  textMuted:    '#6B8294',
 
-  primary:      '#B66A28',
-  primaryStrong:'#A8601F',
-  primarySoft:  'rgba(182,106,40,0.10)',
-  primaryMuted: '#D6A370',
+  primary:      '#0E9888',
+  primaryStrong:'#097A6B',
+  primarySoft:  'rgba(14,152,136,0.10)',
+  primaryMuted: '#5DBBA9',
 
-  success:      '#3F8758',
-  successSoft:  'rgba(63,135,88,0.12)',
-  warning:      '#A14F26',
-  warningSoft:  'rgba(161,79,38,0.12)',
-  danger:       '#9C3B36',
-  dangerSoft:   'rgba(156,59,54,0.10)',
+  success:      '#16A34A',
+  successSoft:  'rgba(22,163,74,0.12)',
+  warning:      '#D97706',
+  warningSoft:  'rgba(217,119,6,0.12)',
+  danger:       '#DC2626',
+  dangerSoft:   'rgba(220,38,38,0.10)',
 
   ...FONTS,
 };
