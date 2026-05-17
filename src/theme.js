@@ -19,11 +19,13 @@
 //  · primary on bg         ≈ 5.2 : 1  AA
 //  · white on primary      ≈ 5.0 : 1  AA
 
-// Font family — single typeface, semantic weights only.
-// `logo` is mapped to the heaviest weight so the brand mark stays distinct
-// without requiring a second font file.
+// Type system — Work Sans for everything except the brand mark, which uses
+// Outfit. Outfit is a rounded geometric sans: the geometry reads as "habit"
+// (structure, discipline) while the rounded terminals read as "flow" (warmth,
+// motion). Reserved exclusively for the HabitFlow wordmark — body and headings
+// stay on Work Sans so the brand mark always stands apart visually.
 export const FONTS = {
-  logo:  'WorkSans_800ExtraBold',   // brand mark (HabitFlow) only
+  logo:  'Outfit_800ExtraBold',     // brand mark (HabitFlow) only
   reg:   'WorkSans_400Regular',
   med:   'WorkSans_500Medium',
   semi:  'WorkSans_600SemiBold',

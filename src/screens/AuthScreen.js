@@ -7,11 +7,12 @@ import {
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
-  CheckCheck, AlertCircle, CheckCircle, Mail, Lock, Eye, EyeOff, ArrowLeft,
+  AlertCircle, CheckCircle, Mail, Lock, Eye, EyeOff, ArrowLeft,
 } from 'lucide-react-native';
 import { useAuth } from '../AuthContext';
 import { useTheme } from '../ThemeContext';
 import { rs, ms, ls } from '../utils/responsive';
+import AppLogo from '../components/AppLogo';
 
 export default function AuthScreen() {
   const { signIn, signUp, resetPassword, updatePassword, recoveryMode } = useAuth();
@@ -140,14 +141,12 @@ export default function AuthScreen() {
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
           >
-            {/* Branding */}
-            <View style={styles.brandRow}>
-              <View style={styles.iconTile}>
-                <CheckCheck size={rs(26)} color={C.primary} strokeWidth={2.5} />
-              </View>
+            {/* Branding — vertical lockup: ripple mark above wordmark */}
+            <View style={styles.brandStack}>
+              <AppLogo size={rs(64)} />
               <Text style={styles.logoText}>HabitFlow</Text>
+              <Text style={styles.tagline}>{tagline}</Text>
             </View>
-            <Text style={styles.tagline}>{tagline}</Text>
 
             {/* Card */}
             <View style={styles.card}>
@@ -384,22 +383,18 @@ function SubmitButton({ label, loading, onPress, styles, C }) {
 function makeStyles(C) {
   return {
     scroll:    { alignItems: 'center', paddingHorizontal: rs(24) },
-    brandRow:  { flexDirection: 'row', alignItems: 'center', gap: rs(12), marginBottom: rs(8) },
-    iconTile: {
-      width: rs(48), height: rs(48), borderRadius: rs(14),
-      backgroundColor: C.primarySoft,
-      borderWidth: 1.5, borderColor: C.primary,
-      alignItems: 'center', justifyContent: 'center',
-    },
+    brandStack: { alignItems: 'center', marginBottom: rs(28) },
     logoText: {
-      color: C.text, fontSize: ms(28),
-      fontFamily: C.logo, letterSpacing: 2,
+      color: C.text, fontSize: ms(30),
+      fontFamily: C.logo,        // Outfit ExtraBold
+      letterSpacing: -0.5,        // Outfit is wider than WorkSans — tighten
+      marginTop: rs(14),
     },
     tagline: {
-      color: C.textMuted, fontSize: ms(12),
+      color: C.textMuted, fontSize: ms(11),
       fontFamily: C.med, fontWeight: '500',
-      letterSpacing: 1.4, textTransform: 'uppercase',
-      marginBottom: rs(28),
+      letterSpacing: 1.6, textTransform: 'uppercase',
+      marginTop: rs(8),
     },
     card: {
       width: '100%',

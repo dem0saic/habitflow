@@ -190,18 +190,29 @@ The Edge Function source lives in `supabase/functions/<name>/index.ts` and is wr
 
 `src/theme.js` exports `DARK`, `LIGHT`, `FONTS`, and the `EMOJIS` array (~110 emojis).
 
-**`FONTS` constant** is spread into both `DARK` and `LIGHT`, so font family names are available as `C.*` tokens everywhere `useTheme()` is called. Single typeface (Work Sans) across the whole app — no decorative second font:
+**`FONTS` constant** is spread into both `DARK` and `LIGHT`, so font family names are available as `C.*` tokens everywhere `useTheme()` is called. Two typefaces, with strict boundaries:
 
 | Token | Font | Use |
 |---|---|---|
-| `C.logo`  | `WorkSans_800ExtraBold` | Brand mark ("HabitFlow") on Auth + Onboarding. Aliased to `xbold` so consumers can keep using `C.logo` semantically |
+| `C.logo`  | `Outfit_800ExtraBold`   | **Brand mark only** — "HabitFlow" wordmark on AuthScreen + OnboardingScreen. Do not use elsewhere |
 | `C.reg`   | `WorkSans_400Regular`   | Body text |
 | `C.med`   | `WorkSans_500Medium`    | Labels, sub-text |
 | `C.semi`  | `WorkSans_600SemiBold`  | Section labels |
 | `C.bold`  | `WorkSans_700Bold`      | Buttons, titles |
 | `C.xbold` | `WorkSans_800ExtraBold` | Display headlines, hero numbers |
 
-All five weight variants are pre-loaded in `App.js`. If you add a new font, load it there and add a token to `FONTS`. We dropped `RussoOne` in the Dusk pass — one less font file to ship, one consistent typeface throughout.
+Outfit is reserved exclusively for the brand mark — the geometry reads as "habit" (structure, discipline), the rounded terminals read as "flow" (warmth, motion). Keeping it isolated to the wordmark means it always stands apart visually; mixing it into body or UI labels would dilute that. Outfit is wider than Work Sans at display sizes, so use a tightened `letterSpacing` (`-0.5` to `-0.6`) on the wordmark — call sites in AuthScreen and OnboardingScreen show the calibrated values.
+
+All seven font variants are pre-loaded in `App.js`. If you add a new font, load it there and add a token to `FONTS`.
+
+### Brand mark
+
+`src/components/AppLogo.js` is the canonical mark — a "ripple" rendered in `react-native-svg`:
+
+- Center filled dot (radius 6) = the single daily choice
+- Three concentric stroke rings (radii 18 / 30 / 42, fading outward) = the compounding effect of that choice over time
+
+Universal symbol (every culture reads a ripple), pure SVG so it's crisp at every size, and pulls `C.primary` / `C.primaryStrong` from the theme so it follows light/dark automatically. Props: `size` (default 96) and `tone` (`'default'` or `'mono'` for ghost contexts). Used in vertical lockup with the wordmark on AuthScreen and OnboardingScreen. Do not introduce a competing icon to represent the brand — any "HabitFlow logo" surface should use this component.
 
 **Active palette — Dusk (cool neutral dark, indigo-violet accent):** the design system is built on HCI principles (calm by default, recognition over recall, AA-contrast minimums) and Figma's strict-token discipline. `C.primary` is `#7C6BFA` in dark, `#5A48D6` in light — a single accent used *only* for actionable things. Decorative color is not allowed; semantic colors (`success` / `warning` / `danger`) carry state only.
 

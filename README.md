@@ -66,7 +66,7 @@ npx supabase functions deploy <name> --project-ref <your-ref>
 | State | React `useReducer` + AsyncStorage + Supabase sync |
 | Navigation | React Navigation v7 (bottom tabs) |
 | UI | Custom components, `lucide-react-native` icons |
-| Fonts | Work Sans (single typeface, five semantic weights, via `expo-google-fonts`) |
+| Fonts | Work Sans (body, five weights) + Outfit (brand wordmark only), via `expo-google-fonts` |
 | Notifications | `expo-notifications` (daily + per-habit, dual Android channels for silent/sound) |
 | AI | Anthropic Claude (server-side via Supabase Edge Functions) |
 

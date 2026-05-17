@@ -4,12 +4,13 @@ import {
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { CheckCheck, Trophy, Rocket, CheckCircle, Flag } from 'lucide-react-native';
+import { Trophy, Rocket, CheckCircle, Flag } from 'lucide-react-native';
 import { useStore } from '../store';
 import { useAuth } from '../AuthContext';
 import { useTheme } from '../ThemeContext';
 import { rs, ms, ls } from '../utils/responsive';
 import { requestPermissions, scheduleDailyReminders } from '../utils/notifications';
+import AppLogo from '../components/AppLogo';
 
 const { width } = Dimensions.get('window');
 
@@ -34,52 +35,21 @@ const STEPS = [
   },
 ];
 
-function AppLogo({ C }) {
+// Wraps the shared AppLogo with a single entrance spring — ambient loops
+// were intentionally removed to keep framerate predictable.
+function AnimatedBrandLogo() {
   const entrance = useRef(new Animated.Value(0)).current;
-
   useEffect(() => {
     Animated.spring(entrance, {
       toValue: 1, tension: 55, friction: 8, useNativeDriver: true,
     }).start();
   }, []);
-
-  const styles = logoStyles(C);
-
   return (
-    <Animated.View style={{
-      alignItems: 'center',
-      transform: [{ scale: entrance }],
-    }}>
-      <View style={styles.outerRing}>
-        <View style={styles.innerRing}>
-          <View style={styles.iconTile}>
-            <CheckCheck size={rs(34)} color={C.primary} strokeWidth={2.5} />
-          </View>
-        </View>
-      </View>
+    <Animated.View style={{ alignItems: 'center', transform: [{ scale: entrance }] }}>
+      <AppLogo size={rs(108)} />
     </Animated.View>
   );
 }
-
-function logoStyles(C) { return {
-  outerRing: {
-    width: rs(108), height: rs(108), borderRadius: rs(54),
-    backgroundColor: C.primarySoft,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  innerRing: {
-    width: rs(86), height: rs(86), borderRadius: rs(43),
-    backgroundColor: C.cardHigh,
-    borderWidth: 1.5, borderColor: C.borderStrong,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  iconTile: {
-    width: rs(66), height: rs(66), borderRadius: rs(20),
-    backgroundColor: C.primarySoft,
-    borderWidth: 1.5, borderColor: C.primary,
-    alignItems: 'center', justifyContent: 'center',
-  },
-}; }
 
 export default function OnboardingScreen() {
   const { dispatch, state } = useStore();
@@ -120,7 +90,7 @@ export default function OnboardingScreen() {
 
         {/* Header */}
         <View style={styles.header}>
-          <AppLogo C={C} />
+          <AnimatedBrandLogo />
           <View style={styles.brandRow}>
             <Text style={styles.logoText}>HabitFlow</Text>
           </View>
@@ -209,12 +179,13 @@ function makeStyles(C) { return {
   header:   { alignItems: 'center', paddingBottom: rs(4) },
   brandRow: { flexDirection: 'row', alignItems: 'center', marginTop: rs(16) },
   logoText: {
-    color: C.text, fontSize: ms(32),
-    fontFamily: C.logo, letterSpacing: 3,
+    color: C.text, fontSize: ms(34),
+    fontFamily: C.logo,        // Outfit ExtraBold
+    letterSpacing: -0.6,        // Outfit is wider than WorkSans — tighten
   },
   tagline: {
-    color: C.textMuted, fontSize: ms(11), letterSpacing: 1.4,
-    textTransform: 'uppercase', marginTop: rs(8),
+    color: C.textMuted, fontSize: ms(11), letterSpacing: 1.6,
+    textTransform: 'uppercase', marginTop: rs(10),
     fontFamily: C.med, fontWeight: '500',
   },
 

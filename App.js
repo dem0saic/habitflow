@@ -17,6 +17,10 @@ import {
   WorkSans_700Bold,
   WorkSans_800ExtraBold,
 } from '@expo-google-fonts/work-sans';
+import {
+  Outfit_700Bold,
+  Outfit_800ExtraBold,
+} from '@expo-google-fonts/outfit';
 import * as SplashScreen from 'expo-splash-screen';
 
 SplashScreen.preventAutoHideAsync();
@@ -120,6 +124,8 @@ export default function App() {
     WorkSans_600SemiBold,
     WorkSans_700Bold,
     WorkSans_800ExtraBold,
+    Outfit_700Bold,
+    Outfit_800ExtraBold,
   });
 
   useEffect(() => {
