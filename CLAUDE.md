@@ -32,6 +32,16 @@ Install **Expo Go** on the device (iOS App Store / Android Play Store) and scan 
 
 **No test / lint / typecheck is set up.** There is no `npm test`, no ESLint config, no TypeScript. Don't waste time searching — those gaps are deliberate-for-now, not hidden somewhere.
 
+**EAS Build / Submit** (configured in `eas.json`):
+```bash
+npx eas build --profile development --platform android   # dev client for on-device debugging
+npx eas build --profile preview     --platform ios       # simulator-only iOS build
+npx eas build --profile production  --platform all       # store-ready binaries (autoIncrement on)
+npx eas submit --profile production --platform ios       # requires Apple credentials in eas.json
+npx eas submit --profile production --platform android   # requires ./play-service-account.json
+```
+The `submit.production.ios` block in `eas.json` ships with `REPLACE_WITH_…` placeholders for `appleId`, `ascAppId`, and `appleTeamId` — submit will fail until those are filled in. Android submit reads `./play-service-account.json` (gitignored). Do not commit either credential.
+
 ## Platform notes
 
 - iOS builds require macOS. Use Expo Go for iOS testing on Windows.
@@ -180,7 +190,7 @@ All functions use `supabase.from(table)`:
 
 ### Supabase database schema
 
-Five tables in the `public` schema, all with RLS enabled. Every table has a policy `auth.uid() = user_id` for ALL operations.
+Seven tables in the `public` schema, all with RLS enabled. Every table has a policy `auth.uid() = user_id` for ALL operations.
 
 | Table | Primary key | Notable columns |
 |---|---|---|
@@ -190,22 +200,24 @@ Five tables in the `public` schema, all with RLS enabled. Every table has a poli
 | `day_notes` | composite `(user_id, date)` | `note` text — free-text notes attached to a single day, surfaced in HistoryScreen and fed to ai-reflection-summary |
 | `challenges` | `id` (text) | `habit_ids` text[], `completed`, `reward_claimed` |
 | `ai_insights` | `id` (uuid) | `type` ('nudge'\|'weekly_summary'\|'monthly_summary'), `content`, `period_start`, `period_end`, `metadata` (jsonb) |
+| `push_tokens` | `token` (text) | `user_id` (FK cascade), `platform` ('ios'\|'android'\|'web'), `updated_at`. One row per device per token. |
 
-`habits.id` and `challenges.id` are text (timestamp strings from `Date.now().toString()`), not UUIDs. The composite PK on `completions` makes upserts idempotent without specifying `onConflict`.
+`habits.id` and `challenges.id` are text (timestamp strings from `Date.now().toString()`), not UUIDs. The composite PK on `completions` makes upserts idempotent without specifying `onConflict`. `push_tokens.token` is the PK (not user_id) so a single user can have multiple devices registered; `on delete cascade` on `user_id` cleans up the rows when an account is deleted.
 
-`ai_insights` is never touched by `supabaseSync.js` — it is read and written exclusively by the Edge Functions.
+`ai_insights` and `push_tokens` are never touched by `supabaseSync.js` — they are read and written exclusively by the Edge Functions and (for tokens) by `registerPushToken` in `src/utils/notifications.js`.
 
 ### Edge Functions (`supabase/functions/`)
 
-Three Supabase Edge Functions invoked via `supabase.functions.invoke()` with the user's JWT. All three set `verify_jwt: true` at the gateway and use the service-role key internally to bypass RLS.
+Four Supabase Edge Functions invoked via `supabase.functions.invoke()` with the user's JWT. All four set `verify_jwt: true` at the gateway and use the service-role key internally to bypass RLS.
 
-- **`ai-coaching-nudge`** — invoked on `StatsScreen` mount. Checks for a cached row in `ai_insights` where `type='nudge'` and `created_at >= today`. If found, returns it immediately; otherwise reads habits + completions + `user_settings.global_pause`, calls Claude, stores and returns the result. One Claude call per user per day maximum. Computes a `weakestWeekday` pattern per habit (≥14 days old, ≥3 occurrences on that weekday, ≥30% worse than the habit's overall rate); if any habit has a pattern, the strongest one is fed to Claude with instructions to lead the nudge with a curious question ("what's different about Wednesdays?") rather than streak praise. The streak passed to Claude uses the same shield+pause-aware algorithm as the client so the AI doesn't contradict what the UI shows.
+- **`ai-coaching-nudge`** — invoked on `StatsScreen` mount. Checks for a cached row in `ai_insights` where `type='nudge'` and `created_at >= today`. If found, returns it immediately; otherwise reads habits + completions + `user_settings.global_pause`, calls Claude, stores and returns the result. One Claude call per user per day maximum. Computes a `weakestWeekday` pattern per habit (≥14 days old, ≥3 occurrences on that weekday, ≥30% worse than the habit's overall rate); if any habit has a pattern, the strongest one is fed to Claude with instructions to lead the nudge with a curious question ("what's different about Wednesdays?") rather than streak praise. The streak passed to Claude uses the same shield+pause-aware algorithm as the client so the AI doesn't contradict what the UI shows. **After inserting the new nudge into `ai_insights`, fire-and-forget invokes `send-push`** (truncated to 140 chars, title "Your coach has a note for you") so the user gets the nudge on their lock screen even if they don't open StatsScreen.
 - **`ai-reflection-summary`** — invoked when the user taps Weekly or Monthly in StatsScreen. Caches by `(user_id, type, period_start)` so the same period never re-generates. Computes per-habit consistency and weakest day-of-week, AND pulls `day_notes` for the period so the AI can reference the user's own context ("the travel days clearly slowed momentum, but you bounced back"). The prompt instructs Claude to weave notes in naturally, never quote them verbatim.
-- **`delete-account`** — invoked from `AuthContext.deleteAccount()` (wired into Settings → Account → Delete account). Resolves the caller's `user.id` from the JWT, deletes their rows from all five public tables (`completions`, `challenges`, `habits`, `ai_insights`, `user_settings`), then calls `auth.admin.deleteUser(userId)`. Required by App Store guideline 5.1.1(v). Deploy with `npx supabase functions deploy delete-account --project-ref <ref>`.
+- **`send-push`** — server-side push sender. Takes `{ user_id, title?, body, data? }`, looks up `push_tokens` rows for that user, POSTs them in batches of 100 to `https://exp.host/--/api/v2/push/send` (the unauthenticated Expo push API — no API key needed). Tickets with `details.error === "DeviceNotRegistered"` cause the corresponding token row to be deleted, so the table self-cleans when users uninstall. Currently invoked by `ai-coaching-nudge`; future triggers (streak-break warnings, weekly summary ready, etc.) should also call this function rather than duplicating the Expo HTTP plumbing. Deploy with `npx supabase functions deploy send-push --project-ref <ref>`.
+- **`delete-account`** — invoked from `AuthContext.deleteAccount()` (wired into Settings → Account → Delete account). Resolves the caller's `user.id` from the JWT, deletes their rows from all seven public tables (`completions`, `challenges`, `habits`, `day_notes`, `ai_insights`, `push_tokens`, `user_settings`), then calls `auth.admin.deleteUser(userId)`. The `push_tokens` cascade is redundant with the FK `on delete cascade` but kept in the explicit list to prevent drift if the FK is ever changed. Required by App Store guideline 5.1.1(v). Deploy with `npx supabase functions deploy delete-account --project-ref <ref>`.
 
 `src/lib/aiCoaching.js` is a thin client: `fetchCoachingNudge()` and `fetchReflectionSummary(period)` both get the session, pass the JWT in the Authorization header, and return `data.content`. All error handling is fire-and-forget at the call site (StatsScreen catches silently and shows a retry prompt).
 
-The Edge Function source lives in `supabase/functions/<name>/index.ts` and is written in Deno TypeScript. AI functions import from `npm:@supabase/supabase-js@2` and `npm:@anthropic-ai/sdk` and use `claude-sonnet-4-6`. `delete-account` only needs `@supabase/supabase-js`. All three set `verify_jwt: true` at the gateway level.
+The Edge Function source lives in `supabase/functions/<name>/index.ts` and is written in Deno TypeScript. AI functions import from `npm:@supabase/supabase-js@2` and `npm:@anthropic-ai/sdk` and use `claude-sonnet-4-6`. `delete-account` and `send-push` only need `@supabase/supabase-js`. All four set `verify_jwt: true` at the gateway level — both user JWTs and the service-role key are accepted, which is what allows `ai-coaching-nudge` to invoke `send-push` server-to-server.
 
 **Prompt constraints (do not remove):** Both edge function prompts include the rule `"Never use dashes of any kind (no hyphens, em dashes, or en dashes) anywhere in the response"`. This is intentional — dashes make the output feel AI-generated. If you edit these prompts, preserve this constraint.
 
@@ -341,6 +353,47 @@ Android requires `ensureAndroidChannel()` before any scheduling — called at ap
 
 **Sound:** A module-level `_soundEnabled` flag (set via `setNotificationSound(bool)`) controls sound for all notifications. On iOS this sets `sound: true/false` per notification content. On Android, sound is channel-level and cannot be changed after channel creation, so two channels are registered: `habitflow-reminders` (with sound) and `habitflow-reminders-silent` (vibrate only). `dailyTrigger()` picks the correct channel ID based on `_soundEnabled`. When the user changes the sound setting in SettingsScreen, all active reminders (daily + per-habit) are cancelled and rescheduled so the new channel/sound takes effect immediately.
 
+**Foreground handler:** `setNotificationHandler` at the top of the file returns both the SDK 51+ keys (`shouldShowBanner` + `shouldShowList`) and the legacy `shouldShowAlert`. The legacy key is no-op on current runtimes but is kept for back-compat with older clients — do not drop it.
+
+**Re-registration after Supabase pull:** `registerAllReminders(habits)` is called by `StoreProvider` after every Supabase pull (init + `SIGNED_IN`) because the pull replaces local habits with whatever the server says. Without it, a stale local schedule outlives the new habit data and the user gets reminders for habits that no longer exist (or no reminder for a new one).
+
+**Remote push (`registerPushToken` + `push_tokens` table + `send-push` function):**
+
+Push tokens are obtained via `Notifications.getExpoPushTokenAsync({ projectId })` and stored in `public.push_tokens` keyed by token (one row per device). `registerPushToken(userId)` is called by `StoreProvider` after every successful Supabase pull (init + `SIGNED_IN`) and gates on four things: `Device.isDevice` (skip simulators), `getPermissionsAsync().status === 'granted'`, a resolvable EAS `projectId`, and a non-null token from Expo. Any failure returns `null` silently — push registration must never block app startup.
+
+The `projectId` is read from `Constants.expoConfig?.extra?.eas?.projectId` (set by running `npx eas init` once — it writes to `app.json`). Until that runs, `registerPushToken` logs a one-line warning and returns null; everything else still works.
+
+Server-to-client delivery goes through the `send-push` Edge Function — never POST to `exp.host` directly from app code. To trigger a push from another Edge Function:
+
+```ts
+supabase.functions.invoke("send-push", {
+  body: { user_id, title: "…", body: "…", data: { type: "nudge" } }
+}).catch(() => {});
+```
+
+Fire-and-forget. The function handles batching, DeviceNotRegistered cleanup, and per-platform channel selection.
+
+**Critical: Expo Go cannot receive remote push.** As of SDK 53+, the Expo Go app is no longer a valid push recipient on Android, and reliability has dropped on iOS. To test push end-to-end the user must build a development client (`npx eas build --profile development --platform android`) and install the resulting APK. Local scheduled notifications are also unreliable in Expo Go — same fix. If something seems "not working" with notifications, step zero is always: are you on a dev build?
+
 ### Haptics (`src/utils/haptics.js`)
 
 Exports `lightTap()`, `mediumTap()`, `successBurst()`, and `setHapticsEnabled(bool)`. A module-level `_enabled` flag gates all three feedback functions — when `false`, calls are no-ops. `StoreProvider` calls `setHapticsEnabled(state.hapticsEnabled)` via a `useEffect` whenever that state field changes, keeping the flag current without requiring the functions to read from the store directly.
+
+## Launch / store submission
+
+App identity is fixed in `app.json`:
+- iOS `bundleIdentifier`: `com.dem0saic.habitflow`, `buildNumber: "1"`, `ITSAppUsesNonExemptEncryption: false` (HabitFlow only hits Supabase + Anthropic over standard HTTPS — no custom crypto, so the encryption export declaration is unchecked)
+- Android `package`: `com.dem0saic.habitflow`, `versionCode: 1`
+- `userInterfaceStyle: "automatic"` lets the OS theme follow the user's system setting until they override it in the in-app Appearance toggle
+- `primaryColor: "#7C6BFA"` matches `C.primary` in dark mode — keep these in lockstep if the palette changes
+
+Reference docs at the repo root (not loaded at runtime, used for store submission):
+- **`PRIVACY.md`** — plain-English privacy policy. Must be hosted at a public URL before App Store / Play Store submission (both stores require a link, not a file upload). The Account Deletion section is what satisfies App Store guideline 5.1.1(v).
+- **`STORE_LISTING.md`** — copy + asset checklist for both stores (description, keywords, screenshot specs, EAS env setup). Read this before generating any store-facing marketing copy so the voice stays consistent.
+
+**Pre-submission blockers** (none are wired into the build — they bite at store-review time):
+1. **Chopera font license** — current FSLA is non-commercial only (see `assets/FSLA_NonCommercial_License.html`). A commercial license must be purchased before either store submission, or the brand wordmark has to be swapped for a different font.
+2. **Real 1024×1024 app icon** + Adaptive icon foreground — `assets/icon.png` and `assets/adaptive-icon.png` are still Expo defaults.
+3. **Screenshots** — STORE_LISTING.md lists the required sizes per device class; capture from a real build, not Expo Go.
+4. **Hosted PRIVACY.md URL** — both store consoles need this filled in.
+5. **`eas.json` placeholders** — fill the three `REPLACE_WITH_…` Apple values and drop a real `play-service-account.json` at the repo root (already in `.gitignore`).

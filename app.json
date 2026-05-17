@@ -42,8 +42,7 @@
         {
           "icon": "./assets/icon.png",
           "color": "#7C6BFA",
-          "defaultChannel": "habitflow-reminders",
-          "sounds": []
+          "defaultChannel": "habitflow-reminders"
         }
       ]
     ]

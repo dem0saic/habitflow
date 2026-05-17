@@ -52,7 +52,7 @@ Deno.serve(async (req: Request) => {
   // Order doesn't matter — every table keys off user_id with RLS bypass
   // via the service role. We collect non-fatal errors and continue so a single
   // table issue doesn't block account removal.
-  const tables = ["completions", "challenges", "habits", "day_notes", "ai_insights", "user_settings"];
+  const tables = ["completions", "challenges", "habits", "day_notes", "ai_insights", "push_tokens", "user_settings"];
   const tableErrors: string[] = [];
   for (const table of tables) {
     const { error } = await supabase.from(table).delete().eq("user_id", userId);

@@ -1,12 +1,19 @@
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
+import * as Device from 'expo-device';
+import Constants from 'expo-constants';
+import { supabase } from '../lib/supabase';
 
-// Show alert + sound when app is open (foreground)
+// Show alert + sound when app is open (foreground).
+// expo-notifications SDK 51+ split shouldShowAlert into shouldShowBanner +
+// shouldShowList. shouldShowAlert is kept for back-compat with older runtimes.
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
-    shouldShowAlert: true,
+    shouldShowBanner: true,
+    shouldShowList: true,
     shouldPlaySound: true,
     shouldSetBadge: true,
+    shouldShowAlert: true,
   }),
 });
 
@@ -111,4 +118,50 @@ export async function cancelHabitReminder(habitId) {
 
 export async function cancelAllReminders() {
   await Notifications.cancelAllScheduledNotificationsAsync();
+}
+
+// Re-schedules every habit reminder from the given habit list. Called after a
+// Supabase pull replaces local habits so OS-scheduled times stay in sync with
+// whatever the server says.
+export async function registerAllReminders(habits = []) {
+  await ensureAndroidChannel();
+  for (const h of habits) {
+    if (h?.reminderTime?.hour != null && h?.reminderTime?.minute != null) {
+      try {
+        await scheduleHabitReminder(h.id, h.name, h.emoji, h.reminderTime.hour, h.reminderTime.minute);
+      } catch (_) { /* fire-and-forget per habit */ }
+    }
+  }
+}
+
+// Registers this device's Expo push token with Supabase so the server can
+// invoke `send-push` to reach the user even when the app is closed.
+// Returns the token on success, or null if push is not available (Expo Go,
+// simulator/emulator, permission denied, no EAS projectId).
+export async function registerPushToken(userId) {
+  if (!userId) return null;
+  if (!Device.isDevice) return null;
+  const { status } = await Notifications.getPermissionsAsync();
+  if (status !== 'granted') return null;
+  const projectId =
+    Constants.expoConfig?.extra?.eas?.projectId
+    ?? Constants.easConfig?.projectId;
+  if (!projectId) {
+    console.warn('[push] No EAS projectId — run `npx eas init` to enable remote push');
+    return null;
+  }
+  try {
+    const { data: token } = await Notifications.getExpoPushTokenAsync({ projectId });
+    if (!token) return null;
+    await supabase.from('push_tokens').upsert({
+      token,
+      user_id: userId,
+      platform: Platform.OS,
+      updated_at: new Date().toISOString(),
+    }, { onConflict: 'token' });
+    return token;
+  } catch (e) {
+    console.warn('[push] registerPushToken failed:', e?.message || e);
+    return null;
+  }
 }

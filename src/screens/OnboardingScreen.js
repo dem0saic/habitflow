@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import {
   View, Text, TouchableOpacity, Animated, Dimensions,
 } from 'react-native';
@@ -59,11 +59,11 @@ export default function OnboardingScreen() {
   const insets = useSafeAreaInsets();
   const scrollX = useRef(new Animated.Value(0)).current;
   const scrollRef = useRef(null);
+  const [permissionHint, setPermissionHint] = useState('');
+  const [requesting, setRequesting] = useState(false);
+  const askedRef = useRef(false);
 
-  function finish() {
-    requestPermissions()
-      .then(granted => granted && scheduleDailyReminders(state.habits.map(h => h.name)))
-      .catch(() => {});
+  function completeOnboarding() {
     dispatch({ type: 'SET_ONBOARDING_DONE' });
     if (!state.challenge) {
       dispatch({
@@ -72,6 +72,30 @@ export default function OnboardingScreen() {
         durationDays: 3,
         habitIds: state.habits.map(h => h.id),
       });
+    }
+  }
+
+  async function finish() {
+    // After the user has seen the deny-hint once, the next tap just completes
+    // onboarding — they've been informed, no need to re-ask.
+    if (askedRef.current) {
+      completeOnboarding();
+      return;
+    }
+    if (state.onboardingDone) {
+      completeOnboarding();
+      return;
+    }
+    setRequesting(true);
+    let granted = false;
+    try { granted = await requestPermissions(); } catch (_) {}
+    askedRef.current = true;
+    setRequesting(false);
+    if (granted) {
+      scheduleDailyReminders(state.habits.map(h => h.name)).catch(() => {});
+      completeOnboarding();
+    } else {
+      setPermissionHint('No reminders for now. You can turn them on in Settings any time.');
     }
   }
 
@@ -152,13 +176,25 @@ export default function OnboardingScreen() {
 
         {/* CTA */}
         <View style={styles.ctaWrap}>
-          <TouchableOpacity style={styles.btn} onPress={finish} activeOpacity={0.88}>
+          <TouchableOpacity
+            style={[styles.btn, requesting && { opacity: 0.7 }]}
+            onPress={finish}
+            activeOpacity={0.88}
+            disabled={requesting}
+          >
             <Rocket size={rs(17)} color="#fff" strokeWidth={2} style={{ marginRight: rs(8) }} />
             <Text style={styles.btnText}>
-              {state.onboardingDone ? 'Back to app' : 'Get started'}
+              {state.onboardingDone
+                ? 'Back to app'
+                : askedRef.current
+                  ? 'Continue'
+                  : 'Get started'}
             </Text>
           </TouchableOpacity>
-          {!state.onboardingDone && (
+          {!!permissionHint && (
+            <Text style={styles.permissionHint}>{permissionHint}</Text>
+          )}
+          {!state.onboardingDone && !permissionHint && (
             <Text style={styles.challengeHint}>Kicks off your 3-Day Challenge automatically</Text>
           )}
         </View>
@@ -238,6 +274,10 @@ function makeStyles(C) { return {
   challengeHint: {
     color: C.textMuted, fontSize: ms(11), marginTop: rs(10),
     fontFamily: C.reg, fontWeight: '400', letterSpacing: ls(11), textAlign: 'center',
+  },
+  permissionHint: {
+    color: C.warning, fontSize: ms(11), marginTop: rs(10),
+    fontFamily: C.med, fontWeight: '500', letterSpacing: ls(11), textAlign: 'center',
   },
 
   signOutBtn:  { marginTop: rs(14), paddingVertical: rs(8), alignItems: 'center' },

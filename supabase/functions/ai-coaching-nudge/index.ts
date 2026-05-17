@@ -233,6 +233,18 @@ Rules:
       },
     });
 
+    // Fire-and-forget push so the user gets the nudge even if they don't open StatsScreen.
+    // Truncate to keep notification body readable on the lock screen.
+    const pushBody = content.length > 140 ? `${content.slice(0, 137)}…` : content;
+    supabase.functions.invoke("send-push", {
+      body: {
+        user_id: user.id,
+        title: "Your coach has a note for you",
+        body: pushBody,
+        data: { type: "nudge" },
+      },
+    }).catch((e) => console.warn("send-push invoke failed:", e?.message ?? e));
+
     return new Response(JSON.stringify({ content, cached: false }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

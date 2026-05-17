@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, Switch, ScrollView, Modal, TextInput, Pressable, ActivityIndicator, Platform } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { View, Text, TouchableOpacity, Switch, ScrollView, Modal, TextInput, Pressable, ActivityIndicator, Platform, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 import {
   Moon, Smartphone, Bell, Volume2, Mail, KeyRound, LogOut,
   Play, Info, AlertCircle, CheckCircle, ChevronRight, Trash2, Palmtree, Hand,
@@ -36,6 +37,7 @@ export default function SettingsScreen() {
   const styles = makeStyles(C);
 
   const [remindersOn, setRemindersOn] = useState(null);
+  const [permissionDenied, setPermissionDenied] = useState(false);
   const [banner, setBanner] = useState({ text: '', type: 'info' });
   const [signingOut, setSigningOut] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
@@ -50,11 +52,21 @@ export default function SettingsScreen() {
 
   const globalPause = state.globalPause;
 
-  useEffect(() => {
-    Notifications.getAllScheduledNotificationsAsync().then(all => {
+  // Refresh both the toggle and the permission-denied state every time the
+  // screen regains focus. Users may have flipped permission in the OS settings
+  // since the last mount.
+  useFocusEffect(useCallback(() => {
+    let cancelled = false;
+    Promise.all([
+      Notifications.getAllScheduledNotificationsAsync(),
+      Notifications.getPermissionsAsync(),
+    ]).then(([all, perm]) => {
+      if (cancelled) return;
       setRemindersOn(all.some(n => n.identifier === 'habitflow_morning'));
-    });
-  }, []);
+      setPermissionDenied(perm.status === 'denied');
+    }).catch(() => {});
+    return () => { cancelled = true; };
+  }, []));
 
   function showBanner(text, type = 'info') {
     setBanner({ text, type });
@@ -89,14 +101,23 @@ export default function SettingsScreen() {
       const granted = await requestPermissions();
       if (!granted) {
         setRemindersOn(false);
-        showBanner('Enable notifications in your device settings first.', 'error');
+        setPermissionDenied(true);
+        showBanner('Notifications blocked. Open Settings to enable them.', 'error');
         return;
       }
+      setPermissionDenied(false);
       await scheduleDailyReminders(state.habits.map(h => h.name));
     } else {
       try { await Notifications.cancelScheduledNotificationAsync('habitflow_morning'); } catch (_) {}
       try { await Notifications.cancelScheduledNotificationAsync('habitflow_evening'); } catch (_) {}
     }
+  }
+
+  function openOSSettings() {
+    lightTap();
+    Linking.openSettings().catch(() => {
+      showBanner('Could not open Settings. Open it manually from your home screen.', 'error');
+    });
   }
 
   async function handleChangePassword() {
@@ -323,7 +344,7 @@ export default function SettingsScreen() {
               ios_backgroundColor={C.border}
             />
           </View>
-          <View style={styles.row}>
+          <View style={[styles.row, permissionDenied && styles.rowBorder]}>
             <View style={styles.rowLeft}>
               <IconTile Icon={Volume2} color={C.textSub} bg={C.cardHigh} />
               <View style={styles.rowTextGroup}>
@@ -339,6 +360,18 @@ export default function SettingsScreen() {
               ios_backgroundColor={C.border}
             />
           </View>
+          {permissionDenied && (
+            <TouchableOpacity style={styles.row} onPress={openOSSettings} activeOpacity={0.7}>
+              <View style={styles.rowLeft}>
+                <IconTile Icon={AlertCircle} color={C.danger} bg={C.dangerSoft} />
+                <View style={styles.rowTextGroup}>
+                  <Text style={[styles.rowLabel, { color: C.danger }]}>Notifications blocked</Text>
+                  <Text style={styles.rowSub}>Tap to open device Settings and enable</Text>
+                </View>
+              </View>
+              <ChevronRight size={rs(17)} color={C.danger} strokeWidth={1.75} />
+            </TouchableOpacity>
+          )}
         </View>
 
         {/* Account */}

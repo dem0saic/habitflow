@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useReducer, useEffect, useRef, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { todayKey } from './utils/date';
-import { scheduleHabitReminder, scheduleDailyReminders, ensureAndroidChannel, setNotificationSound } from './utils/notifications';
+import { scheduleHabitReminder, scheduleDailyReminders, ensureAndroidChannel, setNotificationSound, registerAllReminders, registerPushToken } from './utils/notifications';
 import { setHapticsEnabled } from './utils/haptics';
 import { supabase } from './lib/supabase';
 import { pullUserData, pushAllData, syncActionToSupabase } from './lib/supabaseSync';
@@ -212,11 +212,16 @@ export function StoreProvider({ children }) {
           if (remoteState.habits.length > 0 || remoteState.onboardingDone) {
             dispatch({ type: 'LOAD', payload: remoteState });
             AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(remoteState)).catch(() => {});
+            // Remote habits may have different reminderTime than local cache —
+            // re-register so OS schedules match the server source of truth.
+            registerAllReminders(remoteState.habits).catch(() => {});
           } else if ((localState.habits?.length || 0) > 0) {
             // User has pre-auth local data — migrate it up to Supabase
             pushAllData(session.user.id, localState).catch(() => {});
           }
         }
+        // Register this device for remote push (fire-and-forget; safe in Expo Go — returns null)
+        registerPushToken(session.user.id).catch(() => {});
       }
     }
 
@@ -229,7 +234,9 @@ export function StoreProvider({ children }) {
         if (remoteState && (remoteState.habits.length > 0 || remoteState.onboardingDone)) {
           dispatch({ type: 'LOAD', payload: remoteState });
           AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(remoteState)).catch(() => {});
+          registerAllReminders(remoteState.habits).catch(() => {});
         }
+        registerPushToken(session.user.id).catch(() => {});
       } else if (event === 'SIGNED_OUT') {
         dispatch({ type: 'LOAD', payload: defaultState });
         AsyncStorage.removeItem(STORAGE_KEY).catch(() => {});
