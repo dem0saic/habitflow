@@ -130,6 +130,7 @@ Single global store via React `useReducer` + `AsyncStorage` (key: `@habitapp_sta
   challenge: { id, title, durationDays, startDate, habitIds, completed, rewardClaimed } | null,
   globalPause: { start: 'YYYY-MM-DD', end: 'YYYY-MM-DD' } | null,  // vacation mode for all habits
   addHabitNudgeDismissed: boolean,  // user has dismissed the "start with 1-3 habits" pushback at least once
+  tutorialDismissed: boolean,       // user has dismissed the first-run TutorialOverlay
 }
 ```
 
@@ -183,7 +184,7 @@ Five tables in the `public` schema, all with RLS enabled. Every table has a poli
 
 | Table | Primary key | Notable columns |
 |---|---|---|
-| `user_settings` | `user_id` | `theme_mode`, `onboarding_done`, `global_pause` (jsonb, vacation mode), `add_habit_nudge_dismissed` (boolean, pushback acknowledged) |
+| `user_settings` | `user_id` | `theme_mode`, `onboarding_done`, `global_pause` (jsonb, vacation mode), `add_habit_nudge_dismissed` (boolean, pushback acknowledged), `tutorial_dismissed` (boolean, on-Today tutorial overlay seen) |
 | `habits` | `id` (text) | `deleted_at` (soft delete), `reminder_time` (jsonb), `shields_per_month` (int, default 2), `pauses` (jsonb array of `{start,end}`) |
 | `completions` | composite `(user_id, habit_id, date)` | `count` integer |
 | `day_notes` | composite `(user_id, date)` | `note` text — free-text notes attached to a single day, surfaced in HistoryScreen and fed to ai-reflection-summary |
@@ -300,6 +301,8 @@ Each screen earns its own layout instead of templating a hero card. The shared h
 
 **Today's-note shortcut (`TodayScreen`):** a small card sits below the "Add habit" button (gated on `habits.length > 0` so the empty state stays clean). Dashed border + "Add a note for today…" placeholder when empty, solid card with the note text (2-line truncation) when filled. Tap opens `PastDayLogSheet` with `date={todayStr}` — reusing the existing sheet means the NOTE input is right at the top of the modal and the rest of the sheet still works as a backfill surface if the user wants to confirm any habit toggles for today. No separate component, no duplication.
 
+**First-run tutorial overlay (`TutorialOverlay` + `TodayScreen`):** a two-card overlay that teaches the things a user can't learn from a passive look at Today — the long-press menu and the streak preservation system (shields + vacation). TodayScreen's `useEffect` opens it whenever `state.onboardingDone && !state.tutorialDismissed`, so it fires once on the next Today mount after onboarding and never again. "Skip" or "Got it" both dispatch `DISMISS_TUTORIAL` (persisted to `user_settings.tutorial_dismissed`). A "Replay tutorial" row in Settings → App dispatches `RESET_TUTORIAL` and shows a banner telling the user the overlay will reappear when they next open Today. Card count is intentionally capped at 2; if a third is ever added, keep total ≤ 3 — tutorial drop-off climbs sharply past that point.
+
 **Habit tiles**: small (square, daily/negative, paired two-up) and wide (full-width, volume/timer with inline progress + stepper). Tap a small tile to toggle. Long-press any tile to open `HabitOptionsSheet`. Done state: tile fills with `successSoft`, border switches to bright `success`.
 
 **Streak milestones (`TodayScreen`):** a `useEffect` on `state.completions` walks each habit, computes the current streak via `calcStreak`, and fires a `CelebrationModal` (with `type="milestone"`) when the streak equals one of `[7, 14, 30, 60, 100, 200, 365]`. A session ref `celebratedMilestonesRef` tracks which `(habitId, milestone)` pairs already fired this session so the celebration does not repeat after a toggle-off-and-on. The state is intentionally session-only — if you reinstall on a milestone day you will get the celebration again on first sync, which we accept as a feature.
@@ -311,7 +314,7 @@ Each screen earns its own layout instead of templating a hero card. The shared h
 - **Vacation mode** — single tappable row that opens a date picker for "Start vacation" (sets `state.globalPause`) or shows "On vacation · Streaks safe through {date}" with tap-to-end. Dispatches `SET_GLOBAL_PAUSE`. The pause is honored by `calcStreak` and `consistency30` across every habit — see **Streak preservation**.
 - **Notifications** — daily reminders toggle (reads live from `Notifications.getAllScheduledNotificationsAsync()`); notification sound toggle (`SET_NOTIFICATION_SOUND` — when changed, all active reminders are immediately rescheduled with the new sound/channel setting)
 - **Account** — read-only email, Change Password (calls `resetPassword(email)` and shows a timed banner), Sign Out, **Delete account** (opens a confirmation modal that requires typing `delete`; on confirm it calls `useAuth().deleteAccount()` which invokes the `delete-account` Edge Function and then `signOut`s — the app returns to `AuthScreen` via the `SIGNED_OUT` event)
-- **App** — View Onboarding (dispatches `RESET_ONBOARDING`), Version (static `1.0.0`)
+- **App** — View Onboarding (dispatches `RESET_ONBOARDING`), Replay Tutorial (dispatches `RESET_TUTORIAL` and surfaces a banner; overlay reappears on next Today mount), Version (static `1.0.0`)
 
 `OnboardingScreen` uses `useSafeAreaInsets()` for padding and renders an animated `AppLogo` (single entrance spring — ambient orbiting-badge loops were intentionally removed to keep framerate predictable).
 
@@ -325,7 +328,7 @@ Each screen earns its own layout instead of templating a hero card. The shared h
 - **`ChallengeTrack`** — horizontal journey track. Props: `progress` (array of `{ key, allDone }` from `useChallengeProgress`), `currentDayIndex`. Filled green dots for completed days, pulsing primary dot for today, hollow dots for upcoming, hollow muted dots for missed past days. Connector line between dots colored by completion.
 - **`AddHabitModal`** — bottom-sheet modal for creating/editing habits; has a close (×) button in the fixed header row above the `ScrollView`. Emoji grid uses `ScrollView` with `nestedScrollEnabled` and `maxHeight: rs(258)` (5 rows visible). Default emoji for new habits is 🚀.
 - **`HabitOptionsSheet`** — long-press bottom sheet: edit / set reminder / pause / delete (uses `@react-native-community/datetimepicker`). Header shows a coloured shield-status row driven by `shieldUsage(habit, state.completions, state.globalPause)` (green when full, amber as shields are used, red when exhausted). The pause row reads `habit.pauses[0]` to flip between "Pause habit" (opens a date picker to set the resume date, starts today) and "Resume habit" (clears the pause). Both go through the `onSetPause(id, pause)` prop which TodayScreen wires to `dispatch({ type: 'SET_HABIT_PAUSE', id, pause })`.
-- **`PastDayLogSheet`** — bottom-sheet opened from `HistoryScreen`. Lists every habit with toggle/stepper controls for a given `date` prop and dispatches `LOG_HABIT` with that date. Also exposes a multi-line **NOTE** TextInput at the top (max 500 chars) — text is held in local state and persisted via `SET_DAY_NOTE` on a 700ms debounce, with a force-flush on close so a fast dismiss doesn't drop the note. Wrapped in `KeyboardAvoidingView` so the input rides above the keyboard on iOS.
+- **`PastDayLogSheet`** — bottom-sheet opened from `HistoryScreen` (and from `TodayScreen` via the today's-note shortcut). Lists every habit with toggle/stepper controls for a given `date` prop and dispatches `LOG_HABIT` with that date. Also exposes a multi-line **NOTE** TextInput at the top (max 500 chars) — text is held in local state and persisted via `SET_DAY_NOTE` on a 700ms debounce, with a force-flush on close so a fast dismiss doesn't drop the note. Do NOT wrap in `KeyboardAvoidingView` — Metro chokes on that wrapper here (tag balance is correct but the parser still errors); the iOS keyboard does overlay the sheet temporarily but the note text is preserved.
 - **`CelebrationModal`** — full-screen celebration overlay. `type` (`'daily' | 'challenge' | 'milestone'`) picks the default emoji and button label; optional `emoji` and `actionLabel` props override either. Fired from TodayScreen for all-habits-done and streak milestones, and from ChallengeScreen for reward claims.
 
 ### Notifications (`src/utils/notifications.js`)

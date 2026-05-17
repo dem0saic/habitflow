@@ -13,6 +13,7 @@ import AddHabitModal from '../components/AddHabitModal';
 import CelebrationModal from '../components/CelebrationModal';
 import HabitOptionsSheet from '../components/HabitOptionsSheet';
 import PastDayLogSheet from '../components/PastDayLogSheet';
+import TutorialOverlay from '../components/TutorialOverlay';
 import { lightTap, mediumTap, successBurst } from '../utils/haptics';
 import { scheduleDailyReminders, scheduleHabitReminder, cancelHabitReminder } from '../utils/notifications';
 import { isPaused } from '../utils/streak';
@@ -43,8 +44,22 @@ export default function TodayScreen() {
   const [optionsHabit, setOptionsHabit] = useState(null);
   const [pushbackVisible, setPushbackVisible] = useState(false);
   const [noteSheetOpen, setNoteSheetOpen] = useState(false);
+  const [tutorialOpen, setTutorialOpen] = useState(false);
   const wasAllDoneRef = useRef(false);
   const celebratedMilestonesRef = useRef({});
+
+  // Show the first-run tutorial overlay once per account, on next Today mount
+  // after onboardingDone. Skipped if the user has already dismissed it.
+  useEffect(() => {
+    if (state.onboardingDone && !state.tutorialDismissed) {
+      setTutorialOpen(true);
+    }
+  }, [state.onboardingDone, state.tutorialDismissed]);
+
+  function dismissTutorial() {
+    setTutorialOpen(false);
+    dispatch({ type: 'DISMISS_TUTORIAL' });
+  }
 
   const { habits } = state;
   const doneCount = habits.filter(h => (todayCompletions[h.id] || 0) >= (h.targetCount || 1)).length;
@@ -386,6 +401,11 @@ export default function TodayScreen() {
         visible={noteSheetOpen}
         date={noteSheetOpen ? todayStr : null}
         onClose={() => setNoteSheetOpen(false)}
+      />
+
+      <TutorialOverlay
+        visible={tutorialOpen}
+        onDismiss={dismissTutorial}
       />
       <CelebrationModal
         visible={celebrate}

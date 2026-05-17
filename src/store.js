@@ -20,6 +20,7 @@ const defaultState = {
   challenge: null,  // { id, title, durationDays, startDate, habitIds, completed, rewardClaimed }
   globalPause: null, // { start: 'YYYY-MM-DD', end: 'YYYY-MM-DD' } | null — vacation mode for all habits
   addHabitNudgeDismissed: false, // user has acknowledged "research says 1-3 sticks better" at least once
+  tutorialDismissed: false, // user has dismissed the on-Today first-run tutorial overlay
 };
 
 function reducer(state, action) {
@@ -73,6 +74,12 @@ function reducer(state, action) {
 
     case 'DISMISS_ADD_HABIT_NUDGE':
       return { ...state, addHabitNudgeDismissed: true };
+
+    case 'DISMISS_TUTORIAL':
+      return { ...state, tutorialDismissed: true };
+
+    case 'RESET_TUTORIAL':
+      return { ...state, tutorialDismissed: false };
 
     case 'SET_DAY_NOTE': {
       const notes = { ...state.notes };

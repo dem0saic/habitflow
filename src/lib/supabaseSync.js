@@ -51,6 +51,7 @@ export async function pullUserData(userId) {
     themeMode: settingsRes.data?.theme_mode ?? 'dark',
     globalPause: settingsRes.data?.global_pause ?? null,
     addHabitNudgeDismissed: settingsRes.data?.add_habit_nudge_dismissed ?? false,
+    tutorialDismissed: settingsRes.data?.tutorial_dismissed ?? false,
     habits,
     completions,
     notes,
@@ -122,6 +123,7 @@ export async function pushSettings(userId, state) {
     onboarding_done: state.onboardingDone,
     global_pause: state.globalPause ?? null,
     add_habit_nudge_dismissed: state.addHabitNudgeDismissed ?? false,
+    tutorial_dismissed: state.tutorialDismissed ?? false,
     updated_at: new Date().toISOString(),
   });
 }
@@ -251,6 +253,14 @@ export async function syncActionToSupabase(action, stateRef) {
 
     case 'DISMISS_ADD_HABIT_NUDGE':
       await pushSettings(userId, { ...s, addHabitNudgeDismissed: true });
+      break;
+
+    case 'DISMISS_TUTORIAL':
+      await pushSettings(userId, { ...s, tutorialDismissed: true });
+      break;
+
+    case 'RESET_TUTORIAL':
+      await pushSettings(userId, { ...s, tutorialDismissed: false });
       break;
 
     case 'SET_DAY_NOTE': {

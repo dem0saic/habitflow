@@ -3,7 +3,7 @@ import { View, Text, TouchableOpacity, Switch, ScrollView, Modal, TextInput, Pre
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   Moon, Smartphone, Bell, Volume2, Mail, KeyRound, LogOut,
-  Play, Info, AlertCircle, CheckCircle, ChevronRight, Trash2, Palmtree,
+  Play, Info, AlertCircle, CheckCircle, ChevronRight, Trash2, Palmtree, Hand,
 } from 'lucide-react-native';
 import * as Notifications from 'expo-notifications';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -120,6 +120,12 @@ export default function SettingsScreen() {
   function handleViewOnboarding() {
     lightTap();
     dispatch({ type: 'RESET_ONBOARDING' });
+  }
+
+  function handleReplayTutorial() {
+    lightTap();
+    dispatch({ type: 'RESET_TUTORIAL' });
+    showBanner('Tutorial will reappear next time you open Today.');
   }
 
   function openDeleteFlow() {
@@ -398,6 +404,20 @@ export default function SettingsScreen() {
               <View style={styles.rowTextGroup}>
                 <Text style={styles.rowLabel}>View onboarding</Text>
                 <Text style={styles.rowSub}>Replay the intro walkthrough</Text>
+              </View>
+            </View>
+            <ChevronRight size={rs(17)} color={C.textMuted} strokeWidth={1.75} />
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.row, styles.rowBorder]}
+            onPress={handleReplayTutorial}
+            activeOpacity={0.7}
+          >
+            <View style={styles.rowLeft}>
+              <IconTile Icon={Hand} color={C.textSub} bg={C.cardHigh} />
+              <View style={styles.rowTextGroup}>
+                <Text style={styles.rowLabel}>Replay tutorial</Text>
+                <Text style={styles.rowSub}>Show the long-press + shields guide again</Text>
               </View>
             </View>
             <ChevronRight size={rs(17)} color={C.textMuted} strokeWidth={1.75} />

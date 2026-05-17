@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View, Text, TouchableOpacity, Modal, Pressable, ScrollView, TextInput,
-  KeyboardAvoidingView, Platform,
 } from 'react-native';
 import { Check, Minus, Plus, Ban, ShieldCheck, NotebookPen } from 'lucide-react-native';
 import { useTheme } from '../ThemeContext';
@@ -67,12 +66,7 @@ export default function PastDayLogSheet({ visible, date, onClose }) {
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={handleClose}>
       <Pressable style={styles.overlay} onPress={handleClose} />
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={styles.kavWrap}
-        pointerEvents="box-none"
-      >
-        <View style={styles.sheet}>
+      <View style={styles.sheet}>
         <View style={styles.handle} />
 
         <View style={styles.headerRow}>
@@ -195,8 +189,7 @@ export default function PastDayLogSheet({ visible, date, onClose }) {
             })
           )}
         </ScrollView>
-        </View>
-      </KeyboardAvoidingView>
+      </View>
     </Modal>
   );
 }
@@ -206,10 +199,8 @@ function makeStyles(C) { return {
     position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
     backgroundColor: 'rgba(0,0,0,0.55)',
   },
-  kavWrap: {
-    position: 'absolute', bottom: 0, left: 0, right: 0,
-  },
   sheet: {
+    position: 'absolute', bottom: 0, left: 0, right: 0,
     backgroundColor: C.card,
     borderTopLeftRadius: rs(20), borderTopRightRadius: rs(20),
     borderTopWidth: 1, borderColor: C.borderStrong,
