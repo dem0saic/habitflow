@@ -49,10 +49,10 @@ Deno.serve(async (req: Request) => {
   console.log(`delete-account: cascading delete for user ${userId}`);
 
   // 3. Cascade-delete every row owned by this user across the public schema.
-  // Order doesn't matter — all five tables key off user_id with RLS bypass
+  // Order doesn't matter — every table keys off user_id with RLS bypass
   // via the service role. We collect non-fatal errors and continue so a single
   // table issue doesn't block account removal.
-  const tables = ["completions", "challenges", "habits", "ai_insights", "user_settings"];
+  const tables = ["completions", "challenges", "habits", "day_notes", "ai_insights", "user_settings"];
   const tableErrors: string[] = [];
   for (const table of tables) {
     const { error } = await supabase.from(table).delete().eq("user_id", userId);

@@ -16,7 +16,7 @@ export default function HistoryScreen() {
   const { state } = useStore();
   const C = useTheme();
   const styles = makeStyles(C);
-  const { habits, completions } = state;
+  const { habits, completions, notes } = state;
   const today = todayKey();
 
   const now = new Date();
@@ -86,6 +86,7 @@ export default function HistoryScreen() {
             month={month}
             completions={completions}
             habits={habits}
+            notes={notes}
             onSelectDay={openLogger}
             onChangeMonth={changeMonth}
             todayStr={today}
@@ -113,7 +114,7 @@ export default function HistoryScreen() {
         </View>
 
         <View style={styles.tapHint}>
-          <Text style={styles.tapHintText}>Tap any past day to log retroactively</Text>
+          <Text style={styles.tapHintText}>Tap any past day to log or add a note · dotted days have notes</Text>
         </View>
 
         {/* This month stats */}

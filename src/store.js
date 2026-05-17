@@ -16,6 +16,7 @@ const defaultState = {
   notificationSound: true,
   habits: [],
   completions: {},  // { 'YYYY-MM-DD': { [habitId]: number } }
+  notes: {},        // { 'YYYY-MM-DD': string } — free-text notes attached to a day
   challenge: null,  // { id, title, durationDays, startDate, habitIds, completed, rewardClaimed }
   globalPause: null, // { start: 'YYYY-MM-DD', end: 'YYYY-MM-DD' } | null — vacation mode for all habits
   addHabitNudgeDismissed: false, // user has acknowledged "research says 1-3 sticks better" at least once
@@ -72,6 +73,17 @@ function reducer(state, action) {
 
     case 'DISMISS_ADD_HABIT_NUDGE':
       return { ...state, addHabitNudgeDismissed: true };
+
+    case 'SET_DAY_NOTE': {
+      const notes = { ...state.notes };
+      const trimmed = (action.note || '').trim();
+      if (trimmed) {
+        notes[action.date] = trimmed;
+      } else {
+        delete notes[action.date];
+      }
+      return { ...state, notes };
+    }
 
     case 'EDIT_HABIT': {
       return {

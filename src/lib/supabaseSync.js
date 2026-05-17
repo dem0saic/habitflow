@@ -3,12 +3,13 @@ import { todayKey } from '../utils/date';
 
 // ─── Pull all user data from Supabase ────────────────────────────────────────
 export async function pullUserData(userId) {
-  const [settingsRes, habitsRes, completionsRes, challengeRes] = await Promise.all([
+  const [settingsRes, habitsRes, completionsRes, challengeRes, notesRes] = await Promise.all([
     supabase.from('user_settings').select('*').eq('user_id', userId).maybeSingle(),
     supabase.from('habits').select('*').eq('user_id', userId).is('deleted_at', null),
     supabase.from('completions').select('*').eq('user_id', userId),
     supabase.from('challenges').select('*').eq('user_id', userId)
       .order('created_at', { ascending: false }).limit(1),
+    supabase.from('day_notes').select('date, note').eq('user_id', userId),
   ]);
 
   const habits = (habitsRes.data || []).map(h => ({
@@ -29,6 +30,11 @@ export async function pullUserData(userId) {
     completions[row.date][row.habit_id] = row.count;
   }
 
+  const notes = {};
+  for (const row of (notesRes.data || [])) {
+    if (row.note) notes[row.date] = row.note;
+  }
+
   const raw = challengeRes.data?.[0];
   const challenge = raw ? {
     id: raw.id,
@@ -47,8 +53,22 @@ export async function pullUserData(userId) {
     addHabitNudgeDismissed: settingsRes.data?.add_habit_nudge_dismissed ?? false,
     habits,
     completions,
+    notes,
     challenge,
   };
+}
+
+export async function pushDayNote(userId, date, note) {
+  await supabase.from('day_notes').upsert({
+    user_id: userId,
+    date,
+    note,
+    updated_at: new Date().toISOString(),
+  });
+}
+
+export async function deleteDayNote(userId, date) {
+  await supabase.from('day_notes').delete().eq('user_id', userId).eq('date', date);
 }
 
 // ─── Push helpers ─────────────────────────────────────────────────────────────
@@ -117,6 +137,12 @@ export async function pushAllData(userId, state) {
     }
   }
   if (rows.length > 0) await supabase.from('completions').upsert(rows);
+
+  const noteRows = [];
+  for (const [date, note] of Object.entries(state.notes || {})) {
+    if (note && note.trim()) noteRows.push({ user_id: userId, date, note: note.trim() });
+  }
+  if (noteRows.length > 0) await supabase.from('day_notes').upsert(noteRows);
 
   if (state.challenge) await pushChallenge(userId, state.challenge);
 }
@@ -226,5 +252,15 @@ export async function syncActionToSupabase(action, stateRef) {
     case 'DISMISS_ADD_HABIT_NUDGE':
       await pushSettings(userId, { ...s, addHabitNudgeDismissed: true });
       break;
+
+    case 'SET_DAY_NOTE': {
+      const trimmed = (action.note || '').trim();
+      if (trimmed) {
+        await pushDayNote(userId, action.date, trimmed);
+      } else {
+        await deleteDayNote(userId, action.date);
+      }
+      break;
+    }
   }
 }

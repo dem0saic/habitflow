@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
-  View, Text, TouchableOpacity, Modal, Pressable, ScrollView,
+  View, Text, TouchableOpacity, Modal, Pressable, ScrollView, TextInput,
+  KeyboardAvoidingView, Platform,
 } from 'react-native';
-import { Check, Minus, Plus, Ban, ShieldCheck } from 'lucide-react-native';
+import { Check, Minus, Plus, Ban, ShieldCheck, NotebookPen } from 'lucide-react-native';
 import { useTheme } from '../ThemeContext';
 import { useStore } from '../store';
 import { rs, ms, ls } from '../utils/responsive';
@@ -14,6 +15,39 @@ export default function PastDayLogSheet({ visible, date, onClose }) {
   const C = useTheme();
   const { state, dispatch } = useStore();
   const styles = makeStyles(C);
+
+  const savedNote = (date && state.notes?.[date]) || '';
+  const [noteDraft, setNoteDraft] = useState(savedNote);
+  const lastSavedRef = useRef(savedNote);
+  const debounceRef = useRef(null);
+
+  // Sync the draft when the sheet opens for a new date
+  useEffect(() => {
+    if (!visible || !date) return;
+    setNoteDraft(savedNote);
+    lastSavedRef.current = savedNote;
+  }, [visible, date]);
+
+  // Debounced persist — fires 700ms after the user stops typing
+  useEffect(() => {
+    if (!date || noteDraft === lastSavedRef.current) return;
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      dispatch({ type: 'SET_DAY_NOTE', date, note: noteDraft });
+      lastSavedRef.current = noteDraft;
+    }, 700);
+    return () => debounceRef.current && clearTimeout(debounceRef.current);
+  }, [noteDraft, date]);
+
+  function handleClose() {
+    // Force-flush any pending debounce so notes persist even if user closes fast
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    if (date && noteDraft !== lastSavedRef.current) {
+      dispatch({ type: 'SET_DAY_NOTE', date, note: noteDraft });
+      lastSavedRef.current = noteDraft;
+    }
+    onClose();
+  }
 
   if (!date) return null;
 
@@ -31,9 +65,14 @@ export default function PastDayLogSheet({ visible, date, onClose }) {
   }
 
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <Pressable style={styles.overlay} onPress={onClose} />
-      <View style={styles.sheet}>
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={handleClose}>
+      <Pressable style={styles.overlay} onPress={handleClose} />
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        style={styles.kavWrap}
+        pointerEvents="box-none"
+      >
+        <View style={styles.sheet}>
         <View style={styles.handle} />
 
         <View style={styles.headerRow}>
@@ -41,16 +80,36 @@ export default function PastDayLogSheet({ visible, date, onClose }) {
             <Text style={styles.headerLabel}>LOGGING FOR</Text>
             <Text style={styles.headerDate}>{formatDisplay(date)}</Text>
           </View>
-          <TouchableOpacity onPress={onClose} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+          <TouchableOpacity onPress={handleClose} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
             <Text style={styles.doneText}>Done</Text>
           </TouchableOpacity>
         </View>
 
         <ScrollView
-          style={{ maxHeight: rs(440) }}
+          style={{ maxHeight: rs(480) }}
           showsVerticalScrollIndicator={false}
           bounces={false}
+          keyboardShouldPersistTaps="handled"
         >
+          {/* Day note */}
+          <View style={styles.noteWrap}>
+            <View style={styles.noteHeader}>
+              <NotebookPen size={rs(13)} color={C.primary} strokeWidth={2.5} />
+              <Text style={styles.noteHeaderText}>NOTE</Text>
+              {savedNote ? <View style={styles.noteSavedDot} /> : null}
+            </View>
+            <TextInput
+              style={styles.noteInput}
+              value={noteDraft}
+              onChangeText={setNoteDraft}
+              placeholder="Anything worth remembering about this day? (travel, sick, busy…)"
+              placeholderTextColor={C.textMuted}
+              multiline
+              maxLength={500}
+              textAlignVertical="top"
+            />
+          </View>
+
           {habits.length === 0 ? (
             <View style={styles.emptyState}>
               <Text style={{ fontSize: rs(36), marginBottom: rs(10) }}>🌱</Text>
@@ -136,7 +195,8 @@ export default function PastDayLogSheet({ visible, date, onClose }) {
             })
           )}
         </ScrollView>
-      </View>
+        </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
@@ -146,8 +206,10 @@ function makeStyles(C) { return {
     position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
     backgroundColor: 'rgba(0,0,0,0.55)',
   },
-  sheet: {
+  kavWrap: {
     position: 'absolute', bottom: 0, left: 0, right: 0,
+  },
+  sheet: {
     backgroundColor: C.card,
     borderTopLeftRadius: rs(20), borderTopRightRadius: rs(20),
     borderTopWidth: 1, borderColor: C.borderStrong,
@@ -203,4 +265,24 @@ function makeStyles(C) { return {
 
   emptyState: { alignItems: 'center', paddingVertical: rs(40) },
   emptyText:  { fontSize: ms(13), color: C.textMuted, fontFamily: C.reg, fontWeight: '400', letterSpacing: ls(13) },
+
+  noteWrap: {
+    backgroundColor: C.cardHigh, borderRadius: rs(12),
+    paddingHorizontal: rs(12), paddingTop: rs(10), paddingBottom: rs(8),
+    marginBottom: rs(14),
+    borderWidth: 1, borderColor: C.border,
+  },
+  noteHeader: { flexDirection: 'row', alignItems: 'center', gap: rs(6), marginBottom: rs(6) },
+  noteHeaderText: { fontSize: ms(10), fontFamily: C.bold, fontWeight: '700', color: C.primary, letterSpacing: 0.8 },
+  noteSavedDot: {
+    width: rs(6), height: rs(6), borderRadius: rs(3),
+    backgroundColor: C.primary, marginLeft: rs(2),
+  },
+  noteInput: {
+    fontSize: ms(13), fontFamily: C.reg, fontWeight: '400',
+    color: C.text, letterSpacing: ls(13),
+    minHeight: rs(56), maxHeight: rs(140),
+    paddingVertical: rs(4), paddingHorizontal: 0,
+    lineHeight: ms(13) * 1.4,
+  },
 }; }

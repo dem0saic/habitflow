@@ -52,7 +52,7 @@ Deno.serve(async (req: Request) => {
       });
     }
 
-    const [habitsRes, completionsRes] = await Promise.all([
+    const [habitsRes, completionsRes, notesRes] = await Promise.all([
       supabase
         .from("habits")
         .select("id, name, emoji, type, target_count")
@@ -64,10 +64,18 @@ Deno.serve(async (req: Request) => {
         .eq("user_id", user.id)
         .gte("date", periodStartStr)
         .lte("date", periodEndStr),
+      supabase
+        .from("day_notes")
+        .select("date, note")
+        .eq("user_id", user.id)
+        .gte("date", periodStartStr)
+        .lte("date", periodEndStr)
+        .order("date", { ascending: true }),
     ]);
 
     const habits = habitsRes.data || [];
     const completions = completionsRes.data || [];
+    const notes = notesRes.data || [];
 
     const habitStats = habits.map((habit) => {
       const habitDone = completions.filter(
@@ -108,9 +116,13 @@ Deno.serve(async (req: Request) => {
       })
     ).length;
 
+    const notesBlock = notes.length > 0
+      ? `\n\nUser notes for this period (their own words about specific days):\n${notes.map(n => `  ${n.date}: ${n.note}`).join("\n")}`
+      : "";
+
     const prompt = habits.length === 0
       ? `Generate a warm, encouraging ${period} reflection for a user who hasn't added any habits yet. Inspire them to start with 1-2 small habits and explain the compound effect of daily consistency. 3 sentences max, no headers.`
-      : `You are an insightful AI coach for HabitFlow. Generate a ${period} reflection summary.\n\nPeriod: ${periodStartStr} to ${periodEndStr} (${daysBack} days)\nActive habits: ${habits.length}\nPerfect days (all habits completed): ${perfectDays} of ${daysBack}\n\nHabit breakdown:\n${JSON.stringify(habitStats, null, 2)}\n\nWrite a flowing, personal ${period} reflection in 3-4 sentences:\n- Open with the standout win (best performing habit or highest-consistency metric)\n- Note a meaningful pattern or trend (e.g. a day they consistently struggle)\n- Give one specific, actionable suggestion for next ${period === "weekly" ? "week" : "month"}\n- Close with a forward-looking encouragement\n- 1-2 emojis integrated naturally, not at the start\n- No bullet points, headers, or markdown, flowing prose only\n- Never use dashes of any kind (no hyphens, em dashes, or en dashes) anywhere in the response`;
+      : `You are an insightful AI coach for HabitFlow. Generate a ${period} reflection summary.\n\nPeriod: ${periodStartStr} to ${periodEndStr} (${daysBack} days)\nActive habits: ${habits.length}\nPerfect days (all habits completed): ${perfectDays} of ${daysBack}\n\nHabit breakdown:\n${JSON.stringify(habitStats, null, 2)}${notesBlock}\n\nWrite a flowing, personal ${period} reflection in 3-4 sentences:\n- Open with the standout win (best performing habit or highest-consistency metric)\n- Note a meaningful pattern or trend (e.g. a day they consistently struggle)\n- If user notes are provided above, reference one of them naturally to show you saw their context (e.g. "the travel days clearly slowed momentum, but you bounced back"). Do not quote the note verbatim or list it; weave it in.\n- Give one specific, actionable suggestion for next ${period === "weekly" ? "week" : "month"}\n- Close with a forward-looking encouragement\n- 1-2 emojis integrated naturally, not at the start\n- No bullet points, headers, or markdown, flowing prose only\n- Never use dashes of any kind (no hyphens, em dashes, or en dashes) anywhere in the response`;
 
     const anthropic = new Anthropic({ apiKey: Deno.env.get("ANTHROPIC_API_KEY")! });
     const message = await anthropic.messages.create({
@@ -127,7 +139,7 @@ Deno.serve(async (req: Request) => {
       content,
       period_start: periodStartStr,
       period_end: periodEndStr,
-      metadata: { habitCount: habits.length, perfectDays, totalDays: daysBack },
+      metadata: { habitCount: habits.length, perfectDays, totalDays: daysBack, noteCount: notes.length },
     });
 
     return new Response(JSON.stringify({ content, cached: false }), {

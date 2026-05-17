@@ -126,6 +126,7 @@ Single global store via React `useReducer` + `AsyncStorage` (key: `@habitapp_sta
   notificationSound: boolean,       // device-level, not synced to Supabase
   habits: [{ id, name, emoji, type, targetCount, reminderTime, shieldsPerMonth, pauses, createdAt }],
   completions: { 'YYYY-MM-DD': { [habitId]: number } },
+  notes: { 'YYYY-MM-DD': string },  // free-text day notes (max 500 chars enforced in UI)
   challenge: { id, title, durationDays, startDate, habitIds, completed, rewardClaimed } | null,
   globalPause: { start: 'YYYY-MM-DD', end: 'YYYY-MM-DD' } | null,  // vacation mode for all habits
   addHabitNudgeDismissed: boolean,  // user has dismissed the "start with 1-3 habits" pushback at least once
@@ -183,6 +184,7 @@ Five tables in the `public` schema, all with RLS enabled. Every table has a poli
 | `user_settings` | `user_id` | `theme_mode`, `onboarding_done`, `global_pause` (jsonb, vacation mode), `add_habit_nudge_dismissed` (boolean, pushback acknowledged) |
 | `habits` | `id` (text) | `deleted_at` (soft delete), `reminder_time` (jsonb), `shields_per_month` (int, default 2), `pauses` (jsonb array of `{start,end}`) |
 | `completions` | composite `(user_id, habit_id, date)` | `count` integer |
+| `day_notes` | composite `(user_id, date)` | `note` text — free-text notes attached to a single day, surfaced in HistoryScreen and fed to ai-reflection-summary |
 | `challenges` | `id` (text) | `habit_ids` text[], `completed`, `reward_claimed` |
 | `ai_insights` | `id` (uuid) | `type` ('nudge'\|'weekly_summary'\|'monthly_summary'), `content`, `period_start`, `period_end`, `metadata` (jsonb) |
 
@@ -195,7 +197,7 @@ Five tables in the `public` schema, all with RLS enabled. Every table has a poli
 Three Supabase Edge Functions invoked via `supabase.functions.invoke()` with the user's JWT. All three set `verify_jwt: true` at the gateway and use the service-role key internally to bypass RLS.
 
 - **`ai-coaching-nudge`** — invoked on `StatsScreen` mount. Checks for a cached row in `ai_insights` where `type='nudge'` and `created_at >= today`. If found, returns it immediately; otherwise reads habits + completions + `user_settings.global_pause`, calls Claude, stores and returns the result. One Claude call per user per day maximum. Computes a `weakestWeekday` pattern per habit (≥14 days old, ≥3 occurrences on that weekday, ≥30% worse than the habit's overall rate); if any habit has a pattern, the strongest one is fed to Claude with instructions to lead the nudge with a curious question ("what's different about Wednesdays?") rather than streak praise. The streak passed to Claude uses the same shield+pause-aware algorithm as the client so the AI doesn't contradict what the UI shows.
-- **`ai-reflection-summary`** — invoked when the user taps Weekly or Monthly in StatsScreen. Caches by `(user_id, type, period_start)` so the same period never re-generates. Computes per-habit consistency and weakest day-of-week before calling Claude.
+- **`ai-reflection-summary`** — invoked when the user taps Weekly or Monthly in StatsScreen. Caches by `(user_id, type, period_start)` so the same period never re-generates. Computes per-habit consistency and weakest day-of-week, AND pulls `day_notes` for the period so the AI can reference the user's own context ("the travel days clearly slowed momentum, but you bounced back"). The prompt instructs Claude to weave notes in naturally, never quote them verbatim.
 - **`delete-account`** — invoked from `AuthContext.deleteAccount()` (wired into Settings → Account → Delete account). Resolves the caller's `user.id` from the JWT, deletes their rows from all five public tables (`completions`, `challenges`, `habits`, `ai_insights`, `user_settings`), then calls `auth.admin.deleteUser(userId)`. Required by App Store guideline 5.1.1(v). Deploy with `npx supabase functions deploy delete-account --project-ref <ref>`.
 
 `src/lib/aiCoaching.js` is a thin client: `fetchCoachingNudge()` and `fetchReflectionSummary(period)` both get the session, pass the JWT in the Authorization header, and return `data.content`. All error handling is fire-and-forget at the call site (StatsScreen catches silently and shows a retry prompt).
@@ -315,11 +317,11 @@ Each screen earns its own layout instead of templating a hero card. The shared h
 - **`HabitTileSmall`** — square tile for daily/negative habits, designed to pair two-up. Tap to toggle (with press scale animation), long-press for options. Done state: tile fills `successSoft` + bright `success` border + animated check pip.
 - **`HabitTileWide`** — full-width tile for volume/timer habits. Inline progress bar (animated spring on update), +/− stepper at right. Long-press for options. No tap-to-toggle (use the stepper).
 - **`StatTile`** — generic bento stat cell. Props: `value`, `label`, `accent`, `Icon`, `compact`. Used in the Today stat strip (compact) and the StatsScreen 2×2 bento (full).
-- **`MonthCalendar`** — month grid for HistoryScreen. Props: `year`, `month`, `completions`, `habits`, `onSelectDay`, `onChangeMonth`, `todayStr`. Cell colors come from `heatColor()` in `src/utils/heatmap.js`. Next-month button is disabled when viewing the current or a future month.
+- **`MonthCalendar`** — month grid for HistoryScreen. Props: `year`, `month`, `completions`, `habits`, `notes`, `onSelectDay`, `onChangeMonth`, `todayStr`. Cell colors come from `heatColor()` in `src/utils/heatmap.js`. Days with a `notes[dateStr]` entry render a small dot at the bottom of the cell (white on filled cells, `C.primary` on light ones). Next-month button is disabled when viewing the current or a future month.
 - **`ChallengeTrack`** — horizontal journey track. Props: `progress` (array of `{ key, allDone }` from `useChallengeProgress`), `currentDayIndex`. Filled green dots for completed days, pulsing primary dot for today, hollow dots for upcoming, hollow muted dots for missed past days. Connector line between dots colored by completion.
 - **`AddHabitModal`** — bottom-sheet modal for creating/editing habits; has a close (×) button in the fixed header row above the `ScrollView`. Emoji grid uses `ScrollView` with `nestedScrollEnabled` and `maxHeight: rs(258)` (5 rows visible). Default emoji for new habits is 🚀.
 - **`HabitOptionsSheet`** — long-press bottom sheet: edit / set reminder / pause / delete (uses `@react-native-community/datetimepicker`). The pause row reads `habit.pauses[0]` to flip between "Pause habit" (opens a date picker to set the resume date, starts today) and "Resume habit" (clears the pause). Both go through the `onSetPause(id, pause)` prop which TodayScreen wires to `dispatch({ type: 'SET_HABIT_PAUSE', id, pause })`.
-- **`PastDayLogSheet`** — bottom-sheet opened from `HistoryScreen`. Lists every habit with toggle/stepper controls for a given `date` prop and dispatches `LOG_HABIT` with that date.
+- **`PastDayLogSheet`** — bottom-sheet opened from `HistoryScreen`. Lists every habit with toggle/stepper controls for a given `date` prop and dispatches `LOG_HABIT` with that date. Also exposes a multi-line **NOTE** TextInput at the top (max 500 chars) — text is held in local state and persisted via `SET_DAY_NOTE` on a 700ms debounce, with a force-flush on close so a fast dismiss doesn't drop the note. Wrapped in `KeyboardAvoidingView` so the input rides above the keyboard on iOS.
 - **`CelebrationModal`** — full-screen celebration overlay. `type` (`'daily' | 'challenge' | 'milestone'`) picks the default emoji and button label; optional `emoji` and `actionLabel` props override either. Fired from TodayScreen for all-habits-done and streak milestones, and from ChallengeScreen for reward claims.
 
 ### Notifications (`src/utils/notifications.js`)

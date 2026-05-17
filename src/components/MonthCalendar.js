@@ -31,6 +31,7 @@ function buildGrid(year, month) {
 export default function MonthCalendar({
   year, month,           // zero-indexed month
   completions, habits,
+  notes,                 // { 'YYYY-MM-DD': string } — used for the note dot indicator
   onSelectDay,
   onChangeMonth,         // called with delta (+1 / -1)
   todayStr,
@@ -90,6 +91,8 @@ export default function MonthCalendar({
           const isFuture = dateStr > todayStr;
           const dayNum   = parseInt(dateStr.slice(-2), 10);
 
+          const hasNote = !!(notes && notes[dateStr]);
+
           return (
             <TouchableOpacity
               key={i}
@@ -112,6 +115,13 @@ export default function MonthCalendar({
                 ]}>
                   {dayNum}
                 </Text>
+                {hasNote && !isFuture && (
+                  <View style={[
+                    styles.noteDot,
+                    // Contrast against dark fills — use white when the cell is filled-ish
+                    pct >= 0.5 ? { backgroundColor: '#fff' } : { backgroundColor: C.primary },
+                  ]} />
+                )}
               </View>
             </TouchableOpacity>
           );
@@ -156,5 +166,9 @@ function makeStyles(C) { return {
     fontSize: ms(12), color: C.text,
     fontFamily: C.med, fontWeight: '500',
     letterSpacing: ls(12),
+  },
+  noteDot: {
+    position: 'absolute', bottom: rs(3), alignSelf: 'center',
+    width: rs(4), height: rs(4), borderRadius: rs(2),
   },
 }; }
