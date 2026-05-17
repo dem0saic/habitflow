@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, Modal, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Settings, Plus, Flame, CheckCircle2, Palmtree, Sprout } from 'lucide-react-native';
+import { Settings, Plus, Flame, CheckCircle2, Palmtree, Sprout, NotebookPen } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useStore, useTodayCompletions, calcStreak } from '../store';
 import { useTheme } from '../ThemeContext';
@@ -12,6 +12,7 @@ import HabitTileWide from '../components/HabitTileWide';
 import AddHabitModal from '../components/AddHabitModal';
 import CelebrationModal from '../components/CelebrationModal';
 import HabitOptionsSheet from '../components/HabitOptionsSheet';
+import PastDayLogSheet from '../components/PastDayLogSheet';
 import { lightTap, mediumTap, successBurst } from '../utils/haptics';
 import { scheduleDailyReminders, scheduleHabitReminder, cancelHabitReminder } from '../utils/notifications';
 import { isPaused } from '../utils/streak';
@@ -41,6 +42,7 @@ export default function TodayScreen() {
   const [milestone, setMilestone] = useState(null);
   const [optionsHabit, setOptionsHabit] = useState(null);
   const [pushbackVisible, setPushbackVisible] = useState(false);
+  const [noteSheetOpen, setNoteSheetOpen] = useState(false);
   const wasAllDoneRef = useRef(false);
   const celebratedMilestonesRef = useRef({});
 
@@ -242,6 +244,31 @@ export default function TodayScreen() {
           <Text style={styles.addBtnText}>Add habit</Text>
         </TouchableOpacity>
 
+        {/* Today's note shortcut — only appears once user has habits, so empty state stays clean */}
+        {habits.length > 0 && (
+          (() => {
+            const todayNote = state.notes?.[todayStr];
+            return (
+              <TouchableOpacity
+                style={[styles.noteCard, todayNote ? styles.noteCardFilled : styles.noteCardEmpty]}
+                onPress={() => { lightTap(); setNoteSheetOpen(true); }}
+                activeOpacity={0.85}
+              >
+                <NotebookPen
+                  size={rs(14)}
+                  color={todayNote ? C.primary : C.textMuted}
+                  strokeWidth={2.5}
+                />
+                {todayNote ? (
+                  <Text style={styles.noteCardText} numberOfLines={2}>{todayNote}</Text>
+                ) : (
+                  <Text style={styles.noteCardPlaceholder}>Add a note for today…</Text>
+                )}
+              </TouchableOpacity>
+            );
+          })()
+        )}
+
         {/* Empty state */}
         {habits.length === 0 && (
           <View style={styles.emptyState}>
@@ -353,6 +380,13 @@ export default function TodayScreen() {
         onSetReminder={handleSetReminder}
         onSetPause={(id, pause) => dispatch({ type: 'SET_HABIT_PAUSE', id, pause })}
       />
+
+      {/* Reuses PastDayLogSheet for today; its NOTE input sits at the top */}
+      <PastDayLogSheet
+        visible={noteSheetOpen}
+        date={noteSheetOpen ? todayStr : null}
+        onClose={() => setNoteSheetOpen(false)}
+      />
       <CelebrationModal
         visible={celebrate}
         title="All habits done"
@@ -415,6 +449,24 @@ function makeStyles(C) { return {
     backgroundColor: C.primarySoft,
   },
   addBtnText: { fontSize: ms(13), color: C.primary, fontFamily: C.bold, fontWeight: '700', letterSpacing: ls(13) },
+
+  noteCard: {
+    flexDirection: 'row', alignItems: 'center', gap: rs(10),
+    marginHorizontal: rs(16), marginBottom: rs(14),
+    paddingHorizontal: rs(14), paddingVertical: rs(11),
+    borderRadius: rs(12), borderWidth: 1,
+  },
+  noteCardEmpty:  { borderColor: C.border, borderStyle: 'dashed', backgroundColor: 'transparent' },
+  noteCardFilled: { borderColor: C.border, backgroundColor: C.card },
+  noteCardText: {
+    flex: 1, fontSize: ms(12), color: C.text,
+    fontFamily: C.reg, fontWeight: '400', letterSpacing: ls(12),
+    lineHeight: ms(12) * 1.4,
+  },
+  noteCardPlaceholder: {
+    flex: 1, fontSize: ms(12), color: C.textMuted,
+    fontFamily: C.med, fontWeight: '500', letterSpacing: ls(12),
+  },
 
   section: { paddingHorizontal: rs(16) },
   smallRow: { flexDirection: 'row', gap: rs(10), marginBottom: rs(10) },
