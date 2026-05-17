@@ -28,6 +28,10 @@ Install **Expo Go** on the device (iOS App Store / Android Play Store) and scan 
 & "C:\Program Files\nodejs\npx.cmd" expo install <package>  # falls back to npm if it errors
 ```
 
+**`lucide-react-native` v1.16.0 alias caveat:** the project imports several legacy icon names (`Home`, `BarChart2`, `AlertCircle`, `CheckCircle`, `HelpCircle`, `XCircle`) that are re-exported as aliases for the new circle-prefixed names (`House`, `ChartNoAxesColumn`, `CircleAlert`, etc.). If you bump the package, run `grep -rE "from 'lucide-react-native'" src/ App.js` and verify every import still resolves before assuming the build passes.
+
+**No test / lint / typecheck is set up.** There is no `npm test`, no ESLint config, no TypeScript. Don't waste time searching — those gaps are deliberate-for-now, not hidden somewhere.
+
 ## Platform notes
 
 - iOS builds require macOS. Use Expo Go for iOS testing on Windows.
@@ -53,6 +57,8 @@ To redeploy an Edge Function after editing `supabase/functions/<name>/index.ts`:
 ```bash
 npx supabase functions deploy <name> --project-ref <ref>
 ```
+
+The first deploy on any machine will fail with `401 Unauthorized` until you authenticate the CLI. The login flow is interactive (opens a browser), so you cannot run it from a non-interactive shell — run `npx supabase login` yourself first.
 
 ## Architecture
 
@@ -210,7 +216,10 @@ The heatmap ramp lives in `src/utils/heatmap.js` (`heatColor` for the 4-step cal
 
 When changing colors, edit `src/theme.js` — it is the single source of truth for the design tokens consumed via `useTheme()`.
 
-**Style pattern used everywhere:**
+### Style conventions
+
+Every screen and component follows the same pattern: pull tokens once at the top, build a styles object via a `makeStyles(C)` factory, render.
+
 ```js
 const C = useTheme();
 const styles = makeStyles(C);
@@ -218,7 +227,7 @@ const styles = makeStyles(C);
 function makeStyles(C) { return { ... }; }
 ```
 
-Every text style should include `fontFamily: C.<token>`, `fontWeight`, and `letterSpacing: ls(fontSize)`. Avoid hardcoding hex values — use `C.*` tokens. The only legitimate hardcoded colors are gradient stop values inside `LinearGradient`'s `colors` prop.
+Every text style should include `fontFamily: C.<token>`, `fontWeight`, and `letterSpacing: ls(fontSize)`. Avoid hardcoding hex values — use `C.*` tokens.
 
 ### Responsive scaling (`src/utils/responsive.js`)
 
@@ -247,15 +256,13 @@ Each screen earns its own layout instead of templating a hero card. The shared h
 
 **Past-day logging (`HistoryScreen` + `PastDayLogSheet`):** tap any past cell in `MonthCalendar` to open `PastDayLogSheet`, a bottom-sheet that renders each habit with the same control patterns as Today (toggle for daily/negative, +/− stepper for volume/timer) and dispatches `LOG_HABIT` with the explicit `date` field. Future dates and future months are blocked.
 
-`StatsScreen` includes a GitHub-style contribution graph (`ContributionGraph` component, 16 weeks × 7 days grid, horizontally scrollable) and an **AI Coach** section at the bottom: a daily nudge card (auto-fetched on mount, cached per day) and Weekly/Monthly reflection report buttons (each generates on first tap, cached per period start date). Both use skeleton loading states and call the Edge Functions via `src/lib/aiCoaching.js`.
-
 `SettingsScreen` is the 5th tab (gear icon). It has four grouped card sections:
 - **Appearance** — dark/light mode toggle (`SET_THEME`), haptic feedback toggle (`SET_HAPTICS`)
 - **Notifications** — daily reminders toggle (reads live from `Notifications.getAllScheduledNotificationsAsync()`); notification sound toggle (`SET_NOTIFICATION_SOUND` — when changed, all active reminders are immediately rescheduled with the new sound/channel setting)
 - **Account** — read-only email, Change Password (calls `resetPassword(email)` and shows a timed banner), Sign Out, **Delete account** (opens a confirmation modal that requires typing `delete`; on confirm it calls `useAuth().deleteAccount()` which invokes the `delete-account` Edge Function and then `signOut`s — the app returns to `AuthScreen` via the `SIGNED_OUT` event)
 - **App** — View Onboarding (dispatches `RESET_ONBOARDING`), Version (static `1.0.0`)
 
-`OnboardingScreen` uses `useSafeAreaInsets()` for padding and has an animated `AppLogo` (float, breathe, badge bounce — all via RN `Animated` with `useNativeDriver: true`).
+`OnboardingScreen` uses `useSafeAreaInsets()` for padding and renders an animated `AppLogo` (single entrance spring — ambient orbiting-badge loops were intentionally removed to keep framerate predictable).
 
 ### Components (`src/components/`)
 

@@ -1,14 +1,19 @@
 # HabitFlow
 
-A cross-platform habit tracker built with Expo (React Native) and Supabase. Track daily habits, log volume and timer-based activities, run multi-day challenges, and sync everything to the cloud.
+A cross-platform habit tracker built with Expo (React Native) and Supabase. Track daily habits, log volume and timer-based activities, run multi-day challenges, get an AI-generated daily nudge, and sync everything to the cloud.
 
 ## Features
 
 - **Four habit types** — daily (toggle), volume (reps), timer (minutes), negative (avoidance)
-- **Challenges** — 3-day, 7-day, and 21-day streaks with a reward on completion
+- **Bento dashboard** — habits live as varied tiles (square pairs for toggles, full-width with progress for counters); each screen has its own layout
+- **Past-day logging** — tap any past day in the month calendar to back-fill a missed log
+- **Challenges** — 3-day, 7-day, and 21-day journeys with a reward on completion and a visual progress track
+- **Streak milestones** — celebrations at 7, 14, 30, 60, 100, 200, and 365 days
 - **Cloud sync** — every action syncs to Supabase in real time; data loads from the cloud on sign-in
+- **AI Coach** — daily nudge and weekly/monthly reflection summaries powered by Claude via Supabase Edge Functions
 - **Per-habit reminders** — time-picker per habit plus general morning/evening nudges
-- **Dark / light theme** — Gothic Noir palette, persisted per account
+- **Account deletion** — required by App Store guidelines; cascades all user rows server-side
+- **Dark / light theme** — Pulse palette (warm dark, vibrant amber-coral), persisted per account
 
 ## Getting started
 
@@ -27,6 +32,12 @@ EXPO_PUBLIC_SUPABASE_URL=https://<your-ref>.supabase.co
 EXPO_PUBLIC_SUPABASE_ANON_KEY=sb_publishable_...
 ```
 
+The AI Coach Edge Functions also need an Anthropic API key set as a Supabase secret (server-side only, never in `.env`):
+
+```bash
+npx supabase secrets set ANTHROPIC_API_KEY=sk-ant-... --project-ref <your-ref>
+```
+
 ### Install & run
 
 ```bash
@@ -37,17 +48,27 @@ npx expo start --tunnel # use if phone and PC are on different networks
 
 On Windows PowerShell, replace `npx` with `npx.cmd`.
 
+### Deploy Edge Functions
+
+After editing anything under `supabase/functions/<name>/`:
+
+```bash
+npx supabase login                                  # one-time, interactive
+npx supabase functions deploy <name> --project-ref <your-ref>
+```
+
 ## Tech stack
 
 | Layer | Choice |
 |---|---|
 | Framework | Expo SDK 54 / React Native 0.81 (New Architecture) |
-| Auth & DB | Supabase (email auth + Postgres) |
+| Auth & DB | Supabase (email auth + Postgres + Edge Functions) |
 | State | React `useReducer` + AsyncStorage + Supabase sync |
 | Navigation | React Navigation v7 (bottom tabs) |
-| UI | Custom components, gluestack-style, expo-linear-gradient |
-| Fonts | Russo One, Work Sans (via expo-google-fonts) |
-| Notifications | expo-notifications (daily + per-habit) |
+| UI | Custom components, `lucide-react-native` icons |
+| Fonts | Russo One, Work Sans (via `expo-google-fonts`) |
+| Notifications | `expo-notifications` (daily + per-habit, dual Android channels for silent/sound) |
+| AI | Anthropic Claude (server-side via Supabase Edge Functions) |
 
 ## Auth flow
 
@@ -55,36 +76,52 @@ On Windows PowerShell, replace `npx` with `npx.cmd`.
 2. Sign in → app pulls your habits, completions, and challenge from Supabase
 3. Every action (add, edit, delete, log, challenge) syncs automatically
 4. Pre-auth data created before signing in is migrated to Supabase on first login
+5. Forgot password → tap the email link → app deep-links into the recovery flow
+6. Delete account → typing `delete` to confirm cascades all data and removes the auth user
 
 ## Project structure
 
 ```
-App.js                  # Provider stack + tab navigator
+App.js                       # Provider stack + tab navigator
 src/
-  AuthContext.js        # Supabase session context
-  ThemeContext.js       # DARK/LIGHT palette context
-  store.js              # Global state, AsyncStorage, Supabase sync dispatch
+  AuthContext.js             # Supabase session context (+ deleteAccount)
+  ThemeContext.js            # DARK/LIGHT palette context
+  store.js                   # Global state, AsyncStorage, Supabase sync dispatch
   lib/
-    supabase.js         # Supabase client
-    supabaseSync.js     # pull/push helpers + per-action sync
+    supabase.js              # Supabase client
+    supabaseSync.js          # pull/push helpers + per-action sync
+    aiCoaching.js            # Thin client for Edge Functions
   screens/
-    AuthScreen.js       # Sign in / sign up
-    OnboardingScreen.js # First-run walkthrough
-    TodayScreen.js      # Main habit list
-    ChallengeScreen.js  # Active challenge view
-    HistoryScreen.js    # Completion calendar
-    StatsScreen.js      # Streaks + contribution graph
+    AuthScreen.js            # Sign in / sign up / forgot password / recovery
+    OnboardingScreen.js      # First-run walkthrough
+    TodayScreen.js           # Bento grid of habit tiles
+    ChallengeScreen.js       # Journey track + today's challenge habits
+    HistoryScreen.js         # Month calendar + this-month stats
+    StatsScreen.js           # Stat bento + contribution graph + AI Coach
+    SettingsScreen.js        # Preferences + account management
   components/
-    HabitCard.js        # Single habit row (all 4 types)
-    AddHabitModal.js    # Create / edit habit sheet
-    HabitOptionsSheet.js# Long-press: edit / delete / reminder
-    CelebrationModal.js # All-done / reward overlay
-    AnimatedEmoji.js    # Semantic emoji animations
-  theme.js              # Color palettes, font tokens, emoji list
+    HabitTileSmall.js        # Square tile (daily / negative), paired two-up
+    HabitTileWide.js         # Full-width tile (volume / timer) with stepper
+    StatTile.js              # Generic bento stat cell
+    MonthCalendar.js         # Month grid for HistoryScreen
+    ChallengeTrack.js        # Horizontal journey of dots for ChallengeScreen
+    AddHabitModal.js         # Create / edit habit bottom-sheet
+    HabitOptionsSheet.js     # Long-press: edit / delete / reminder
+    PastDayLogSheet.js       # Log habits retroactively for a past date
+    CelebrationModal.js      # All-done / reward / milestone overlay
+    AnimatedEmoji.js         # Semantic emoji animations
+  theme.js                   # Pulse palette, font tokens, emoji list
   utils/
-    responsive.js       # rs() ms() vs() ls() scaling helpers
-    notifications.js    # Schedule / cancel reminders
-    date.js             # todayKey(), dateKey(), addDays(), etc.
+    responsive.js            # rs() ms() vs() ls() scaling helpers
+    notifications.js         # Schedule / cancel reminders, dual Android channels
+    haptics.js               # lightTap / mediumTap / successBurst with kill switch
+    date.js                  # todayKey(), dateKey(), addDays(), diffDays()
+    heatmap.js               # Shared completion-pct → color ramp
+supabase/
+  functions/
+    ai-coaching-nudge/       # Daily Claude nudge, cached per (user, day)
+    ai-reflection-summary/   # Weekly / monthly Claude reflection, cached per period
+    delete-account/          # Cascades user rows + auth.users delete
 ```
 
 ## Database schema (Supabase)
@@ -97,3 +134,6 @@ All tables are in the `public` schema with RLS enabled. Every row is scoped to t
 | `habits` | `id` (text) | Soft-deleted via `deleted_at`; `reminder_time` stored as jsonb |
 | `completions` | `(user_id, habit_id, date)` | Composite PK makes upserts idempotent |
 | `challenges` | `id` (text) | `habit_ids` text array |
+| `ai_insights` | `id` (uuid) | `type` ∈ {`nudge`, `weekly_summary`, `monthly_summary`}; written only by Edge Functions |
+
+For architecture details — provider stack, reducer behavior, sync model, theme tokens, and per-screen anatomy — see [`CLAUDE.md`](./CLAUDE.md).
