@@ -144,3 +144,5 @@ All tables are in the `public` schema with RLS enabled. Every row is scoped to t
 | `ai_insights` | `id` (uuid) | `type` ∈ {`nudge`, `weekly_summary`, `monthly_summary`}; written only by Edge Functions |
 
 For architecture details — provider stack, reducer behavior, sync model, theme tokens, and per-screen anatomy — see [`CLAUDE.md`](./CLAUDE.md).
+https://drive.google.com/file/d/1lKSTGrJijhBY95LPHVBqK7XPVeLU69f5/view?usp=sharing
+
